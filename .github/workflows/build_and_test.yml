@@ -1,0 +1,42 @@
+name: Build and Test
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    # The type of runner that the job will run on
+    runs-on: [self-hosted, main]
+
+    steps:
+      # Checks-out your repository
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: pre-commit
+        run: make run-pre-commit && make clean-pre-commit
+
+      # setup and install everything and run tests
+      - name: up
+        run: make up
+      - name: tests
+        run: make tests
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose down -v --remove-orphans
+
+      - name: 'Cleanup build folder'
+        if: always()
+        run: |
+          ls -la ./
+          sudo rm -rf ${{ github.workspace }}/*
+          ls -la ./

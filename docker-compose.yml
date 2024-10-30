@@ -1,0 +1,22 @@
+version: '3'
+services:
+  dev:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: language_model_gateway
+    environment:
+      DEBUG_METRICS: 0
+      FLASK_ENV: development
+      DD_TRACE_ENABLED: "false"
+      LOG_LEVEL: INFO
+    env_file: docker.env
+    ports:
+      - '5050:5000'
+    volumes:
+    - ./:/usr/src/language_model_gateway/:cached
+    healthcheck:
+      test: curl --fail -s http://localhost:5000/health || exit 1
+      interval: 1m30s
+      timeout: 10s
+      retries: 3

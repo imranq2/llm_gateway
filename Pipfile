@@ -1,0 +1,53 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[[source]]
+name = "alpine-wheels"
+# https://github.com/imranq2/alpine-wheels/
+url = "https://imranq2.github.io/alpine-wheels/docs/"
+verify_ssl = true
+
+[packages]
+# wheel is needed for building the package and installing wheels
+wheel = ">=0.43.0"
+# requests is needed for making HTTP requests
+requests = "*"
+# aridne is a Python library for building GraphQL APIs
+ariadne= ">=0.22"
+# fastapi is a Python library for building APIs
+fastapi = ">=0.110.0"
+# boto3 is a Python library for interacting with AWS services
+boto3 = ">=1.34.59"
+# uvicorn is a Python library for running ASGI applications
+uvicorn = ">=0.28.0"
+# ddtrace is a Python library for tracing requests
+ddtrace=">=2.6.3"
+# prometheus-fastapi-instrumentator is a Python library for instrumenting FastAPI applications
+prometheus-fastapi-instrumentator = ">=7.0.0"
+# python-crfsuite is a Python library used when installing some packages
+python-crfsuite = {version = "==0.9.10", index = "alpine-wheels"}
+
+[dev-packages]
+# pre-commit is a Python library for running pre-commit checks
+pre-commit=">=3.8.0"
+# autoflake is a Python library for removing unused imports
+autoflake=">=2.3.1"
+# mypy is a Python library for type checking
+mypy = ">=1.11.2"
+# pytest is a Python library for running tests
+pytest = ">=8.3.3"
+# pytest-asyncio is a Python library for running asyncio tests
+pytest-asyncio = ">=0.24.0"
+# black is a Python library for formatting code
+black = ">=24.8.0"
+# deepdiff is a Python library for comparing objects
+deepdiff = { version = ">=8.0.1", extras = ["murmur"] }
+types-requests = "*"
+
+[requires]
+python_version = "3.12"
+
+[pipenv]
+allow_prereleases = false
