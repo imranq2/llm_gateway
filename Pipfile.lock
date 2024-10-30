@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "291639a008c745559ed735b34e193a44fa5be6f83649fce6986baa5221379b2c"
+            "sha256": "f64e6010a5a29ebcd008ec8c710e36a48a91014ffd0cce62282a9781b55af2a7"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -721,11 +721,12 @@
                 "murmur"
             ],
             "hashes": [
-                "sha256:58396bb7a863cbb4ed5193f548c56f18218060362311aa1dc36397b2f25108bd",
-                "sha256:b367e6fa6caac1c9f500adc79ada1b5b1242c50d5f716a1a4362030197847d30"
+                "sha256:245599a4586ab59bb599ca3517a9c42f3318ff600ded5e80a3432693c8ec3c4b",
+                "sha256:42e99004ce603f9a53934c634a57b04ad5900e0d8ed0abb15e635767489cbc05"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==6.7.1"
+            "index": "pypi",
+            "markers": "python_version >= '3.8'",
+            "version": "==8.0.1"
         },
         "distlib": {
             "hashes": [
@@ -815,6 +816,14 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==4.1.0"
+        },
+        "orderly-set": {
+            "hashes": [
+                "sha256:52a18b86aaf3f5d5a498bbdb27bf3253a4e5c57ab38e5b7a56fa00115cd28448",
+                "sha256:f7a37c95a38c01cdfe41c3ffb62925a318a2286ea0a41790c057fc802aec54da"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==5.2.2"
         },
         "packaging": {
             "hashes": [
