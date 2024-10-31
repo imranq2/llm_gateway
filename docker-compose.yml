@@ -7,7 +7,6 @@ services:
     container_name: language_model_gateway
     environment:
       DEBUG_METRICS: 0
-      FLASK_ENV: development
       DD_TRACE_ENABLED: "false"
       LOG_LEVEL: INFO
     env_file: docker.env

@@ -23,6 +23,7 @@ type Query {
     """
     providers(
         query_id: String
+        query: String
     ): QueryResults!
 }
 
@@ -32,4 +33,3 @@ type Mutation {
         result_id: String
     ): Boolean
 }
-

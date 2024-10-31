@@ -13,7 +13,9 @@ from language_model_gateway.providers.my_search_results_provider import (
     MyResultsProvider,
 )
 from language_model_gateway.providers.results_provider import ResultsProvider
-from language_model_gateway.providers.search_resolver_provider import SearchResolverProvider
+from language_model_gateway.providers.search_resolver_provider import (
+    SearchResolverProvider,
+)
 
 
 datetime_scalar = ScalarType("DateTime")
@@ -28,9 +30,7 @@ class ApiSchema:
     results_provider: ResultsProvider = MyResultsProvider()
 
     query: QueryType = QueryType()
-    query.set_field(
-        "providers", SearchResolverProvider(results_provider).resolve_async
-    )
+    query.set_field("providers", SearchResolverProvider(results_provider).resolve_async)
 
     mutation = MutationType()
     # mutation.set_field(

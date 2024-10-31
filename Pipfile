@@ -28,6 +28,8 @@ ddtrace=">=2.6.3"
 prometheus-fastapi-instrumentator = ">=7.0.0"
 # python-crfsuite is a Python library used when installing some packages
 python-crfsuite = {version = "==0.9.10", index = "alpine-wheels"}
+# httpx is a Python library for making HTTP requests
+httpx = ">=0.27.2"
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks

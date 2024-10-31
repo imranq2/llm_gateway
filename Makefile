@@ -3,7 +3,7 @@ export LANG
 .PHONY: Pipfile.lock
 Pipfile.lock: # Locks Pipfile and updates the Pipfile.lock on the local file system
 	docker compose --progress=plain build --no-cache --build-arg RUN_PIPENV_LOCK=true dev && \
-	docker compose --progress=plain run dev sh -c "cp -f /tmp/Pipfile.lock /language_model_gateway/Pipfile.lock"
+	docker compose --progress=plain run dev sh -c "cp -f /tmp/Pipfile.lock /usr/src/language_model_gateway/Pipfile.lock"
 
 .PHONY:devsetup
 devsetup: ## one time setup for devs
@@ -16,10 +16,6 @@ devsetup: ## one time setup for devs
 .PHONY:build
 build: ## Builds the docker for dev
 	docker compose build --parallel
-
-.PHONY: run
-run: ## runs Flask app
-	docker compose run --rm --name helix_pipenv_language_model_gateway dev pipenv run flask run
 
 .PHONY: up
 up: ## starts docker containers
@@ -63,7 +59,7 @@ clean-pre-commit: ## removes pre-commit hook
 	rm -f .git/hooks/pre-commit
 
 .PHONY:setup-pre-commit
-setup-pre-commit: Pipfile.lock
+setup-pre-commit:
 	cp ./pre-commit-hook ./.git/hooks/pre-commit
 
 .PHONY:run-pre-commit

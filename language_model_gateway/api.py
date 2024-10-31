@@ -59,7 +59,10 @@ async def graphql_server(request: Request) -> JSONResponse:
     print(f"API call [{request.client.host if request.client else None}] {data!r}")
 
     success, result = await graphql(
-        ApiSchema.schema, data, context_value=request, debug=app.debug
+        ApiSchema.schema,
+        data,
+        context_value=request,
+        debug=False,
     )
 
     status_code = 200 if success else 400
