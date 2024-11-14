@@ -9,11 +9,11 @@ from ariadne import (
     ScalarType,
 )
 
-from language_model_gateway.providers.my_search_results_provider import (
+from language_model_gateway.graphql.providers.my_search_results_provider import (
     MyResultsProvider,
 )
-from language_model_gateway.providers.results_provider import ResultsProvider
-from language_model_gateway.providers.search_resolver_provider import (
+from language_model_gateway.graphql.providers.results_provider import ResultsProvider
+from language_model_gateway.graphql.providers.search_resolver_provider import (
     SearchResolverProvider,
 )
 

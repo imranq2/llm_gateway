@@ -30,6 +30,11 @@ prometheus-fastapi-instrumentator = ">=7.0.0"
 python-crfsuite = {version = "==0.9.10", index = "alpine-wheels"}
 # httpx is a Python library for making HTTP requests
 httpx = ">=0.27.2"
+# tiktoken is a fast BPE tokeniser for use with OpenAI's models
+# tiktoken 0.8.0 is missing wheel for tiktoken-0.7.0-cp312-cp312-musllinux_1_2_aarch64.whl: https://pypi.org/simple/tiktoken/
+tiktoken= "==0.7.0"
+# numpy is a Python library for working with arrays
+numpy = {version = "==1.26.4", index = "alpine-wheels"}
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks

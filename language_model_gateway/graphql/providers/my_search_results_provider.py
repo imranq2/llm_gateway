@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from language_model_gateway.providers.results_provider import ResultsProvider
+from language_model_gateway.graphql.providers.results_provider import ResultsProvider
 
 
 class MyResultsProvider(ResultsProvider):

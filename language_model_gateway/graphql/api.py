@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from language_model_gateway.api_schema import ApiSchema
+from language_model_gateway.graphql.api_schema import ApiSchema
 
 # Get log level from environment variable
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()

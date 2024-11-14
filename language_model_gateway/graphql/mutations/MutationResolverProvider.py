@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 from graphql import GraphQLResolveInfo
 
-from language_model_gateway.mutations.MutationProvider import MutationProvider
+from language_model_gateway.graphql.mutations.MutationProvider import MutationProvider
 
 
 class MutationResolverProvider:

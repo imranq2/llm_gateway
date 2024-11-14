@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from language_model_gateway.utilities.test_runner import run_test_runner_async
+from language_model_gateway.graphql.utilities.test_runner import run_test_runner_async
 
 
 async def test_simple(graphql_client: TestClient) -> None:
