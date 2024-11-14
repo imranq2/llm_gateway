@@ -1,7 +1,7 @@
 import time
 import uuid
 from abc import ABC, abstractmethod
-from typing import AsyncIterable
+from typing import Generator, Optional
 
 from language_model_gateway.api.schema import (
     # Chat
@@ -34,7 +34,9 @@ class BaseChatModel(ABC):
         """Handle a basic chat completion requests."""
 
     @abstractmethod
-    def chat_stream(self, chat_request: ChatRequest) -> AsyncIterable[bytes]:
+    def chat_stream(
+        self, chat_request: ChatRequest
+    ) -> Generator[None, None, Optional[bytes]]:
         """Handle a basic chat completion requests with stream response."""
 
     @staticmethod

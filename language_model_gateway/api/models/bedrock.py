@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from abc import ABC
-from typing import AsyncIterable, Iterable, Literal
+from typing import Iterable, Literal, Dict, Any, List, Optional, Generator
 
 import boto3
 import numpy as np
@@ -35,6 +35,7 @@ from language_model_gateway.api.schema import (
     EmbeddingsResponse,
     EmbeddingsUsage,
     Embedding,
+    SystemMessage,
 )
 from language_model_gateway.api.setting import DEBUG, AWS_REGION
 
@@ -273,7 +274,7 @@ class BedrockModel(BaseChatModel):
     def list_models(self) -> list[str]:
         return list(self._supported_models.keys())
 
-    def validate(self, chat_request: ChatRequest):
+    def validate(self, chat_request: ChatRequest) -> bool:
         """Perform basic validation on requests"""
         error = ""
         # check if model is supported
@@ -281,8 +282,12 @@ class BedrockModel(BaseChatModel):
             error = f"Unsupported model {chat_request.model}, please use models API to get a list of supported models"
 
         # check if tool call is supported
-        elif chat_request.tools and not self._is_tool_call_supported(
-            chat_request.model, stream=chat_request.stream
+        elif (
+            chat_request.tools
+            and chat_request.stream is not None
+            and not self._is_tool_call_supported(
+                chat_request.model, stream=chat_request.stream
+            )
         ):
             tool_call_info = (
                 "Tool call with streaming" if chat_request.stream else "Tool call"
@@ -296,8 +301,11 @@ class BedrockModel(BaseChatModel):
                 status_code=400,
                 detail=error,
             )
+        return True
 
-    def _invoke_bedrock(self, chat_request: ChatRequest, stream=False):
+    def _invoke_bedrock(
+        self, chat_request: ChatRequest, stream: bool = False
+    ) -> Dict[str, Any]:
         """Common logic for invoke bedrock models"""
         if DEBUG:
             logger.info("Raw request: " + chat_request.model_dump_json())
@@ -307,6 +315,7 @@ class BedrockModel(BaseChatModel):
         if DEBUG:
             logger.info("Bedrock request: " + json.dumps(args))
 
+        response: Dict[str, Any]
         try:
             if stream:
                 response = bedrock_runtime.converse_stream(**args)
@@ -343,12 +352,15 @@ class BedrockModel(BaseChatModel):
             logger.info("Proxy response :" + chat_response.model_dump_json())
         return chat_response
 
-    def chat_stream(self, chat_request: ChatRequest) -> AsyncIterable[bytes]:
+    def chat_stream(
+        self, chat_request: ChatRequest
+    ) -> Generator[None, None, Optional[bytes]]:
         """Default implementation for Chat Stream API"""
         response = self._invoke_bedrock(chat_request, stream=True)
         message_id = self.generate_message_id()
 
         stream = response.get("stream")
+        assert stream, "Stream response is missing"
         for chunk in stream:
             stream_response = self._create_response_stream(
                 model_id=chat_request.model, message_id=message_id, chunk=chunk
@@ -394,7 +406,7 @@ class BedrockModel(BaseChatModel):
 
         return system_prompts
 
-    def _parse_messages(self, chat_request: ChatRequest) -> list[dict]:
+    def _parse_messages(self, chat_request: ChatRequest) -> List[Dict[str, Any]]:
         """
         Converse API only support user and assistant messages.
 
@@ -406,7 +418,9 @@ class BedrockModel(BaseChatModel):
         See example:
         https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html#message-inference-examples
         """
-        messages = []
+        messages: List[Dict[str, Any]] = []
+
+        message: SystemMessage | UserMessage | AssistantMessage | ToolMessage
         for message in chat_request.messages:
             if isinstance(message, UserMessage):
                 messages.append(
@@ -430,6 +444,7 @@ class BedrockModel(BaseChatModel):
                     )
                 else:
                     # Tool use message
+                    assert message.tool_calls and len(message.tool_calls) > 0
                     tool_input = json.loads(message.tool_calls[0].function.arguments)
                     messages.append(
                         {
@@ -466,9 +481,12 @@ class BedrockModel(BaseChatModel):
             else:
                 # ignore others, such as system messages
                 continue
-        return self._reframe_multi_payloard(messages)
+        return self._reframe_multi_payload(messages)
 
-    def _reframe_multi_payloard(self, messages: list) -> list:
+    # noinspection PyMethodMayBeStatic
+    def _reframe_multi_payload(
+        self, messages: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Receive messages and reformat them to comply with the Claude format
 
         With OpenAI format requests, it's not a problem to repeatedly receive messages from the same role, but
@@ -493,9 +511,9 @@ class BedrockModel(BaseChatModel):
         ]
         ```
         """
-        reformatted_messages = []
-        current_role = None
-        current_content = []
+        reformatted_messages: List[Dict[str, Any]] = []
+        current_role: Optional[str] = None
+        current_content: List[Dict[str, Any]] = []
 
         # Search through the list of messages and combine messages from the same role into one list
         for message in messages:
@@ -526,7 +544,7 @@ class BedrockModel(BaseChatModel):
 
         return reformatted_messages
 
-    def _parse_request(self, chat_request: ChatRequest) -> dict:
+    def _parse_request(self, chat_request: ChatRequest) -> Dict[str, Any]:
         """Create default converse request body.
 
         Also perform validations to tool call etc.
@@ -582,7 +600,7 @@ class BedrockModel(BaseChatModel):
         self,
         model: str,
         message_id: str,
-        content: list[dict] = None,
+        content: List[Dict[str, Any]] | None = None,
         finish_reason: str | None = None,
         input_tokens: int = 0,
         output_tokens: int = 0,
@@ -637,7 +655,7 @@ class BedrockModel(BaseChatModel):
         return response
 
     def _create_response_stream(
-        self, model_id: str, message_id: str, chunk: dict
+        self, model_id: str, message_id: str, chunk: Dict[str, Any]
     ) -> ChatStreamResponse | None:
         """Parsing the Bedrock stream response chunk.
 
@@ -749,6 +767,7 @@ class BedrockModel(BaseChatModel):
         if response.status_code == 200:
 
             content_type = response.headers.get("Content-Type")
+            assert content_type, "Content-Type is missing in the response headers"
             if not content_type.startswith("image"):
                 content_type = "image/jpeg"
             # Get the image content
@@ -761,9 +780,9 @@ class BedrockModel(BaseChatModel):
 
     def _parse_content_parts(
         self,
-        message: UserMessage,
+        message: UserMessage | AssistantMessage,
         model_id: str,
-    ) -> list[dict]:
+    ) -> List[Dict[str, Any]]:
         if isinstance(message.content, str):
             return [
                 {
@@ -816,7 +835,7 @@ class BedrockModel(BaseChatModel):
             return False
         return feature["system"]
 
-    def _convert_tool_spec(self, func: Function) -> dict:
+    def _convert_tool_spec(self, func: Function) -> Dict[str, Any]:
         return {
             "toolSpec": {
                 "name": func.name,
@@ -856,7 +875,7 @@ class BedrockEmbeddingsModel(BaseEmbeddingsModel, ABC):
     accept = "application/json"
     content_type = "application/json"
 
-    def _invoke_model(self, args: dict, model_id: str):
+    def _invoke_model(self, args: Dict[str, Any], model_id: str):
         body = json.dumps(args)
         if DEBUG:
             logger.info("Invoke Bedrock Model: " + model_id)
@@ -907,7 +926,7 @@ class BedrockEmbeddingsModel(BaseEmbeddingsModel, ABC):
 
 class CohereEmbeddingsModel(BedrockEmbeddingsModel):
 
-    def _parse_args(self, embeddings_request: EmbeddingsRequest) -> dict:
+    def _parse_args(self, embeddings_request: EmbeddingsRequest) -> Dict[str, Any]:
         texts = []
         if isinstance(embeddings_request.input, str):
             texts = [embeddings_request.input]
@@ -953,7 +972,8 @@ class CohereEmbeddingsModel(BedrockEmbeddingsModel):
 
 class TitanEmbeddingsModel(BedrockEmbeddingsModel):
 
-    def _parse_args(self, embeddings_request: EmbeddingsRequest) -> dict:
+    # noinspection PyMethodMayBeStatic
+    def _parse_args(self, embeddings_request: EmbeddingsRequest) -> Dict[str, Any]:
         if isinstance(embeddings_request.input, str):
             input_text = embeddings_request.input
         elif (
