@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+import random
 import time
 from typing import Dict, Any, AsyncGenerator
 from typing import List, Optional
@@ -8,6 +10,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from starlette.responses import StreamingResponse
 
+logging.basicConfig(level=logging.INFO)
 
 # Based on https://towardsdatascience.com/how-to-build-an-openai-compatible-api-87c8edea2f06
 
@@ -15,6 +18,9 @@ from starlette.responses import StreamingResponse
 class ChatMessage(BaseModel):
     role: str
     content: str
+
+    def to_dict(self) -> Dict[str, str]:
+        return self.model_dump()
 
 
 class ChatCompletionRequest(BaseModel):
@@ -73,6 +79,9 @@ async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
 async def chat_completions(
     request: ChatCompletionRequest,
 ) -> StreamingResponse | Dict[str, Any]:
+    logger = logging.getLogger(__name__)
+    request_id = random.randint(1, 1000)
+    logger.info(f"Received request {request_id}: {request}")
     if request.messages:
         resp_content = (
             "As a mock AI Assistant, I can only echo your last message:"
@@ -81,17 +90,23 @@ async def chat_completions(
     else:
         resp_content = "As a mock AI Assistant, I can only echo your last message, but there wasn't one!"
     if request.stream:
+        logger.info(f"Streaming response {request_id}")
         return StreamingResponse(
             _resp_async_generator(resp_content), media_type="application/x-ndjson"
         )
 
-    return {
+    response_dict = {
         "id": "1337",
         "object": "chat.completion",
         "created": time.time(),
         "model": request.model,
-        "choices": [{"message": ChatMessage(role="assistant", content=resp_content)}],
+        "choices": [
+            {"message": ChatMessage(role="assistant", content=resp_content).to_dict()}
+        ],
     }
+    logger.info(f"Non-streaming response {request_id}: {response_dict}")
+
+    return response_dict
 
 
 # Mock list of models
@@ -105,4 +120,6 @@ models = [
 
 @app.get("/api/v1/models")
 async def get_models() -> Dict[str, List[Dict[str, str]]]:
+    logger = logging.getLogger(__name__)
+    logger.info("Received request for models")
     return {"data": models}
