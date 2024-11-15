@@ -69,7 +69,7 @@ async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
     yield "data: [DONE]\n\n"
 
 
-@app.post("/chat/completions")
+@app.post("/chat/completions", response_model=None)
 async def chat_completions(
     request: ChatCompletionRequest,
 ) -> StreamingResponse | Dict[str, Any]:
