@@ -16,7 +16,7 @@ services:
     - ./:/usr/src/language_model_gateway/:cached
     healthcheck:
       test: curl --fail -s http://localhost:5000/health || exit 1
-      interval: 30s
+      interval: 10s
       timeout: 10s
       retries: 3
 
@@ -26,6 +26,7 @@ services:
     container_name: open-webui
     image: ghcr.io/open-webui/open-webui:v0.3.35
     depends_on:
+      - dev
       - open-webui-db
     env_file:
       - docker.env
