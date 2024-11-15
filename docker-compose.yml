@@ -24,7 +24,7 @@ services:
     ports:
       - '3050:8080'
     container_name: open-webui
-    image: ghcr.io/open-webui/open-webui:v0.3.32
+    image: ghcr.io/open-webui/open-webui:v0.3.35
     depends_on:
       - open-webui-db
     env_file:
@@ -35,7 +35,7 @@ services:
       OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
       OPENAI_API_KEY: 'bedrock'
 #      DEFAULT_MODELS: "anthropic.claude-3-5-sonnet-20240620-v1:0"
-      ENABLE_MODEL_FILTER: 1
+#      ENABLE_MODEL_FILTER: 1
 #      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
       WEBUI_SECRET_KEY: ""
       WEBUI_DB_HOST: "open-webui-db"

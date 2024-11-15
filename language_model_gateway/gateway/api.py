@@ -3,32 +3,26 @@ import json
 import logging
 import random
 import time
-from typing import Dict, Any, AsyncGenerator
-from typing import List, Optional
+from typing import Dict, Any, AsyncGenerator, cast
+from typing import List
 
 from fastapi import FastAPI
-from pydantic import BaseModel
 from starlette.responses import StreamingResponse
+
+from language_model_gateway.gateway.schema import (
+    ChatResponseMessage,
+    ChatRequest,
+    ChatResponse,
+    Choice,
+    Usage,
+    ChoiceDelta,
+    ChatStreamResponse,
+    UserMessage,
+)
 
 logging.basicConfig(level=logging.INFO)
 
 # Based on https://towardsdatascience.com/how-to-build-an-openai-compatible-api-87c8edea2f06
-
-
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-
-    def to_dict(self) -> Dict[str, str]:
-        return self.model_dump()
-
-
-class ChatCompletionRequest(BaseModel):
-    model: str = "mock-gpt-model"
-    messages: List[ChatMessage]
-    max_tokens: Optional[int] = 512
-    temperature: Optional[float] = 0.1
-    stream: Optional[bool] = False
 
 
 app = FastAPI(title="OpenAI-compatible API")
@@ -40,12 +34,10 @@ def health() -> str:
 
 
 @app.post("/api/v1/chat/completions_sync")
-async def chat_completions_sync(request: ChatCompletionRequest) -> Dict[str, Any]:
+async def chat_completions_sync(request: ChatRequest) -> Dict[str, Any]:
+    resp_content: str
     if request.messages and request.messages[0].role == "user":
-        resp_content = (
-            "As a mock AI Assistant, I can only echo your last message:"
-            + request.messages[-1].content
-        )
+        resp_content = cast(str, cast(UserMessage, request.messages[-1]).content)
     else:
         resp_content = "As a mock AI Assistant, I can only echo your last message, but there were no messages!"
 
@@ -54,7 +46,9 @@ async def chat_completions_sync(request: ChatCompletionRequest) -> Dict[str, Any
         "object": "chat.completion",
         "created": time.time(),
         "model": request.model,
-        "choices": [{"message": ChatMessage(role="assistant", content=resp_content)}],
+        "choices": [
+            {"message": ChatResponseMessage(role="assistant", content=resp_content)}
+        ],
     }
 
 
@@ -63,13 +57,18 @@ async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
     tokens = text_resp.split(" ")
 
     for i, token in enumerate(tokens):
-        chunk = {
-            "id": i,
-            "object": "chat.completion.chunk",
-            "created": time.time(),
-            "model": "blah",
-            "choices": [{"delta": {"content": token + " "}}],
-        }
+        chunk: ChatStreamResponse = ChatStreamResponse(
+            id=str(i),
+            object="chat.completion.chunk",
+            created=int(time.time()),
+            model="blah",
+            choices=[
+                ChoiceDelta(
+                    delta=ChatResponseMessage(role="assistant", content=token + " ")
+                )
+            ],
+            usage=Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+        )
         yield f"data: {json.dumps(chunk)}\n\n"
         await asyncio.sleep(1)
     yield "data: [DONE]\n\n"
@@ -77,16 +76,15 @@ async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
 
 @app.post("/api/v1/chat/completions", response_model=None)
 async def chat_completions(
-    request: ChatCompletionRequest,
-) -> StreamingResponse | Dict[str, Any]:
+    request: ChatRequest,
+) -> StreamingResponse | ChatResponse:
     logger = logging.getLogger(__name__)
     request_id = random.randint(1, 1000)
     logger.info(f"Received request {request_id}: {request}")
+
+    response_context: str
     if request.messages:
-        resp_content = (
-            "As a mock AI Assistant, I can only echo your last message:"
-            + request.messages[-1].content
-        )
+        resp_content = cast(str, cast(UserMessage, request.messages[-1]).content)
     else:
         resp_content = "As a mock AI Assistant, I can only echo your last message, but there wasn't one!"
     if request.stream:
@@ -95,15 +93,16 @@ async def chat_completions(
             _resp_async_generator(resp_content), media_type="application/x-ndjson"
         )
 
-    response_dict = {
-        "id": "1337",
-        "object": "chat.completion",
-        "created": time.time(),
-        "model": request.model,
-        "choices": [
-            {"message": ChatMessage(role="assistant", content=resp_content).to_dict()}
+    response_dict: ChatResponse = ChatResponse(
+        id="1337",
+        object="chat.completion",
+        created=int(time.time()),
+        model=request.model,
+        choices=[
+            Choice(message=ChatResponseMessage(role="assistant", content=resp_content))
         ],
-    }
+        usage=Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+    )
     logger.info(f"Non-streaming response {request_id}: {response_dict}")
 
     return response_dict
@@ -111,10 +110,7 @@ async def chat_completions(
 
 # Mock list of models
 models = [
-    {"id": "text-davinci-003", "description": "Highly capable language model"},
-    {"id": "text-curie-001", "description": "Less capable than Davinci, faster"},
-    {"id": "text-babbage-001", "description": "Basic capability, faster"},
-    {"id": "text-ada-001", "description": "Simplest and fastest model"},
+    {"id": "search-web", "description": "Highly capable language model"},
 ]
 
 
