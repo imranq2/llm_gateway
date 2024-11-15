@@ -7,7 +7,7 @@ from typing import Dict, Any, AsyncGenerator, cast
 from typing import List
 
 from fastapi import FastAPI
-from starlette.responses import StreamingResponse
+from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.gateway.schema import (
     ChatResponseMessage,
@@ -69,7 +69,7 @@ async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
             ],
             usage=Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
-        yield f"data: {json.dumps(chunk)}\n\n"
+        yield f"data: {json.dumps(chunk.model_dump())}\n\n"
         await asyncio.sleep(1)
     yield "data: [DONE]\n\n"
 
@@ -77,7 +77,7 @@ async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
 @app.post("/api/v1/chat/completions", response_model=None)
 async def chat_completions(
     request: ChatRequest,
-) -> StreamingResponse | ChatResponse:
+) -> StreamingResponse | JSONResponse:
     logger = logging.getLogger(__name__)
     request_id = random.randint(1, 1000)
     logger.info(f"Received request {request_id}: {request}")
@@ -105,7 +105,7 @@ async def chat_completions(
     )
     logger.info(f"Non-streaming response {request_id}: {response_dict}")
 
-    return response_dict
+    return JSONResponse(content=response_dict.model_dump())
 
 
 # Mock list of models
