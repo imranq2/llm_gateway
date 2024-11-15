@@ -92,3 +92,17 @@ async def chat_completions(
         "model": request.model,
         "choices": [{"message": ChatMessage(role="assistant", content=resp_content)}],
     }
+
+
+# Mock list of models
+models = [
+    {"id": "text-davinci-003", "description": "Highly capable language model"},
+    {"id": "text-curie-001", "description": "Less capable than Davinci, faster"},
+    {"id": "text-babbage-001", "description": "Basic capability, faster"},
+    {"id": "text-ada-001", "description": "Simplest and fastest model"},
+]
+
+
+@app.get("/models")
+async def get_models() -> Dict[str, List[Dict[str, str]]]:
+    return {"data": models}
