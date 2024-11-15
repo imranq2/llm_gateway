@@ -52,6 +52,8 @@ black = ">=24.8.0"
 # deepdiff is a Python library for comparing objects
 deepdiff = { version = ">=8.0.1", extras = ["murmur"] }
 types-requests = "*"
+# openai is a Python library for interacting with OpenAI's models.  We use it for testing.
+openai = ">=1.54.4"
 
 [requires]
 python_version = "3.12"
