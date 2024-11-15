@@ -29,6 +29,11 @@ class ChatCompletionRequest(BaseModel):
 app = FastAPI(title="OpenAI-compatible API")
 
 
+@app.get("/health")
+def health() -> str:
+    return "OK"
+
+
 @app.post("/chat/completions")
 async def chat_completions(request: ChatCompletionRequest) -> Dict[str, Any]:
     if request.messages and request.messages[0].role == "user":
