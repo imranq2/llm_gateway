@@ -32,11 +32,11 @@ services:
     environment:
       WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
-      OPENAI_API_BASE_URL: 'http://localhost:5000/api/v1'
+      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
       OPENAI_API_KEY: 'bedrock'
-      DEFAULT_MODELS: "anthropic.claude-3-5-sonnet-20240620-v1:0"
+#      DEFAULT_MODELS: "anthropic.claude-3-5-sonnet-20240620-v1:0"
       ENABLE_MODEL_FILTER: 1
-      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
+#      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
       WEBUI_SECRET_KEY: ""
       WEBUI_DB_HOST: "open-webui-db"
       DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
