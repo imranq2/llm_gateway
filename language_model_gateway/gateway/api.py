@@ -33,7 +33,7 @@ def health() -> str:
     return "OK"
 
 
-@app.post("/chat/completions_sync")
+@app.post("/api/v1/chat/completions_sync")
 async def chat_completions_sync(request: ChatCompletionRequest) -> Dict[str, Any]:
     if request.messages and request.messages[0].role == "user":
         resp_content = (
@@ -69,7 +69,7 @@ async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
     yield "data: [DONE]\n\n"
 
 
-@app.post("/chat/completions", response_model=None)
+@app.post("/api/v1/chat/completions", response_model=None)
 async def chat_completions(
     request: ChatCompletionRequest,
 ) -> StreamingResponse | Dict[str, Any]:
@@ -103,6 +103,6 @@ models = [
 ]
 
 
-@app.get("/models")
+@app.get("/api/v1/models")
 async def get_models() -> Dict[str, List[Dict[str, str]]]:
     return {"data": models}

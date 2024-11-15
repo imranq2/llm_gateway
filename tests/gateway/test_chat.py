@@ -35,7 +35,7 @@ async def test_chat_completions(
     # init client and connect to localhost server
     client = OpenAI(
         api_key="fake-api-key",
-        base_url="http://localhost:5000",  # change the default port if needed
+        base_url="http://localhost:5000/api/v1",  # change the default port if needed
         http_client=sync_client,
     )
 
