@@ -36,7 +36,7 @@ class BaseChatModel(ABC):
     @abstractmethod
     def chat_stream(
         self, chat_request: ChatRequest
-    ) -> Generator[None, None, Optional[bytes]]:
+    ) -> Generator[Optional[bytes], None, None]:
         """Handle a basic chat completion requests with stream response."""
 
     @staticmethod

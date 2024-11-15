@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from abc import ABC
-from typing import Iterable, Literal, Dict, Any, List, Optional, Generator
+from typing import Iterable, Literal, Dict, Any, List, Optional, Generator, Match, cast
 
 import boto3
 import numpy as np
@@ -354,7 +354,7 @@ class BedrockModel(BaseChatModel):
 
     def chat_stream(
         self, chat_request: ChatRequest
-    ) -> Generator[None, None, Optional[bytes]]:
+    ) -> Generator[Optional[bytes], None, None]:
         """Default implementation for Chat Stream API"""
         response = self._invoke_bedrock(chat_request, stream=True)
         message_id = self.generate_message_id()
@@ -385,6 +385,7 @@ class BedrockModel(BaseChatModel):
 
         # return an [DONE] message at the end.
         yield self.stream_response_to_bytes()
+        return
 
     def _parse_system_prompts(self, chat_request: ChatRequest) -> list[dict[str, str]]:
         """Create system prompts.
@@ -583,13 +584,14 @@ class BedrockModel(BaseChatModel):
                     # auto (default) is mapped to {"auto" : {}}
                     # required is mapped to {"any" : {}}
                     if chat_request.tool_choice == "required":
-                        args["toolConfig"]["toolChoice"] = {"any": {}}
+                        args["toolConfig"]["toolChoice"] = {"any": {}}  # type: ignore[index]
                     else:
-                        args["toolConfig"]["toolChoice"] = {"auto": {}}
+                        args["toolConfig"]["toolChoice"] = {"auto": {}}  # type: ignore[index]
                 else:
+                    assert isinstance(chat_request.tool_choice, dict)
                     # Specific tool to use
                     assert "function" in chat_request.tool_choice
-                    args["toolConfig"]["toolChoice"] = {
+                    args["toolConfig"]["toolChoice"] = {  # type: ignore[index]
                         "tool": {
                             "name": chat_request.tool_choice["function"].get("name", "")
                         }
@@ -612,6 +614,7 @@ class BedrockModel(BaseChatModel):
         if finish_reason == "tool_use":
             # https://docs.aws.amazon.com/bedrock/latest/userguide/tool-use.html#tool-use-examples
             tool_calls = []
+            assert content
             for part in content:
                 if "toolUse" in part:
                     tool = part["toolUse"]
@@ -754,7 +757,7 @@ class BedrockModel(BaseChatModel):
         returns a tuple of (Image Data, Content Type)
         """
         pattern = r"^data:(image/[a-z]*);base64,\s*"
-        content_type = re.search(pattern, image_url)
+        content_type: Match[str] | None = re.search(pattern, image_url)
         # if already base64 encoded.
         # Only supports 'image/jpeg', 'image/png', 'image/gif' or 'image/webp'
         if content_type:
@@ -766,13 +769,13 @@ class BedrockModel(BaseChatModel):
         # Check if the request was successful
         if response.status_code == 200:
 
-            content_type = response.headers.get("Content-Type")
-            assert content_type, "Content-Type is missing in the response headers"
-            if not content_type.startswith("image"):
-                content_type = "image/jpeg"
+            content_type1 = cast(str, response.headers.get("Content-Type"))
+            assert content_type1, "Content-Type is missing in the response headers"
+            if not content_type1.startswith("image"):
+                content_type1 = "image/jpeg"
             # Get the image content
             image_content = response.content
-            return image_content, content_type
+            return image_content, content_type1
         else:
             raise HTTPException(
                 status_code=500, detail="Unable to access the image url"
@@ -789,7 +792,8 @@ class BedrockModel(BaseChatModel):
                     "text": message.content,
                 }
             ]
-        content_parts = []
+        content_parts: List[Dict[str, Any]] = []
+        assert message.content
         for part in message.content:
             if isinstance(part, TextContent):
                 content_parts.append(
@@ -875,13 +879,13 @@ class BedrockEmbeddingsModel(BaseEmbeddingsModel, ABC):
     accept = "application/json"
     content_type = "application/json"
 
-    def _invoke_model(self, args: Dict[str, Any], model_id: str):
+    def _invoke_model(self, args: Dict[str, Any], model_id: str) -> Dict[str, Any]:
         body = json.dumps(args)
         if DEBUG:
             logger.info("Invoke Bedrock Model: " + model_id)
             logger.info("Bedrock request body: " + body)
         try:
-            return bedrock_runtime.invoke_model(
+            return bedrock_runtime.invoke_model(  # type: ignore[no-any-return]
                 body=body,
                 modelId=model_id,
                 accept=self.accept,
@@ -910,7 +914,7 @@ class BedrockEmbeddingsModel(BaseEmbeddingsModel, ABC):
                 encoded_embedding = base64.b64encode(arr_bytes)
                 data.append(Embedding(index=i, embedding=encoded_embedding))
             else:
-                data.append(Embedding(index=i, embedding=embedding))
+                data.append(Embedding(index=i, embedding=embedding))  # type: ignore[arg-type]
         response = EmbeddingsResponse(
             data=data,
             model=model,
@@ -942,7 +946,7 @@ class CohereEmbeddingsModel(BedrockEmbeddingsModel):
                     encodings.append(inner)
                 else:
                     # Iterable[Iterable[int]]
-                    text = ENCODER.decode(list(inner))
+                    text = ENCODER.decode(list(inner))  # type: ignore[arg-type]
                     texts.append(text)
             if encodings:
                 texts.append(ENCODER.decode(encodings))
@@ -959,7 +963,9 @@ class CohereEmbeddingsModel(BedrockEmbeddingsModel):
         response = self._invoke_model(
             args=self._parse_args(embeddings_request), model_id=embeddings_request.model
         )
-        response_body = json.loads(response.get("body").read())
+        body = response.get("body")
+        assert body, "Response body is missing"
+        response_body = json.loads(body.read())
         if DEBUG:
             logger.info("Bedrock response body: " + str(response_body))
 
@@ -985,7 +991,7 @@ class TitanEmbeddingsModel(BedrockEmbeddingsModel):
             raise ValueError(
                 "Amazon Titan Embeddings models support only single strings as input."
             )
-        args = {
+        args: Dict[str, Any] = {
             "inputText": input_text,
             # Note: inputImage is not supported!
         }
@@ -1001,7 +1007,9 @@ class TitanEmbeddingsModel(BedrockEmbeddingsModel):
         response = self._invoke_model(
             args=self._parse_args(embeddings_request), model_id=embeddings_request.model
         )
-        response_body = json.loads(response.get("body").read())
+        body = response.get("body")
+        assert body, "Response body is missing"
+        response_body = json.loads(body.read())
         if DEBUG:
             logger.info("Bedrock response body: " + str(response_body))
 

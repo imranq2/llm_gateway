@@ -152,6 +152,7 @@ class EmbeddingsRequest(BaseModel):
     encoding_format: Literal["float", "base64"] = "float"
     dimensions: int | None = None  # not used.
     user: str | None = None  # not used.
+    embedding_config: Dict[str, Any] | None = None  # not used.
 
 
 class Embedding(BaseModel):

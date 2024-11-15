@@ -48,6 +48,7 @@ async def chat_completions(
     model.validate(chat_request)
     if chat_request.stream:
         return StreamingResponse(
-            content=model.chat_stream(chat_request), media_type="text/event-stream"
+            content=iter(model.chat_stream(chat_request)),  # type: ignore[arg-type]
+            media_type="text/event-stream",
         )
     return model.chat(chat_request)
