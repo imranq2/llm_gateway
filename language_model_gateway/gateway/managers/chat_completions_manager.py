@@ -124,8 +124,9 @@ class ChatCompletionsManager:
             }
 
             agent_response: Response = await client.post(
-                "/api/v1/invoke", json={"input": test_data}
+                "/invoke", json={"input": test_data}, timeout=60 * 60
             )
+            response_text: str = agent_response.text
             response_dict: Dict[str, Any] = agent_response.json()
             print(response_dict)
             assert agent_response.status_code == 200
