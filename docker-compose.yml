@@ -9,6 +9,8 @@ services:
       DEBUG_METRICS: 0
       DD_TRACE_ENABLED: "false"
       LOG_LEVEL: INFO
+      AGENT_URL: 'http://host.docker.internal:5060/api/v1'
+      DEFAULT_PATIENT_ID: "eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
     env_file: docker.env
     ports:
       - '5050:5000'
