@@ -30,7 +30,7 @@ def health() -> str:
 async def chat_completions(
     request: ChatRequest,
 ) -> StreamingResponse | JSONResponse:
-    return await ChatCompletionsManager.chat_completions(request)
+    return await ChatCompletionsManager().chat_completions(request=request)
 
 
 @app.get("/api/v1/models")
