@@ -61,7 +61,11 @@ class ChatCompletionsManager:
         logger.info(f"Streaming response {request_id} from agent")
         async with httpx.AsyncClient(base_url=agent_url) as client:
             async with aconnect_sse(
-                client, "POST", "/stream", json={"input": test_data}
+                client,
+                "POST",
+                "/stream",
+                json={"input": test_data},
+                timeout=60 * 60,
             ) as event_source:
                 i = 0
                 sse: ServerSentEvent
