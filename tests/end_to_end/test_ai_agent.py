@@ -25,6 +25,8 @@ async def test_call_agent_with_input() -> None:
         model="test-model",
         agent_url=environ["AGENT_URL"],
         patient_id=environ["DEFAULT_PATIENT_ID"],
+        stream_request=False,
+        request_id="test-request-id",
     )
 
     assert response.status_code == 200
