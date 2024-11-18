@@ -3,7 +3,7 @@ import logging
 import random
 import time
 from os import environ
-from typing import AsyncGenerator, cast, List, Any, Dict, Optional
+from typing import AsyncGenerator, cast, List, Any, Dict, Optional, AsyncIterator
 
 import httpx
 from httpx import Response
@@ -30,11 +30,7 @@ class ChatCompletionsManager:
 
     @staticmethod
     async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
-        # let's pretend every word is a token and return it over time
         tokens = text_resp.split(" ")
-
-        # now enumerate the tokens in batches of 10 tokens
-
         for i, token in enumerate(tokens):
             chunk: ChatStreamResponse = ChatStreamResponse(
                 id=str(i),
@@ -48,8 +44,14 @@ class ChatCompletionsManager:
                 usage=Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
             )
             yield f"data: {json.dumps(chunk.model_dump())}\n\n"
-            # await asyncio.sleep(1)
         yield "data: [DONE]\n\n"
+
+    @staticmethod
+    async def _stream_resp_async_generator(
+        stream: AsyncIterator[bytes],
+    ) -> AsyncGenerator[str, None]:
+        async for line in stream:
+            yield line.decode()
 
     async def chat_completions(
         self,
@@ -90,7 +92,6 @@ class ChatCompletionsManager:
         else:
             return await self.call_ai_agent(request=request, request_id=str(request_id))
 
-    # noinspection PyMethodMayBeStatic
     async def call_ai_agent(
         self, *, request: ChatRequest, request_id: str
     ) -> StreamingResponse | JSONResponse:
@@ -108,9 +109,8 @@ class ChatCompletionsManager:
             stream_request=request.stream,
         )
 
-    # noinspection PyMethodMayBeStatic
+    @staticmethod
     async def call_agent_with_input(
-        self,
         *,
         chat_history: List[Dict[str, Any]],
         input_text: str,
@@ -132,11 +132,24 @@ class ChatCompletionsManager:
                 "chat_history": chat_history,
             }
 
-            agent_response: Response = await client.post(
-                "/invoke", json={"input": test_data}, timeout=60 * 60
+            agent_response: Response = (
+                await client.post("/invoke", json={"input": test_data}, timeout=60 * 60)
+                if not stream_request
+                else await client.post(
+                    "/stream", json={"input": test_data}, timeout=60 * 60
+                )
             )
+
+            if agent_response.headers.get("Content-Type") == "text/event-stream":
+                logger.info(f"Streaming response {request_id} from agent")
+                return StreamingResponse(
+                    ChatCompletionsManager._stream_resp_async_generator(
+                        agent_response.aiter_bytes()
+                    ),
+                    media_type="text/event-stream",
+                )
+
             response_text: str = agent_response.text
-            print(f"response_text: {response_text}")
             try:
                 response_dict: Dict[str, Any] = agent_response.json()
             except json.JSONDecodeError:
@@ -154,7 +167,6 @@ class ChatCompletionsManager:
             outputs: List[Dict[str, Any]] = output_dict["output"]
             assert len(outputs) == 1
             output_text: str = outputs[0]["text"]
-            print(f"output_text: {output_text}")
 
             if stream_request:
                 logger.info(f"Streaming response {request_id}: {output_text}")
@@ -163,7 +175,6 @@ class ChatCompletionsManager:
                     media_type="text/event-stream",
                 )
 
-            # assert isinstance(str, output_text), f"output_text type: {type(output_text)} content: {output_text}"
             response: ChatResponse = ChatResponse(
                 id="1337",
                 created=int(time.time()),

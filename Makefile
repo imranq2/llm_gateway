@@ -24,7 +24,7 @@ up: ## starts docker containers
 	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "healthy" ]; do printf "." && sleep 2; done && \
 	echo ""
 	@echo language_model_gateway Service: http://localhost:5050/graphql
-	@echo OpenWebUI dashboard: http://localhost:3050
+	@echo OpenWebUI: http://localhost:3050
 
 .PHONY: down
 down: ## stops docker containers
