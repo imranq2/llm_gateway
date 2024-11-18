@@ -3,7 +3,7 @@ import logging
 import random
 import time
 from os import environ
-from typing import AsyncGenerator, cast, List, Any, Dict, Optional, AsyncIterator
+from typing import AsyncGenerator, cast, List, Any, Dict, Optional
 
 import httpx
 from httpx import Response
@@ -22,6 +22,7 @@ from language_model_gateway.gateway.schema import (
     AssistantMessage,
     ToolMessage,
 )
+from httpx_sse import aconnect_sse, ServerSentEvent
 
 logger = logging.getLogger(__file__)
 
@@ -29,13 +30,15 @@ logger = logging.getLogger(__file__)
 class ChatCompletionsManager:
 
     @staticmethod
-    async def _resp_async_generator(text_resp: str) -> AsyncGenerator[str, None]:
+    async def _resp_async_generator(
+        *, request_model: str, text_resp: str
+    ) -> AsyncGenerator[str, None]:
         tokens = text_resp.split(" ")
         for i, token in enumerate(tokens):
             chunk: ChatStreamResponse = ChatStreamResponse(
                 id=str(i),
                 created=int(time.time()),
-                model="blah",
+                model=request_model,
                 choices=[
                     ChoiceDelta(
                         delta=ChatResponseMessage(role="assistant", content=token + " ")
@@ -48,10 +51,45 @@ class ChatCompletionsManager:
 
     @staticmethod
     async def _stream_resp_async_generator(
-        stream: AsyncIterator[bytes],
+        *,
+        request_id: str,
+        agent_url: str,
+        test_data: Dict[str, Any],
+        request_model: str,
     ) -> AsyncGenerator[str, None]:
-        async for line in stream:
-            yield line.decode()
+
+        logger.info(f"Streaming response {request_id} from agent")
+        async with httpx.AsyncClient(base_url=agent_url) as client:
+            async with aconnect_sse(
+                client, "POST", "/stream", json={"input": test_data}
+            ) as event_source:
+                i = 0
+                sse: ServerSentEvent
+                async for sse in event_source.aiter_sse():
+                    event: str = sse.event
+                    data: str = sse.data
+                    i += 1
+
+                    logger.info(f"----- Received data from stream {i} {event} ------")
+                    logger.info(data)
+                    logger.info(f"----- End data from stream {i} {event} ------")
+                    chunk: ChatStreamResponse = ChatStreamResponse(
+                        id=str(i),
+                        created=int(time.time()),
+                        model=request_model,
+                        choices=[
+                            ChoiceDelta(
+                                delta=ChatResponseMessage(
+                                    role="assistant", content=data
+                                )
+                            )
+                        ],
+                        usage=Usage(
+                            prompt_tokens=0, completion_tokens=0, total_tokens=0
+                        ),
+                    )
+                    yield f"data: {json.dumps(chunk.model_dump())}\n\n"
+                yield "data: [DONE]\n\n"
 
     async def chat_completions(
         self,
@@ -71,7 +109,9 @@ class ChatCompletionsManager:
             if request.stream:
                 logger.info(f"Streaming response {request_id}")
                 return StreamingResponse(
-                    ChatCompletionsManager._resp_async_generator(resp_content),
+                    ChatCompletionsManager._resp_async_generator(
+                        request_model=request.model, text_resp=resp_content
+                    ),
                     media_type="text/event-stream",
                 )
             response_dict: ChatResponse = ChatResponse(
@@ -125,29 +165,26 @@ class ChatCompletionsManager:
         assert input_text
         assert isinstance(chat_history, list)
 
-        async with httpx.AsyncClient(base_url=agent_url) as client:
-            test_data = {
-                "input": input_text,
-                "patient_id": patient_id,
-                "chat_history": chat_history,
-            }
-
-            agent_response: Response = (
-                await client.post("/invoke", json={"input": test_data}, timeout=60 * 60)
-                if not stream_request
-                else await client.post(
-                    "/stream", json={"input": test_data}, timeout=60 * 60
-                )
+        test_data = {
+            "input": input_text,
+            "patient_id": patient_id,
+            "chat_history": chat_history,
+        }
+        if stream_request:
+            return StreamingResponse(
+                await ChatCompletionsManager.get_streaming_response_async(
+                    model=model,
+                    agent_url=agent_url,
+                    request_id=request_id,
+                    test_data=test_data,
+                ),
+                media_type="text/event-stream",
             )
 
-            if agent_response.headers.get("Content-Type") == "text/event-stream":
-                logger.info(f"Streaming response {request_id} from agent")
-                return StreamingResponse(
-                    ChatCompletionsManager._stream_resp_async_generator(
-                        agent_response.aiter_bytes()
-                    ),
-                    media_type="text/event-stream",
-                )
+        async with httpx.AsyncClient(base_url=agent_url) as client:
+            agent_response: Response = await client.post(
+                "/invoke", json={"input": test_data}, timeout=60 * 60
+            )
 
             response_text: str = agent_response.text
             try:
@@ -168,13 +205,6 @@ class ChatCompletionsManager:
             assert len(outputs) == 1
             output_text: str = outputs[0]["text"]
 
-            if stream_request:
-                logger.info(f"Streaming response {request_id}: {output_text}")
-                return StreamingResponse(
-                    ChatCompletionsManager._resp_async_generator(output_text),
-                    media_type="text/event-stream",
-                )
-
             response: ChatResponse = ChatResponse(
                 id="1337",
                 created=int(time.time()),
@@ -190,3 +220,18 @@ class ChatCompletionsManager:
             )
             logger.info(f"Non-streaming response {request_id}: {response}")
             return JSONResponse(content=response.model_dump())
+
+    @staticmethod
+    async def get_streaming_response_async(
+        *, agent_url: str, model: str, request_id: str, test_data: Dict[str, Any]
+    ) -> AsyncGenerator[str, None]:
+        logger.info(f"Streaming response {request_id} from agent")
+        generator: AsyncGenerator[str, None] = (
+            ChatCompletionsManager._stream_resp_async_generator(
+                request_model=model,
+                agent_url=agent_url,
+                test_data=test_data,
+                request_id=request_id,
+            )
+        )
+        return generator
