@@ -74,25 +74,40 @@ class ChatCompletionsManager:
                     data: str = sse.data
                     i += 1
 
-                    logger.info(f"----- Received data from stream {i} {event} ------")
-                    logger.info(data)
-                    logger.info(f"----- End data from stream {i} {event} ------")
-                    chunk: ChatStreamResponse = ChatStreamResponse(
-                        id=str(i),
-                        created=int(time.time()),
-                        model=request_model,
-                        choices=[
-                            ChoiceDelta(
-                                delta=ChatResponseMessage(
-                                    role="assistant", content=data
-                                )
-                            )
-                        ],
-                        usage=Usage(
-                            prompt_tokens=0, completion_tokens=0, total_tokens=0
-                        ),
+                    logger.info(
+                        f"----- Received data from stream {i} {event} {type(data)} ------"
                     )
-                    yield f"data: {json.dumps(chunk.model_dump())}\n\n"
+                    logger.info(data)
+                    logger.info(
+                        f"----- End data from stream {i} {event} {type(data)} ------"
+                    )
+
+                    if event == "data" and data:
+                        response_json: Dict[str, Any] = json.loads(data)
+                        if "output" in response_json:
+                            output_responses: List[Dict[str, Any]] = response_json[
+                                "output"
+                            ]
+                            if len(output_responses) >= 0:
+                                response_text: str = output_responses[0]["text"]
+                                chunk: ChatStreamResponse = ChatStreamResponse(
+                                    id=str(i),
+                                    created=int(time.time()),
+                                    model=request_model,
+                                    choices=[
+                                        ChoiceDelta(
+                                            delta=ChatResponseMessage(
+                                                role="assistant", content=response_text
+                                            )
+                                        )
+                                    ],
+                                    usage=Usage(
+                                        prompt_tokens=0,
+                                        completion_tokens=0,
+                                        total_tokens=0,
+                                    ),
+                                )
+                                yield f"data: {json.dumps(chunk.model_dump())}\n\n"
                 yield "data: [DONE]\n\n"
 
     async def chat_completions(
