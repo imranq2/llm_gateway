@@ -127,14 +127,16 @@ class ChatCompletionsManager:
                 "/invoke", json={"input": test_data}, timeout=60 * 60
             )
             response_text: str = agent_response.text
+            print(f"response_text: {response_text}")
             response_dict: Dict[str, Any] = agent_response.json()
-            print(response_dict)
             assert agent_response.status_code == 200
             assert "output" in response_dict
             output_dict: Dict[str, Any] = response_dict["output"]
             outputs: List[Dict[str, Any]] = output_dict["output"]
             assert len(outputs) == 1
-            output_text = outputs[0]["text"]
+            output_text: str = outputs[0]["text"]
+            print(f"output_text: {output_text}")
+            # assert isinstance(str, output_text), f"output_text type: {type(output_text)} content: {output_text}"
             response: ChatResponse = ChatResponse(
                 id="1337",
                 created=int(time.time()),

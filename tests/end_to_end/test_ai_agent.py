@@ -14,6 +14,7 @@ from language_model_gateway.gateway.schema import ChatRequest
 
 @pytest.mark.asyncio
 async def test_call_agent_with_input() -> None:
+    print("")
     # Create a ChatRequest object
     request = ChatRequest(model="test-model", messages=[])
 
