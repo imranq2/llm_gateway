@@ -33,18 +33,23 @@ services:
     env_file:
       - docker.env
     environment:
+      # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
       WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
       OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
       OPENAI_API_KEY: 'bedrock'
-      DEFAULT_MODELS: "conversation-phr"
-      ENABLE_MODEL_FILTER: 1
+      DEFAULT_MODELS: "b.well-phr"
+      ENABLE_MODEL_FILTER: True
 #      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
       WEBUI_SECRET_KEY: ""
       WEBUI_DB_HOST: "open-webui-db"
       DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
+      ENABLE_OLLAMA_API: False
+      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
+      ENABLE_IMAGE_GENERATION: True
     volumes:
       - ./openwebui/backend/data:/app/backend/data
+#      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
 
   open-webui-db:
     image: postgres:13

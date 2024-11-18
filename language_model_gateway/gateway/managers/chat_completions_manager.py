@@ -137,7 +137,17 @@ class ChatCompletionsManager:
             )
             response_text: str = agent_response.text
             print(f"response_text: {response_text}")
-            response_dict: Dict[str, Any] = agent_response.json()
+            try:
+                response_dict: Dict[str, Any] = agent_response.json()
+            except json.JSONDecodeError:
+                response_dict = {
+                    "output": {
+                        "output": [
+                            {"text": f"{agent_response.status_code} {response_text}"},
+                        ]
+                    }
+                }
+
             assert agent_response.status_code == 200
             assert "output" in response_dict
             output_dict: Dict[str, Any] = response_dict["output"]

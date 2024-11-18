@@ -6,7 +6,7 @@ class ModelManager:
     # Mock list of models
     models = [
         {"id": "search-web", "description": "Highly capable language model"},
-        {"id": "conversation-phr", "description": "Conversation PHR"},
+        {"id": "b.well-phr", "description": "Conversational PHR"},
     ]
 
     @staticmethod

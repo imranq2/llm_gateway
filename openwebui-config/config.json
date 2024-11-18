@@ -1,0 +1,29 @@
+{
+  "version": 0,
+  "ui": {
+    "default_locale": "",
+    "prompt_suggestions": [
+      {
+        "title": [
+          "Do I need a vaccine?",
+          "search your vaccination history"
+        ],
+        "content": "Ask your question"
+      },
+      {
+        "title": [
+          "When did I see a doctor?",
+          "search your past visits"
+        ],
+        "content": "Ask your question."
+      },
+      {
+        "title": [
+          "What insurance did I have?",
+          "search your past insurance plans"
+        ],
+        "content": "Ask your question."
+      }
+    ]
+  }
+}
