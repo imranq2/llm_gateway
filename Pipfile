@@ -37,6 +37,8 @@ httpx-sse = ">=0.4.0"
 tiktoken= "==0.7.0"
 # numpy is a Python library for working with arrays
 numpy = {version = "==1.26.4", index = "alpine-wheels"}
+# openai is a Python library for interacting with OpenAI's models.  We use it for testing.
+openai = ">=1.54.4"
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks
@@ -54,8 +56,6 @@ black = ">=24.8.0"
 # deepdiff is a Python library for comparing objects
 deepdiff = { version = ">=8.0.1", extras = ["murmur"] }
 types-requests = "*"
-# openai is a Python library for interacting with OpenAI's models.  We use it for testing.
-openai = ">=1.54.4"
 
 [requires]
 python_version = "3.12"

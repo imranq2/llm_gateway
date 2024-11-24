@@ -9,7 +9,7 @@ from starlette.responses import StreamingResponse, JSONResponse
 from language_model_gateway.gateway.managers.chat_completions_manager import (
     ChatCompletionsManager,
 )
-from language_model_gateway.gateway.schema import ChatRequest
+from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 
 
 @pytest.mark.asyncio
@@ -20,7 +20,7 @@ async def test_call_agent_with_input() -> None:
 
     manager = ChatCompletionsManager()
     response: StreamingResponse | JSONResponse = await manager.call_agent_with_input(
-        chat_history=[msg.model_dump() for msg in request.messages],
+        chat_history=[msg for msg in request["messages"]],
         input_text="Have I taken covid vaccine?",
         model="test-model",
         agent_url=environ["AGENT_URL"],
