@@ -13,7 +13,6 @@ from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 
 logging.basicConfig(level=logging.INFO)
 
-
 app = FastAPI(title="OpenAI-compatible API")
 
 
@@ -28,7 +27,8 @@ async def chat_completions(
     chat_request: Dict[str, Any],
 ) -> StreamingResponse | JSONResponse:
     return await ChatCompletionManager().chat_completions(
-        headers=request.headers.__dict__, chat_request=cast(ChatRequest, chat_request)
+        headers={k: v for k, v in request.headers.items()},
+        chat_request=cast(ChatRequest, chat_request),
     )
 
 
