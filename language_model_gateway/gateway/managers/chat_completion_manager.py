@@ -1,7 +1,9 @@
-from typing import Dict
+from typing import Dict, List
 
 from starlette.responses import StreamingResponse, JSONResponse
 
+from language_model_gateway.configs.config_reader import ConfigReader
+from language_model_gateway.configs.config_schema import ModelConfig
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
     BaseChatCompletionsProvider,
 )
@@ -21,9 +23,27 @@ class ChatCompletionManager:
     ) -> StreamingResponse | JSONResponse:
         # Use the model to choose the provider
         model: str = chat_request["model"]
+        assert model is not None
+
+        configs: List[ModelConfig] = ConfigReader().read_model_config()
+
+        # Find the model config
+        model_config: ModelConfig | None = next(
+            (config for config in configs if config.name.lower() == model.lower()), None
+        )
+        if model_config is None:
+            return JSONResponse(content=f"Model {model} not found in the config")
+
+        provider: BaseChatCompletionsProvider
+        match model_config.type:
+            case "openai":
+                provider = OpenAiChatCompletionsProvider()
+            case _:
+                return JSONResponse(
+                    content=f"Model type {model_config.type} not supported"
+                )
 
         # Use the provider to get the completions
-        provider: BaseChatCompletionsProvider = OpenAiChatCompletionsProvider()
         return await provider.chat_completions(
             headers=headers, chat_request=chat_request
         )

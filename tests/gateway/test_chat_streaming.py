@@ -36,7 +36,7 @@ async def test_chat_completions_streaming(
     )
 
     stream = client.chat.completions.create(
-        model="mock-gpt-model",
+        model="b.well",
         messages=[{"role": "user", "content": "Say this is a test"}],
         stream=True,
     )

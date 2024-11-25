@@ -48,7 +48,7 @@ async def test_chat_completions(
                 "content": "Say this is a test",
             }
         ],
-        model="gpt-1337-turbo-pro-max",
+        model="b.well",
     )
 
     # print the top "choice"
@@ -79,7 +79,7 @@ async def test_chat_completions_streaming(
                 "content": "Say this is a test",
             }
         ],
-        model="gpt-1337-turbo-pro-max",
+        model="b.well",
         stream=True,
     )
 
