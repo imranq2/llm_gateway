@@ -81,7 +81,7 @@ class LangServeChatCompletionsProvider(BaseChatCompletionsProvider):
             return JSONResponse(content=response_dict.model_dump())
         else:
             return await self.call_ai_agent(
-                request=(chat_request), request_id=str(request_id)
+                request=chat_request, request_id=str(request_id)
             )
 
     @staticmethod
