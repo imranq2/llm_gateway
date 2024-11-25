@@ -5,16 +5,13 @@ from typing import List
 from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import StreamingResponse, JSONResponse
-
-from language_model_gateway.gateway.managers.chat_completions_manager import (
-    ChatCompletionsManager,
+from language_model_gateway.gateway.managers.chat_completion_manager import (
+    ChatCompletionManager,
 )
 from language_model_gateway.gateway.managers.model_manager import ModelManager
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 
 logging.basicConfig(level=logging.INFO)
-
-# Based on https://towardsdatascience.com/how-to-build-an-openai-compatible-api-87c8edea2f06
 
 
 app = FastAPI(title="OpenAI-compatible API")
@@ -30,8 +27,8 @@ async def chat_completions(
     request: Request,
     chat_request: Dict[str, Any],
 ) -> StreamingResponse | JSONResponse:
-    return await ChatCompletionsManager().chat_completions(
-        request=cast(ChatRequest, chat_request)
+    return await ChatCompletionManager().chat_completions(
+        headers=request.headers.__dict__, chat_request=cast(ChatRequest, chat_request)
     )
 
 
