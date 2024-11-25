@@ -24,6 +24,13 @@ up: ## starts docker containers
 	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "healthy" ]; do printf "." && sleep 2; done && \
 	echo ""
 	@echo language_model_gateway Service: http://localhost:5050/graphql
+
+.PHONY: up-open-webui
+up-open-webui: ## starts docker containers
+	docker compose -f docker-compose-openwebui.yml up -d
+	echo "waiting for language_model_gateway service to become healthy" && \
+	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; do printf "." && sleep 2; done && \
+	echo ""
 	@echo OpenWebUI: http://localhost:3050
 
 .PHONY: down
