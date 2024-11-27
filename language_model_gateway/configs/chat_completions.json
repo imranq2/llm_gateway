@@ -46,6 +46,9 @@
             "value": "YYYY-MM-DD"
           }
         ]
+      },
+      {
+        "name": "web_search"
       }
     ]
   },
@@ -96,6 +99,9 @@
             "value": "YYYY-MM-DD"
           }
         ]
+      },
+      {
+        "name": "web_search"
       }
     ]
   }

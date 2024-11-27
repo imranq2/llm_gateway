@@ -30,7 +30,7 @@ class ToolParameter(BaseModel):
 
 class ToolChoice(BaseModel):
     name: str
-    parameters: List[ToolParameter]
+    parameters: List[ToolParameter] | None = None
 
 
 class ModelChoice(BaseModel):

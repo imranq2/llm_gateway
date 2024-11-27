@@ -1,5 +1,6 @@
 from typing import Dict
 
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolChoice
@@ -9,6 +10,7 @@ from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTo
 class ToolProvider:
     tools: Dict[str, BaseTool] = {
         "current_date": CurrentTimeTool(),
+        "web_search": DuckDuckGoSearchRun(),
     }
 
     def get_tool_by_name(self, *, tool: ToolChoice) -> BaseTool:
