@@ -3,7 +3,7 @@ services:
   open-webui:
     ports:
       - '3050:8080'
-    image: ghcr.io/open-webui/open-webui:v0.4.6
+    image: ghcr.io/open-webui/open-webui:v0.4.4
     depends_on:
       - open-webui-db
     env_file:
@@ -23,8 +23,8 @@ services:
       ENABLE_OLLAMA_API: False
 #      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
       ENABLE_IMAGE_GENERATION: True
-    volumes:
-      - ./openwebui/backend/data:/app/backend/data
+#    volumes:
+#      - ./openwebui/backend/data:/app/backend/data
 #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
 
   open-webui-db:

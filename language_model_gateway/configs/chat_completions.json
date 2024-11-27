@@ -1,6 +1,7 @@
 [
   {
-    "name": "b.well",
+    "id": "b.well",
+    "name": "b.well PHR",
     "description": "Conversational PHR",
     "type": "openai",
     "url": "https://api.openai.com/v1/engines/gpt-2/completions",
@@ -49,7 +50,8 @@
     ]
   },
   {
-    "name": "general_purpose",
+    "id": "general_purpose",
+    "name": "General Purpose",
     "description": "General Purpose Language Model",
     "type": "langchain",
     "url": "https://api.openai.com/v1/engines/gpt-2/completions",

@@ -39,6 +39,7 @@ class ModelChoice(BaseModel):
 
 
 class ChatModelConfig(BaseModel):
+    id: str
     name: str
     description: str
     type: str
