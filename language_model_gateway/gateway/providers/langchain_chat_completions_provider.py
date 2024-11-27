@@ -5,8 +5,9 @@ from typing import Dict, Any, Sequence
 
 from langchain_aws import ChatBedrockConverse
 from langchain_core.language_models import BaseChatModel
-from langchain_core.tools import Tool, BaseTool
+from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
+from langgraph.graph.state import CompiledStateGraph
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_schema import ChatModelConfig, ModelChoice
@@ -17,6 +18,7 @@ from language_model_gateway.gateway.providers.base_chat_completions_provider imp
     BaseChatCompletionsProvider,
 )
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
+from language_model_gateway.gateway.tools.tool_provider import ToolProvider
 
 
 class LangChainCompletionsProvider(BaseChatCompletionsProvider):
@@ -53,18 +55,18 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
             return now.strftime("%Y-%m-%d %H:%M:%S%Z%z")
 
         # Initialize tools
-        tools: Sequence[BaseTool] = [
-            Tool(
-                name="Time",  # Name of the tool
-                func=get_current_time,  # Function that the tool will execute
-                # Description of the tool
-                description="Useful for when you need to know the current time",
-            )
-        ]
+        tools: Sequence[BaseTool] = (
+            ToolProvider().get_tools(tools=[t for t in model_config.tools])
+            if model_config.tools is not None
+            else []
+        )
+
         converter: LangGraphToOpenAIConverter = LangGraphToOpenAIConverter()
-        compiled_state_graph = LangGraphToOpenAIConverter.create_graph_for_llm(
-            llm=llm,
-            tools=tools,
+        compiled_state_graph: CompiledStateGraph = (
+            LangGraphToOpenAIConverter.create_graph_for_llm(
+                llm=llm,
+                tools=tools,
+            )
         )
         request_id = random.randint(1, 1000)
 

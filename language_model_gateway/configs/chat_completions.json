@@ -39,7 +39,7 @@
     ],
     "tools": [
       {
-        "name": "date",
+        "name": "current_date",
         "parameters": [
           {
             "key": "format",
@@ -89,7 +89,7 @@
     ],
     "tools": [
       {
-        "name": "date",
+        "name": "current_date",
         "parameters": [
           {
             "key": "format",

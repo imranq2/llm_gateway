@@ -47,7 +47,7 @@ async def test_chat_completions(
                 "content": "what is the first name of Obama?",
             }
         ],
-        model="general_purpose",
+        model="General Purpose",
     )
 
     # print the top "choice"
@@ -86,10 +86,13 @@ async def test_chat_completions_with_chat_history(
                 "content": "what is his first name?",
             },
         ],
-        model="general_purpose",
+        model="General Purpose",
     )
 
     # print the top "choice"
+    print("========  Response ======")
+    print(chat_completion)
+    print("====== End of Response ======")
     content: Optional[str] = chat_completion.choices[0].message.content
     assert content is not None
     print(content)

@@ -28,7 +28,7 @@ class ToolParameter(BaseModel):
     value: str
 
 
-class Tool(BaseModel):
+class ToolChoice(BaseModel):
     name: str
     parameters: List[ToolParameter]
 
@@ -49,4 +49,4 @@ class ChatModelConfig(BaseModel):
     model_parameters: List[ModelParameter] | None = None
     few_shot_examples: List[FewShotExample] | None = None
     headers: List[Header] | None = None
-    tools: List[Tool] | None = None
+    tools: List[ToolChoice] | None = None
