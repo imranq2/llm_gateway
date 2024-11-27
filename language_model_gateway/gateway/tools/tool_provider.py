@@ -5,12 +5,14 @@ from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolChoice
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
+from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
 
 class ToolProvider:
     tools: Dict[str, BaseTool] = {
         "current_date": CurrentTimeTool(),
         "web_search": DuckDuckGoSearchRun(),
+        "pubmed": PubmedQueryRun(),
     }
 
     def get_tool_by_name(self, *, tool: ToolChoice) -> BaseTool:
