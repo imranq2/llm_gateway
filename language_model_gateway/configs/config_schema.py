@@ -5,7 +5,8 @@ from pydantic import BaseModel
 
 class Prompt(BaseModel):
     role: str
-    message: str
+    message: str | None = None
+    lang_hub_id: str | None = None
 
 
 class ModelParameter(BaseModel):
