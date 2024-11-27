@@ -3,7 +3,7 @@ services:
   open-webui:
     ports:
       - '3050:8080'
-    image: ghcr.io/open-webui/open-webui:v0.4.4
+    image: ghcr.io/open-webui/open-webui:v0.4.6
     depends_on:
       - open-webui-db
     env_file:

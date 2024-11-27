@@ -49,8 +49,8 @@
     ]
   },
   {
-    "name": "SimpleAnthropic",
-    "description": "Simple Anthropic",
+    "name": "general_purpose",
+    "description": "General Purpose Language Model",
     "type": "langchain",
     "url": "https://api.openai.com/v1/engines/gpt-2/completions",
     "model": {

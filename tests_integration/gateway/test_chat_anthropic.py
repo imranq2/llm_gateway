@@ -47,7 +47,7 @@ async def test_chat_completions(
                 "content": "what is the first name of Obama?",
             }
         ],
-        model="SimpleAnthropic",
+        model="general_purpose",
     )
 
     # print the top "choice"
@@ -86,7 +86,7 @@ async def test_chat_completions_with_chat_history(
                 "content": "what is his first name?",
             },
         ],
-        model="SimpleAnthropic",
+        model="general_purpose",
     )
 
     # print the top "choice"
