@@ -1,4 +1,4 @@
-from typing import Generator, AsyncGenerator
+from typing import Generator, AsyncGenerator, Optional
 
 import httpx
 import pytest
@@ -44,11 +44,14 @@ async def test_chat_completions(
         messages=[
             {
                 "role": "user",
-                "content": "what is name of U.S. President?",
+                "content": "what is the first name of Obama?",
             }
         ],
         model="SimpleAnthropic",
     )
 
     # print the top "choice"
-    print(chat_completion.choices[0].message.content)
+    content: Optional[str] = chat_completion.choices[0].message.content
+    assert content is not None
+    print(content)
+    assert "Barack" in content

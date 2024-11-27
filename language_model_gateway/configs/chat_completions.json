@@ -55,7 +55,7 @@
     "url": "https://api.openai.com/v1/engines/gpt-2/completions",
     "model": {
       "provider": "bedrock",
-      "model": "anthropic:claude-3-5-sonnet-20240620"
+      "model": "anthropic.claude-3-5-sonnet-20240620-v1:0"
     },
     "prompts": [
       {
