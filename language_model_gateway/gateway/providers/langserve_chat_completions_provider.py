@@ -20,6 +20,7 @@ from openai.types.chat.chat_completion import Choice
 from openai.types.chat.chat_completion_chunk import ChoiceDelta, Choice as ChunkChoice
 from starlette.responses import StreamingResponse, JSONResponse
 
+from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
     BaseChatCompletionsProvider,
 )
@@ -32,6 +33,7 @@ class LangServeChatCompletionsProvider(BaseChatCompletionsProvider):
     async def chat_completions(
         self,
         *,
+        model_config: ChatModelConfig,
         headers: Dict[str, str],
         chat_request: ChatRequest,
     ) -> StreamingResponse | JSONResponse:

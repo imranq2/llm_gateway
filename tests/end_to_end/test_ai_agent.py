@@ -6,6 +6,7 @@ import pytest
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionUserMessageParam
 from starlette.responses import StreamingResponse, JSONResponse
 
+from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.providers.openai_chat_completions_provider import (
     OpenAiChatCompletionsProvider,
 )
@@ -31,6 +32,13 @@ async def test_call_agent_with_input() -> None:
     response: StreamingResponse | JSONResponse = await provider.chat_completions(
         headers={},
         chat_request=request,
+        model_config=ChatModelConfig(
+            name="test-model",
+            description="test model",
+            type="chat",
+            model="test-model",
+            url="http://localhost:5000",
+        ),
     )
 
     assert response.status_code == 200

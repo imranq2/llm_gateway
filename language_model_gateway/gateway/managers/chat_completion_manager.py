@@ -3,7 +3,7 @@ from typing import Dict, List
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_reader import ConfigReader
-from language_model_gateway.configs.config_schema import ModelConfig
+from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
     BaseChatCompletionsProvider,
 )
@@ -28,10 +28,10 @@ class ChatCompletionManager:
         model: str = chat_request["model"]
         assert model is not None
 
-        configs: List[ModelConfig] = ConfigReader().read_model_config()
+        configs: List[ChatModelConfig] = ConfigReader().read_model_config()
 
         # Find the model config
-        model_config: ModelConfig | None = next(
+        model_config: ChatModelConfig | None = next(
             (config for config in configs if config.name.lower() == model.lower()), None
         )
         if model_config is None:
@@ -50,5 +50,5 @@ class ChatCompletionManager:
 
         # Use the provider to get the completions
         return await provider.chat_completions(
-            headers=headers, chat_request=chat_request
+            model_config=model_config, headers=headers, chat_request=chat_request
         )

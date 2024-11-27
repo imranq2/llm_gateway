@@ -10,6 +10,8 @@ from openai.types.chat import (
     ChatCompletion,
 )
 
+from language_model_gateway.configs.config_schema import ChatModelConfig
+
 logger = logging.getLogger(__file__)
 from typing import Optional
 
@@ -26,6 +28,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
     async def chat_completions(
         self,
         *,
+        model_config: ChatModelConfig,
         headers: Dict[str, str],
         chat_request: ChatRequest,
     ) -> StreamingResponse | JSONResponse:
@@ -34,6 +37,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
 
         :param headers:
         :param chat_request:
+        :param model_config:
         :return:
         """
         assert chat_request
