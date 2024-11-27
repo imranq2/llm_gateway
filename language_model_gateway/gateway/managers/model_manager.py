@@ -12,7 +12,6 @@ class ModelManager:
         logger.info("Received request for models")
         configs: List[ChatModelConfig] = ConfigReader().read_model_config()
         models = [
-            {"id": config.model, "description": config.description}
-            for config in configs
+            {"id": config.name, "description": config.description} for config in configs
         ]
         return {"data": models}

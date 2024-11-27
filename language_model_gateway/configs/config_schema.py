@@ -33,12 +33,17 @@ class Tool(BaseModel):
     parameters: List[ToolParameter]
 
 
-class ChatModelConfig(BaseModel):
+class ModelChoice(BaseModel):
+    provider: str
     model: str
+
+
+class ChatModelConfig(BaseModel):
     name: str
     description: str
     type: str
-    url: str
+    url: str | None = None
+    model: ModelChoice | None = None
     prompts: List[Prompt] | None = None
     model_parameters: List[ModelParameter] | None = None
     few_shot_examples: List[FewShotExample] | None = None

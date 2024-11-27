@@ -4,7 +4,10 @@
     "description": "Conversational PHR",
     "type": "openai",
     "url": "https://api.openai.com/v1/engines/gpt-2/completions",
-    "model": "gpt-1337-turbo-pro-max",
+    "model": {
+      "provider": "bedrock",
+      "model": "gpt-1337-turbo-pro-max"
+    },
     "prompts": [
       {
         "role": "system",
@@ -37,10 +40,10 @@
       {
         "name": "date",
         "parameters": [
-            {
-                "key": "format",
-                "value": "YYYY-MM-DD"
-            }
+          {
+            "key": "format",
+            "value": "YYYY-MM-DD"
+          }
         ]
       }
     ]
@@ -50,7 +53,10 @@
     "description": "Simple Anthropic",
     "type": "langchain",
     "url": "https://api.openai.com/v1/engines/gpt-2/completions",
-    "model": "bedrock:claude3.5",
+    "model": {
+      "provider": "bedrock",
+      "model": "anthropic:claude-3-5-sonnet-20240620"
+    },
     "prompts": [
       {
         "role": "system",
@@ -83,10 +89,10 @@
       {
         "name": "date",
         "parameters": [
-            {
-                "key": "format",
-                "value": "YYYY-MM-DD"
-            }
+          {
+            "key": "format",
+            "value": "YYYY-MM-DD"
+          }
         ]
       }
     ]

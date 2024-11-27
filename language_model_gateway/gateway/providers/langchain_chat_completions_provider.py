@@ -9,7 +9,7 @@ from langchain_core.tools import Tool, BaseTool
 from langchain_openai import ChatOpenAI
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.configs.config_schema import ChatModelConfig
+from language_model_gateway.configs.config_schema import ChatModelConfig, ModelChoice
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
 )
@@ -27,13 +27,14 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
         headers: Dict[str, str],
         chat_request: ChatRequest
     ) -> StreamingResponse | JSONResponse:
-        model_name: str = model_config.model
-        model_vendor: str = model_name.split(":")[0]
-        model: str = model_name.split(":")[1]
+        model: ModelChoice | None = model_config.model
+        assert model is not None
+        model_vendor: str = model.provider
+        model_name: str = model.model
 
         # noinspection PyArgumentList
         llm: BaseChatModel = (
-            ChatOpenAI(model=model, temperature=0)
+            ChatOpenAI(model=model_name, temperature=0)
             if model_vendor == "openai"
             else ChatBedrockConverse(
                 client=None,
@@ -41,7 +42,7 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
                 credentials_profile_name=os.environ.get("AWS_CREDENTIALS_PROFILE"),
                 # Setting temperature to 0 for deterministic results
                 temperature=0,
-                model=model,
+                model=model_name,
             )
         )
 
