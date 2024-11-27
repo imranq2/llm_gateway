@@ -23,6 +23,16 @@ class Header(BaseModel):
     value: str
 
 
+class ToolParameter(BaseModel):
+    key: str
+    value: str
+
+
+class Tool(BaseModel):
+    name: str
+    parameters: List[ToolParameter]
+
+
 class ModelConfig(BaseModel):
     model: str
     name: str
@@ -33,3 +43,4 @@ class ModelConfig(BaseModel):
     model_parameters: List[ModelParameter]
     few_shot_examples: List[FewShotExample]
     headers: List[Header]
+    tools: List[Tool]

@@ -7,6 +7,9 @@ from language_model_gateway.configs.config_schema import ModelConfig
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
     BaseChatCompletionsProvider,
 )
+from language_model_gateway.gateway.providers.langchain_chat_completions_provider import (
+    LangChainCompletionsProvider,
+)
 from language_model_gateway.gateway.providers.openai_chat_completions_provider import (
     OpenAiChatCompletionsProvider,
 )
@@ -38,6 +41,8 @@ class ChatCompletionManager:
         match model_config.type:
             case "openai":
                 provider = OpenAiChatCompletionsProvider()
+            case "langchain":
+                provider = LangChainCompletionsProvider()
             case _:
                 return JSONResponse(
                     content=f"Model type {model_config.type} not supported"

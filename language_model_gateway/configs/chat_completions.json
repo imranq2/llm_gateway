@@ -32,6 +32,63 @@
         "key": "Authorization",
         "value": "Bearer OPENAI_API_KEY"
       }
+    ],
+    "tools": [
+      {
+        "name": "date",
+        "parameters": [
+            {
+                "key": "format",
+                "value": "YYYY-MM-DD"
+            }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "SimpleAnthropic",
+    "description": "Simple Anthropic",
+    "type": "langchain",
+    "url": "https://api.openai.com/v1/engines/gpt-2/completions",
+    "model": "bedrock:claude3.5",
+    "prompts": [
+      {
+        "role": "system",
+        "message": "You are a tool"
+      }
+    ],
+    "model_parameters": [
+      {
+        "key": "temperature",
+        "value": 0.7
+      },
+      {
+        "key": "max_tokens",
+        "value": 100
+      }
+    ],
+    "few_shot_examples": [
+      {
+        "input": "You are a tool",
+        "output": "Patient/eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
+      }
+    ],
+    "headers": [
+      {
+        "key": "Authorization",
+        "value": "Bearer OPENAI_API_KEY"
+      }
+    ],
+    "tools": [
+      {
+        "name": "date",
+        "parameters": [
+            {
+                "key": "format",
+                "value": "YYYY-MM-DD"
+            }
+        ]
+      }
     ]
   }
 ]
