@@ -1,4 +1,4 @@
-from typing import Generator, AsyncGenerator, Optional
+from typing import Generator, AsyncGenerator
 
 import httpx
 import pytest
@@ -40,7 +40,7 @@ async def test_chat_completions(
     )
 
     # call API
-    chat_completion = client.chat.completions.create(
+    stream = client.chat.completions.create(
         messages=[
             {
                 "role": "user",
@@ -48,12 +48,21 @@ async def test_chat_completions(
             }
         ],
         model="SimpleAnthropic",
+        stream=True,
     )
+    content: str = ""
+    i: int = 0
+    for chunk in stream:
+        i += 1
+        print(f"======== Chunk {i} ========")
+        delta_content = chunk.choices[0].delta.content
+        content += delta_content or ""
+        print(delta_content or "")
+        print(f"====== End of Chunk {i} ======")
 
-    # print the top "choice"
-    content: Optional[str] = chat_completion.choices[0].message.content
-    assert content is not None
+    print("======== Final Content ========")
     print(content)
+    print("====== End of Final Content ======")
     assert "Barack" in content
 
 
@@ -61,7 +70,7 @@ async def test_chat_completions(
 async def test_chat_completions_with_chat_history(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
-
+    print("")
     # Test health endpoint
     response = await async_client.get("/health")
     assert response.status_code == 200
@@ -74,7 +83,7 @@ async def test_chat_completions_with_chat_history(
     )
 
     # call API
-    chat_completion = client.chat.completions.create(
+    stream = client.chat.completions.create(
         messages=[
             {
                 "role": "user",
@@ -87,10 +96,19 @@ async def test_chat_completions_with_chat_history(
             },
         ],
         model="SimpleAnthropic",
+        stream=True,
     )
+    content: str = ""
+    i: int = 0
+    for chunk in stream:
+        i += 1
+        print(f"======== Chunk {i} ========")
+        delta_content = chunk.choices[0].delta.content
+        content += delta_content or ""
+        print(delta_content or "")
+        print(f"====== End of Chunk {i} ======")
 
-    # print the top "choice"
-    content: Optional[str] = chat_completion.choices[0].message.content
-    assert content is not None
+    print("======== Final Content ========")
     print(content)
+    print("====== End of Final Content ======")
     assert "Barack" in content
