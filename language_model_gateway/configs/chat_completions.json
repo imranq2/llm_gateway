@@ -102,6 +102,12 @@
       },
       {
         "name": "web_search"
+      },
+      {
+        "name": "pubmed"
+      },
+      {
+        "name": "google_search"
       }
     ]
   }

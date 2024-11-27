@@ -7,12 +7,15 @@ from language_model_gateway.configs.config_schema import ToolChoice
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
+from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
+
 
 class ToolProvider:
     tools: Dict[str, BaseTool] = {
         "current_date": CurrentTimeTool(),
         "web_search": DuckDuckGoSearchRun(),
         "pubmed": PubmedQueryRun(),
+        "google_search": GoogleSearchTool(),
     }
 
     def get_tool_by_name(self, *, tool: ToolChoice) -> BaseTool:
