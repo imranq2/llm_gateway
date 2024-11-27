@@ -44,10 +44,10 @@ async def test_chat_completions(
         messages=[
             {
                 "role": "user",
-                "content": "what is name of U.S. President?",
+                "content": "Say this is a test",
             }
         ],
-        model="SimpleAnthropic",
+        model="b.well",
     )
 
     # print the top "choice"
