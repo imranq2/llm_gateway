@@ -58,7 +58,7 @@ async def test_chat_completions_with_web_search(
 
 
 @pytest.mark.asyncio
-async def test_chat_completions_with_chat_history(
+async def test_chat_completions_with_chat_history_and_web_search(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
 
