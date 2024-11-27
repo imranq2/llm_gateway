@@ -33,6 +33,7 @@ async def test_call_agent_with_input() -> None:
         headers={},
         chat_request=request,
         model_config=ChatModelConfig(
+            id="1",
             name="test-model",
             description="test model",
             type="chat",
