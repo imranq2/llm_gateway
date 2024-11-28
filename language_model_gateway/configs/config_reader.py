@@ -9,11 +9,15 @@ from language_model_gateway.configs.config_schema import ChatModelConfig
 class ConfigReader:
     # noinspection PyMethodMayBeStatic
     def read_model_config(self) -> List[ChatModelConfig]:
-        config_folder: Path = Path(__file__).parent
-        # Read the JSON file
-        with open(config_folder.joinpath("chat_completions.json"), "r") as file:
-            data = json.load(file)
+        config_folder: Path = Path(__file__).parent.joinpath("chat_completions")
+        # read all the .json files recursively in the config folder
+        # for each file, parse the json data into ModelConfig
+        configs: List[ChatModelConfig] = []
 
-        # Parse the JSON data into ModelConfig objects
-        configs = [ChatModelConfig(**config) for config in data]
+        # Read all the .json files recursively in the config folder
+        for json_file in config_folder.rglob("*.json"):
+            with open(json_file, "r") as file:
+                data = json.load(file)
+                configs.append(ChatModelConfig(**data))
+
         return configs
