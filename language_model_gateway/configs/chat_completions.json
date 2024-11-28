@@ -104,7 +104,7 @@
         "name": "pubmed"
       },
       {
-        "name": "google_search"
+        "name": "web_search"
       }
     ]
   }

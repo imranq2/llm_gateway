@@ -1,3 +1,4 @@
+from os import environ
 from typing import Dict
 
 from langchain_community.tools import DuckDuckGoSearchRun
@@ -11,12 +12,26 @@ from language_model_gateway.gateway.tools.google_search_tool import GoogleSearch
 
 
 class ToolProvider:
-    tools: Dict[str, BaseTool] = {
-        "current_date": CurrentTimeTool(),
-        "web_search": DuckDuckGoSearchRun(),
-        "pubmed": PubmedQueryRun(),
-        "google_search": GoogleSearchTool(),
-    }
+    def __init__(self) -> None:
+        web_search_tool: BaseTool
+        default_web_search_tool: str = environ.get(
+            "DEFAULT_WEB_SEARCH_TOOL", "duckduckgo"
+        )
+        match default_web_search_tool:
+            case "duckduckgo":
+                web_search_tool = DuckDuckGoSearchRun()
+            case "google":
+                web_search_tool = GoogleSearchTool()
+            case _:
+                raise ValueError(
+                    f"Unknown default web search tool: {default_web_search_tool}"
+                )
+
+        self.tools: Dict[str, BaseTool] = {
+            "current_date": CurrentTimeTool(),
+            "web_search": web_search_tool,
+            "pubmed": PubmedQueryRun(),
+        }
 
     def get_tool_by_name(self, *, tool: ToolChoice) -> BaseTool:
         if tool.name in self.tools:
