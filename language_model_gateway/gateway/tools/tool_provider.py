@@ -18,9 +18,9 @@ class ToolProvider:
             "DEFAULT_WEB_SEARCH_TOOL", "duckduckgo"
         )
         match default_web_search_tool:
-            case "duckduckgo":
+            case "duckduckgo_search":
                 web_search_tool = DuckDuckGoSearchRun()
-            case "google":
+            case "google_search":
                 web_search_tool = GoogleSearchTool()
             case _:
                 raise ValueError(
