@@ -6,9 +6,7 @@
     "name",
     "description",
     "type",
-    "url",
-    "model",
-    "prompts"
+    "model"
   ],
   "properties": {
     "id": {
