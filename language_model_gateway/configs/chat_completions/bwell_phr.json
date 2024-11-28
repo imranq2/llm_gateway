@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
   "id": "b.well",
   "name": "b.well PHR",
   "description": "Conversational PHR",
