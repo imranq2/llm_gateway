@@ -31,6 +31,8 @@ class ToolProvider:
             "current_date": CurrentTimeTool(),
             "web_search": web_search_tool,
             "pubmed": PubmedQueryRun(),
+            "google_search": GoogleSearchTool(),
+            "duckduckgo_search": DuckDuckGoSearchRun(),
         }
 
     def get_tool_by_name(self, *, tool: ToolChoice) -> BaseTool:

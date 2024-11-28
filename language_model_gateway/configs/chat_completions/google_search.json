@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
+    "id": "google_search",
+    "name": "Google Search",
+    "description": "Google Search",
+    "type": "langchain",
+  "model": {
+    "provider": "bedrock",
+    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+  },
+  "tools": [
+    {
+      "name": "google_search"
+    }
+  ]
+}
