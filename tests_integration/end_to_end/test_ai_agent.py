@@ -6,7 +6,7 @@ import pytest
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionUserMessageParam
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.configs.config_schema import ChatModelConfig, ModelChoice
+from language_model_gateway.configs.config_schema import ChatModelConfig, ModelConfig
 from language_model_gateway.gateway.providers.openai_chat_completions_provider import (
     OpenAiChatCompletionsProvider,
 )
@@ -37,7 +37,7 @@ async def test_call_agent_with_input() -> None:
             name="test-model",
             description="test model",
             type="chat",
-            model=ModelChoice(
+            model=ModelConfig(
                 provider="openai",
                 model="gpt-3.5-turbo",
             ),

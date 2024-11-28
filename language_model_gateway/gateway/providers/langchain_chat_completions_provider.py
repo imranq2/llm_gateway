@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph.state import CompiledStateGraph
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.configs.config_schema import ChatModelConfig, ModelChoice
+from language_model_gateway.configs.config_schema import ChatModelConfig, ModelConfig
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
 )
@@ -29,7 +29,7 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
         headers: Dict[str, str],
         chat_request: ChatRequest
     ) -> StreamingResponse | JSONResponse:
-        model: ModelChoice | None = model_config.model
+        model: ModelConfig | None = model_config.model
         assert model is not None
         model_vendor: str = model.provider
         model_name: str = model.model
