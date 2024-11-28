@@ -32,7 +32,7 @@ class ChatCompletionManager:
         model: str = chat_request["model"]
         assert model is not None
 
-        configs: List[ChatModelConfig] = ConfigReader().read_model_config()
+        configs: List[ChatModelConfig] = ConfigReader().read_model_configs()
 
         # Find the model config
         model_config: ChatModelConfig | None = next(

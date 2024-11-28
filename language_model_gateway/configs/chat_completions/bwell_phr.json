@@ -12,7 +12,7 @@
   "prompts": [
     {
       "role": "system",
-      "message": "You are a tool"
+      "content": "You are a tool"
     }
   ],
   "model_parameters": [

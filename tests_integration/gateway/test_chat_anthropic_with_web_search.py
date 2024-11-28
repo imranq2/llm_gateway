@@ -1,3 +1,5 @@
+import logging
+import os
 from typing import Generator, AsyncGenerator, Optional
 
 import httpx
@@ -27,6 +29,11 @@ def sync_client() -> Generator[httpx.Client, None, None]:
 async def test_chat_completions_with_web_search(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
+    # Get log level from environment variable
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+    # Set up basic configuration for logging
+    logging.basicConfig(level=getattr(logging, log_level))
 
     # Test health endpoint
     response = await async_client.get("/health")
