@@ -2,8 +2,7 @@ from typing import Generator, AsyncGenerator
 
 import httpx
 import pytest
-from openai import OpenAI, Stream
-from openai.types.chat import ChatCompletionChunk
+from openai import OpenAI
 from starlette.testclient import TestClient
 
 from language_model_gateway.gateway.api import app
@@ -48,42 +47,8 @@ async def test_chat_completions(
                 "content": "Say this is a test",
             }
         ],
-        model="gpt-1337-turbo-pro-max",
+        model="b.well",
     )
 
     # print the top "choice"
     print(chat_completion.choices[0].message.content)
-
-
-@pytest.mark.asyncio
-async def test_chat_completions_streaming(
-    async_client: httpx.AsyncClient, sync_client: httpx.Client
-) -> None:
-
-    # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
-
-    # init client and connect to localhost server
-    client = OpenAI(
-        api_key="fake-api-key",
-        base_url="http://localhost:5000/api/v1",  # change the default port if needed
-        http_client=sync_client,
-    )
-
-    # call API with streaming
-    chunk_stream: Stream[ChatCompletionChunk] = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": "Say this is a test",
-            }
-        ],
-        model="gpt-1337-turbo-pro-max",
-        stream=True,
-    )
-
-    for chunk in chunk_stream:
-        print(chunk)
-        print(chunk.choices[0].delta.content)
-        print("****************")

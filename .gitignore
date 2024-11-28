@@ -136,3 +136,4 @@ dmypy.json
 /data/
 /tests_integration/index/
 /openwebui/
+/docker.env

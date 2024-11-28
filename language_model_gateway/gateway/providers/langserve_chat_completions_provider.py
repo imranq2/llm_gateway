@@ -20,12 +20,71 @@ from openai.types.chat.chat_completion import Choice
 from openai.types.chat.chat_completion_chunk import ChoiceDelta, Choice as ChunkChoice
 from starlette.responses import StreamingResponse, JSONResponse
 
+from language_model_gateway.configs.config_schema import ChatModelConfig
+from language_model_gateway.gateway.providers.base_chat_completions_provider import (
+    BaseChatCompletionsProvider,
+)
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 
 logger = logging.getLogger(__file__)
 
 
-class ChatCompletionsManager:
+class LangServeChatCompletionsProvider(BaseChatCompletionsProvider):
+    async def chat_completions(
+        self,
+        *,
+        model_config: ChatModelConfig,
+        headers: Dict[str, str],
+        chat_request: ChatRequest,
+    ) -> StreamingResponse | JSONResponse:
+        request_id = random.randint(1, 1000)
+        logger.info(f"Received request {request_id}: {chat_request}")
+
+        response_context: str
+        if chat_request["messages"]:
+            request_messages: List[ChatCompletionMessageParam] = [
+                m for m in chat_request["messages"]
+            ]
+            resp_content = cast(
+                str,
+                cast(ChatCompletionUserMessageParam, request_messages[-1])["content"],
+            )
+        else:
+            resp_content = "As a mock AI Assistant, I can only echo your last message, but there wasn't one!"
+
+        if resp_content == "dummy":
+            if chat_request.get("stream"):
+                logger.info(f"Streaming response {request_id}")
+                return StreamingResponse(
+                    LangServeChatCompletionsProvider._resp_async_generator(
+                        request_model=chat_request["model"], text_resp=resp_content
+                    ),
+                    media_type="text/event-stream",
+                )
+            response_dict: ChatCompletion = ChatCompletion(
+                id="1337",
+                created=int(time.time()),
+                model=chat_request["model"],
+                choices=[
+                    Choice(
+                        index=0,
+                        message=ChatCompletionMessage(
+                            role="assistant", content=resp_content
+                        ),
+                        finish_reason="stop",
+                    )
+                ],
+                usage=CompletionUsage(
+                    prompt_tokens=0, completion_tokens=0, total_tokens=0
+                ),
+                object="chat.completion",
+            )
+            logger.info(f"Non-streaming response {request_id}: {response_dict}")
+            return JSONResponse(content=response_dict.model_dump())
+        else:
+            return await self.call_ai_agent(
+                request=chat_request, request_id=str(request_id)
+            )
 
     @staticmethod
     async def _resp_async_generator(
@@ -114,58 +173,6 @@ class ChatCompletionsManager:
                                 yield f"data: {json.dumps(chunk.model_dump())}\n\n"
                 yield "data: [DONE]\n\n"
 
-    async def chat_completions(
-        self,
-        *,
-        request: ChatRequest,
-    ) -> StreamingResponse | JSONResponse:
-        request_id = random.randint(1, 1000)
-        logger.info(f"Received request {request_id}: {request}")
-
-        response_context: str
-        if request["messages"]:
-            request_messages: List[ChatCompletionMessageParam] = [
-                m for m in request["messages"]
-            ]
-            resp_content = cast(
-                str,
-                cast(ChatCompletionUserMessageParam, request_messages[-1])["content"],
-            )
-        else:
-            resp_content = "As a mock AI Assistant, I can only echo your last message, but there wasn't one!"
-
-        if resp_content == "dummy":
-            if request.get("stream"):
-                logger.info(f"Streaming response {request_id}")
-                return StreamingResponse(
-                    ChatCompletionsManager._resp_async_generator(
-                        request_model=request["model"], text_resp=resp_content
-                    ),
-                    media_type="text/event-stream",
-                )
-            response_dict: ChatCompletion = ChatCompletion(
-                id="1337",
-                created=int(time.time()),
-                model=request["model"],
-                choices=[
-                    Choice(
-                        index=0,
-                        message=ChatCompletionMessage(
-                            role="assistant", content=resp_content
-                        ),
-                        finish_reason="stop",
-                    )
-                ],
-                usage=CompletionUsage(
-                    prompt_tokens=0, completion_tokens=0, total_tokens=0
-                ),
-                object="chat.completion",
-            )
-            logger.info(f"Non-streaming response {request_id}: {response_dict}")
-            return JSONResponse(content=response_dict.model_dump())
-        else:
-            return await self.call_ai_agent(request=request, request_id=str(request_id))
-
     async def call_ai_agent(
         self, *, request: ChatRequest, request_id: str
     ) -> StreamingResponse | JSONResponse:
@@ -207,7 +214,7 @@ class ChatCompletionsManager:
         }
         if stream_request:
             return StreamingResponse(
-                await ChatCompletionsManager.get_streaming_response_async(
+                await LangServeChatCompletionsProvider.get_streaming_response_async(
                     model=model,
                     agent_url=agent_url,
                     request_id=request_id,
@@ -267,7 +274,7 @@ class ChatCompletionsManager:
     ) -> AsyncGenerator[str, None]:
         logger.info(f"Streaming response {request_id} from agent")
         generator: AsyncGenerator[str, None] = (
-            ChatCompletionsManager._stream_resp_async_generator(
+            LangServeChatCompletionsProvider._stream_resp_async_generator(
                 request_model=model,
                 agent_url=agent_url,
                 test_data=test_data,

@@ -10,59 +10,18 @@ services:
       DD_TRACE_ENABLED: "false"
       LOG_LEVEL: INFO
       AGENT_URL: 'http://host.docker.internal:5055/api/v1'
+      OPENAI_AGENT_URL: 'http://host.docker.internal:5055/api/v1'
       DEFAULT_PATIENT_ID: "eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
+      DEFAULT_WEB_SEARCH_TOOL: "duckduckgo"
     env_file: docker.env
     ports:
       - '5050:5000'
     volumes:
     - ./:/usr/src/language_model_gateway/:cached
+      # uncomment this for testing AWS models and the docker.env above (need the AWS_CREDENTIALS_PROFILE env var)
+    - ~/.aws/:/etc/appuser/.aws/
     healthcheck:
       test: curl --fail -s http://localhost:5000/health || exit 1
       interval: 10s
       timeout: 10s
       retries: 3
-
-  open-webui:
-    ports:
-      - '3050:8080'
-    container_name: open-webui
-    image: ghcr.io/open-webui/open-webui:v0.3.35
-    depends_on:
-      - dev
-      - open-webui-db
-    env_file:
-      - docker.env
-    environment:
-      # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
-      WEBUI_AUTH: 0
-      #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
-      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
-      OPENAI_API_KEY: 'bedrock'
-      DEFAULT_MODELS: "b.well"
-      ENABLE_MODEL_FILTER: True
-#      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
-      WEBUI_SECRET_KEY: ""
-      WEBUI_DB_HOST: "open-webui-db"
-      DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
-      ENABLE_OLLAMA_API: False
-      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
-      ENABLE_IMAGE_GENERATION: True
-    volumes:
-      - ./openwebui/backend/data:/app/backend/data
-#      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
-
-  open-webui-db:
-    image: postgres:13
-    environment:
-      - POSTGRES_DB=myapp_db
-      - POSTGRES_USER=myapp_user
-      - POSTGRES_PASSWORD=myapp_pass
-    ports:
-      - "5431:5431"
-    command: -p 5431
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U myapp_user -d myapp_db -p 5431" ]
-      interval: 3s
-      timeout: 5s
-      retries: 5
-    restart: always

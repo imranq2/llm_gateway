@@ -1,0 +1,44 @@
+version: '3'
+services:
+  open-webui:
+    ports:
+      - '3050:8080'
+    image: ghcr.io/open-webui/open-webui:v0.4.4
+    depends_on:
+      - open-webui-db
+    env_file:
+      - docker.env
+    environment:
+      # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
+      WEBUI_AUTH: 0
+      #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
+      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
+      OPENAI_API_KEY: 'bedrock'
+      DEFAULT_MODELS: "General Purpose"
+      ENABLE_MODEL_FILTER: True
+#      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
+      WEBUI_SECRET_KEY: ""
+      WEBUI_DB_HOST: "open-webui-db"
+      DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
+      ENABLE_OLLAMA_API: False
+#      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
+      ENABLE_IMAGE_GENERATION: True
+#    volumes:
+#      - ./openwebui/backend/data:/app/backend/data
+#      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
+
+  open-webui-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=myapp_db
+      - POSTGRES_USER=myapp_user
+      - POSTGRES_PASSWORD=myapp_pass
+    ports:
+      - "5431:5431"
+    command: -p 5431
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U myapp_user -d myapp_db -p 5431" ]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    restart: always
