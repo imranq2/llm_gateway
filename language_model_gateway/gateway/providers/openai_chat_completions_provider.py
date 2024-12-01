@@ -43,7 +43,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
         assert chat_request
 
         request_id: str = str(randint(1, 1000))
-        agent_url: Optional[str] = environ["OPENAI_AGENT_URL"]
+        agent_url: Optional[str] = model_config.url or environ["OPENAI_AGENT_URL"]
         assert agent_url
 
         if chat_request.get("stream"):
@@ -57,6 +57,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                 media_type="text/event-stream",
             )
 
+        response_text: Optional[str] = None
         async with httpx.AsyncClient(base_url=agent_url) as client:
             try:
                 agent_response: Response = await client.post(
@@ -66,12 +67,18 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                     headers=headers,
                 )
 
-                response_text: str = agent_response.text
+                response_text = agent_response.text
                 response_dict: Dict[str, Any] = agent_response.json()
             except json.JSONDecodeError:
-                return JSONResponse(content="Error decoding response", status_code=500)
+                return JSONResponse(
+                    content=f"Error decoding response. url: {agent_url}/chat/completions\n{response_text}",
+                    status_code=500,
+                )
             except Exception as e:
-                return JSONResponse(content=f"Error from agent: {e}", status_code=500)
+                return JSONResponse(
+                    content=f"Error from agent: {e} url: {agent_url}/chat/completions\n{response_text}",
+                    status_code=500,
+                )
 
             response: ChatCompletion = ChatCompletion.parse_obj(response_dict)
             logger.info(f"Non-streaming response {request_id}: {response}")

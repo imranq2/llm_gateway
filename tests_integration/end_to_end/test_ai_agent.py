@@ -45,7 +45,7 @@ async def test_call_agent_with_input() -> None:
         ),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.body
     assert isinstance(response, JSONResponse)
     response_json: str = response.body.decode("utf-8")  # type: ignore[union-attr]
     response_dict: Dict[str, Any] = json.loads(response_json)

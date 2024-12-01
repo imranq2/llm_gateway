@@ -36,7 +36,7 @@ async def test_chat_completions_streaming(
     )
 
     stream = client.chat.completions.create(
-        model="b.well",
+        model="b.well PHR",
         messages=[{"role": "user", "content": "Say this is a test"}],
         stream=True,
     )

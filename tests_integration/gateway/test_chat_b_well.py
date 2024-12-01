@@ -3,6 +3,7 @@ from typing import Generator, AsyncGenerator
 import httpx
 import pytest
 from openai import OpenAI
+from openai.types.chat import ChatCompletion
 from starlette.testclient import TestClient
 
 from language_model_gateway.gateway.api import app
@@ -24,7 +25,7 @@ def sync_client() -> Generator[httpx.Client, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_chat_completions(
+async def test_chat_completions_b_well(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
 
@@ -40,14 +41,14 @@ async def test_chat_completions(
     )
 
     # call API
-    chat_completion = client.chat.completions.create(
+    chat_completion: ChatCompletion = client.chat.completions.create(
         messages=[
             {
                 "role": "user",
                 "content": "Say this is a test",
             }
         ],
-        model="b.well",
+        model="b.well PHR",
     )
 
     # print the top "choice"
