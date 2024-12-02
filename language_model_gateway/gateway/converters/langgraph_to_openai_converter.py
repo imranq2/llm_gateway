@@ -407,6 +407,14 @@ class LangGraphToOpenAIConverter:
     async def create_graph_for_llm_async(
         self, *, llm: BaseChatModel, tools: Sequence[BaseTool]
     ) -> CompiledStateGraph:
+        """
+        Create a graph for the language model asynchronously.
+
+
+        :param llm: base chat model
+        :param tools: list of tools
+        :return: compiled state graph
+        """
         tool_node: ToolNode = ToolNode(tools)
         model_with_tools = llm.bind_tools(tools)
 

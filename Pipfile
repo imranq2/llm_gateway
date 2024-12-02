@@ -71,6 +71,8 @@ rizaio = ">=0.2.0"
 tavily-python = ">=0.5.0"
 # youtube_search is a Python library for searching YouTube videos
 youtube_search = ">=2.1.2"
+# llm-guard is a Python library designed to protect the LLM API from abuse
+#llm-guard= ">=0.3.15"
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks
