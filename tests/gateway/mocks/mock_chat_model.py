@@ -1,5 +1,14 @@
 import typing
-from typing import Optional, Any, Sequence, Union, Callable, AsyncIterator
+from typing import (
+    Optional,
+    Any,
+    Sequence,
+    Union,
+    Callable,
+    AsyncIterator,
+    List,
+    Iterator,
+)
 
 from langchain_core.callbacks import (
     CallbackManagerForLLMRun,
@@ -33,7 +42,26 @@ class MockChatModel(BaseChatModel):
             generations=[ChatGeneration(message=AIMessage(content=content))]
         )
 
-    def _astream(  # type: ignore[misc]
+    def _stream(
+        self,
+        messages: List[BaseMessage],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> Iterator[ChatGenerationChunk]:
+        content: str = self.fn_get_response(messages=messages)
+        return iter(
+            [
+                ChatGenerationChunk(
+                    message=AIMessageChunk(
+                        content=[{"type": "text", "text": content, "index": 0}],
+                        id="run-da3c2606-4792-440a-ac66-72e0d1f6d117",
+                    )
+                )
+            ]
+        )
+
+    async def _astream(
         self,
         messages: list[BaseMessage],
         stop: Optional[list[str]] = None,
@@ -41,11 +69,17 @@ class MockChatModel(BaseChatModel):
         **kwargs: Any,
     ) -> AsyncIterator[ChatGenerationChunk]:
         content: str = self.fn_get_response(messages=messages)
-        yield ChatGenerationChunk(
-            message=AIMessageChunk(
-                content=content,
+
+        # Split content into words to simulate streaming
+        words = content.split()
+
+        for i, word in enumerate(words):
+            yield ChatGenerationChunk(
+                message=AIMessageChunk(
+                    content=[{"type": "text", "text": word + " ", "index": i}],
+                    id="run-da3c2606-4792-440a-ac66-72e0d1f6d117",
+                )
             )
-        )
 
     def bind_tools(
         self,
