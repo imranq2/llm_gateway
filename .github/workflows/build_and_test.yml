@@ -11,7 +11,7 @@ on:
 jobs:
   build_and_test:
     # The type of runner that the job will run on
-    runs-on: [self-hosted, main]
+    runs-on: ubuntu-latest
 
     steps:
       # Checks-out your repository
