@@ -33,7 +33,7 @@ class ModelsRouter:
     def _register_routes(self) -> None:
         """Register all routes for this router"""
         self.router.add_api_route(
-            self.prefix + "/models",
+            "/models",
             self.get_models,
             methods=["GET"],
             response_model=Dict[str, List[Dict[str, str]]],

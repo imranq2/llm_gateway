@@ -46,7 +46,7 @@ class ChatCompletionsRouter:
     def _register_routes(self) -> None:
         """Register all routes for this router"""
         self.router.add_api_route(
-            self.prefix + "/chat/completions",
+            "/chat/completions",
             self.chat_completions,
             methods=["POST"],
             response_model=None,
