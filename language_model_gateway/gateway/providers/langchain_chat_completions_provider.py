@@ -68,7 +68,7 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
         )
 
         compiled_state_graph: CompiledStateGraph = (
-            self.lang_graph_to_open_ai_converter.create_graph_for_llm(
+            await self.lang_graph_to_open_ai_converter.create_graph_for_llm_async(
                 llm=llm,
                 tools=tools,
             )

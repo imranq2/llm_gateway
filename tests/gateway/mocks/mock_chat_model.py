@@ -42,6 +42,18 @@ class MockChatModel(BaseChatModel):
             generations=[ChatGeneration(message=AIMessage(content=content))]
         )
 
+    async def _agenerate(
+        self,
+        messages: list[BaseMessage],
+        stop: Optional[list[str]] = None,
+        run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        content: str = self.fn_get_response(messages=messages)
+        return ChatResult(
+            generations=[ChatGeneration(message=AIMessage(content=content))]
+        )
+
     def _stream(
         self,
         messages: List[BaseMessage],
