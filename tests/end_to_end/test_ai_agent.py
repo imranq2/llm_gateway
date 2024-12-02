@@ -37,8 +37,9 @@ async def test_call_agent_with_input(async_client: httpx.AsyncClient) -> None:
         content="Have I taken covid vaccine?",
     )
     # Create a ChatRequest object
+    model = "General Purpose"
     request = ChatRequest(
-        model="test-model",
+        model=model,
         messages=chat_history + [user_message],
     )
 
@@ -60,7 +61,7 @@ async def test_call_agent_with_input(async_client: httpx.AsyncClient) -> None:
                 id="chat_1",
                 object="chat.completion",
                 created=1633660000,
-                model="b.well PHR",
+                model=model,
                 choices=[
                     Choice(
                         finish_reason="stop",
@@ -84,7 +85,7 @@ async def test_call_agent_with_input(async_client: httpx.AsyncClient) -> None:
         chat_request=request,
         model_config=ChatModelConfig(
             id="1",
-            name="test-model",
+            name=model,
             description="test model",
             type="chat",
             model=ModelConfig(
