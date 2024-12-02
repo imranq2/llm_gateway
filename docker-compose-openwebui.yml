@@ -23,6 +23,9 @@ services:
       ENABLE_OLLAMA_API: False
 #      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
       ENABLE_IMAGE_GENERATION: True
+      LOAD_PROMPT_FROM_LANGCHAIN_HUB: False
+      WEBUI_FAVICON_URL: "http://dev:5000/favicon.png"
+      WEBUI_NAME: "b.ai"
 #    volumes:
 #      - ./openwebui/backend/data:/app/backend/data
 #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
