@@ -1,0 +1,52 @@
+{
+  "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
+  "id": "writing_communication",
+  "name": "Writing Communication",
+  "description": "Writing Communication Model",
+  "type": "langchain",
+  "model": {
+    "provider": "bedrock",
+    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+  },
+  "system_prompts": [
+    {
+      "role": "system",
+      "content": "You are an assistant that writes communication for a variety of purposes.  The communication should be targeted to the healthcare industry."
+    }
+  ],
+  "model_parameters": [
+    {
+      "key": "temperature",
+      "value": 1.0
+    }
+  ],
+  "few_shot_examples": [
+    {
+      "input": "You are a tool",
+      "output": "Patient/eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
+    }
+  ],
+  "headers": [
+    {
+      "key": "Authorization",
+      "value": "Bearer OPENAI_API_KEY"
+    }
+  ],
+  "tools": [
+    {
+      "name": "current_date",
+      "parameters": [
+        {
+          "key": "format",
+          "value": "YYYY-MM-DD"
+        }
+      ]
+    },
+    {
+      "name": "pubmed"
+    },
+    {
+      "name": "web_search"
+    }
+  ]
+}
