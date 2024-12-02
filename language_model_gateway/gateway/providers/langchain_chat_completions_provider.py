@@ -52,7 +52,9 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
         assert model is not None
 
         # noinspection PyArgumentList
-        llm: BaseChatModel = self.model_factory.get_model(model_config=model)
+        llm: BaseChatModel = self.model_factory.get_model(
+            chat_model_config=model_config
+        )
 
         # noinspection PyUnusedLocal
         def get_current_time(*args: Any, **kwargs: Any) -> str:

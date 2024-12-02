@@ -20,4 +20,6 @@ class ConfigReader:
                 data = json.load(file)
                 configs.append(ChatModelConfig(**data))
 
+        # sort the configs by name
+        configs.sort(key=lambda x: x.name)
         return configs

@@ -11,13 +11,13 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are a tool"
+      "content": "You are a tool that answers questions and generates text."
     }
   ],
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0.7
+      "value": 0.5
     },
     {
       "key": "max_tokens",

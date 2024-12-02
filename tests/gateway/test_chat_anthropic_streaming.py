@@ -24,7 +24,7 @@ async def test_chat_completions_streaming(
         test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
-                fn_get_model=lambda model_config: MockChatModel(
+                fn_get_model=lambda chat_model_config: MockChatModel(
                     fn_get_response=lambda messages: "His first name is Barack"
                 )
             ),
@@ -80,7 +80,7 @@ async def test_chat_completions_with_chat_history_streaming(
         test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
-                fn_get_model=lambda model_config: MockChatModel(
+                fn_get_model=lambda chat_model_config: MockChatModel(
                     fn_get_response=lambda messages: "His first name is Barack"
                 )
             ),

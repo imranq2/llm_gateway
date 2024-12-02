@@ -18,7 +18,7 @@
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0.7
+      "value": 0
     },
     {
       "key": "max_tokens",
