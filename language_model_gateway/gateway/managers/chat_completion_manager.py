@@ -21,6 +21,27 @@ logger = logging.getLogger(__name__)
 
 
 class ChatCompletionManager:
+    def __init__(
+        self,
+        *,
+        open_ai_provider: OpenAiChatCompletionsProvider,
+        langchain_provider: LangChainCompletionsProvider,
+    ) -> None:
+        """
+        Chat completion manager
+
+        :param open_ai_provider: provider to use for OpenAI completions
+        :param langchain_provider: provider to use for LangChain completions
+        :return:
+        """
+
+        self.openai_provider: OpenAiChatCompletionsProvider = open_ai_provider
+        assert self.openai_provider is not None
+        assert isinstance(self.openai_provider, OpenAiChatCompletionsProvider)
+        self.langchain_provider: LangChainCompletionsProvider = langchain_provider
+        assert self.langchain_provider is not None
+        assert isinstance(self.langchain_provider, LangChainCompletionsProvider)
+
     # noinspection PyMethodMayBeStatic
     async def chat_completions(
         self,
@@ -48,9 +69,9 @@ class ChatCompletionManager:
         provider: BaseChatCompletionsProvider
         match model_config.type:
             case "openai":
-                provider = OpenAiChatCompletionsProvider()
+                provider = self.openai_provider
             case "langchain":
-                provider = LangChainCompletionsProvider()
+                provider = self.langchain_provider
             case _:
                 return JSONResponse(
                     content=f"Model type {model_config.type} not supported"
