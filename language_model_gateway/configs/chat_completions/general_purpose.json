@@ -8,7 +8,7 @@
     "provider": "bedrock",
     "model": "anthropic.claude-3-5-sonnet-20240620-v1:0"
   },
-  "prompts": [
+  "system_prompts": [
     {
       "role": "system",
       "content": "You are a tool"

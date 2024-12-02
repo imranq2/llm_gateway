@@ -40,7 +40,7 @@
         }
       }
     },
-    "prompts": {
+    "system_prompts": {
       "type": "array",
       "items": {
         "type": "object",

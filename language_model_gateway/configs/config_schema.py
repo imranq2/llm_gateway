@@ -97,7 +97,7 @@ class ChatModelConfig(BaseModel):
     model: ModelConfig | None = None
     """The model configuration"""
 
-    prompts: List[PromptConfig] | None = None
+    system_prompts: List[PromptConfig] | None = None
     """The prompts for the model"""
 
     model_parameters: List[ModelParameterConfig] | None = None

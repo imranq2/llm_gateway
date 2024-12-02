@@ -63,7 +63,7 @@ class ChatCompletionManager:
             return JSONResponse(content=f"Model {model} not found in the config")
 
         chat_request = self.add_system_messages(
-            chat_request=chat_request, system_prompts=model_config.prompts
+            chat_request=chat_request, system_prompts=model_config.system_prompts
         )
 
         provider: BaseChatCompletionsProvider
