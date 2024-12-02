@@ -29,6 +29,8 @@ R = TypeVar("R")
 
 
 def cached(f: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+    """Decorator to cache the result of an async function"""
+
     cache: R | None = None
 
     @wraps(f)
@@ -46,12 +48,14 @@ def cached(f: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
 
 @cached  # makes it singleton-like
 async def get_container() -> SimpleContainer:
+    """Create the container"""
     return await ContainerCreator().create_container_async()
 
 
 def get_chat_manager(
     container: Annotated[SimpleContainer, Depends(get_container)]
 ) -> ChatCompletionManager:
+    """helper function to get the chat manager"""
     assert isinstance(container, SimpleContainer), type(container)
     return container.resolve(ChatCompletionManager)
 
@@ -59,6 +63,7 @@ def get_chat_manager(
 def get_model_manager(
     container: Annotated[SimpleContainer, Depends(get_container)]
 ) -> ModelManager:
+    """helper function to get the model manager"""
     assert isinstance(container, SimpleContainer), type(container)
     return container.resolve(ModelManager)
 
@@ -85,11 +90,19 @@ async def chat_completions(
     chat_request: Dict[str, Any],
     chat_manager: Annotated[ChatCompletionManager, Depends(get_chat_manager)],
 ) -> StreamingResponse | JSONResponse:
+    """
+    Chat completions endpoint.  chat_manager is injected by FastAPI.
+
+    :param request:
+    :param chat_request:
+    :param chat_manager:
+    :return:
+    """
     assert chat_request
     assert chat_manager
     try:
         return await chat_manager.chat_completions(
-            headers={k: v for k, v in request.headers.items()},  # Add headers if needed
+            headers={k: v for k, v in request.headers.items()},
             chat_request=cast(ChatRequest, chat_request),
         )
     except* ConnectionError as e:
@@ -131,7 +144,17 @@ async def chat_completions(
 async def get_models(
     request: Request, model_manager: Annotated[ModelManager, Depends(get_model_manager)]
 ) -> Dict[str, List[Dict[str, str]]]:
-    return await model_manager.get_models()
+    """
+    Get models endpoint.  model_manager is injected by FastAPI.
+
+
+    :param request:
+    :param model_manager:
+    :return:
+    """
+    return await model_manager.get_models(
+        headers={k: v for k, v in request.headers.items()},
+    )
 
 
 @asynccontextmanager
@@ -145,8 +168,7 @@ async def lifespan(app1: FastAPI) -> AsyncGenerator[None, None]:
         )
         logger.info("Starting application initialization...")
 
-        # Initialize container
-        # await container.initialize()
+        # perform any startup tasks here
 
         logger.info("Application initialization completed")
         yield
