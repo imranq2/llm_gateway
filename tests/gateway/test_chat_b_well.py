@@ -29,7 +29,7 @@ async def test_chat_completions_b_well(
                         "finish_reason": "stop",
                         "index": 0,
                         "message": {
-                            "content": "Barack",
+                            "content": "This is a test",
                             "role": "assistant",
                         },
                     }
