@@ -1,24 +1,21 @@
-from typing import Generator, AsyncGenerator, Optional, Dict, Any
+from typing import Generator, AsyncGenerator, Optional
 
 import httpx
 import pytest
+from langchain_core.messages import BaseMessage, AIMessage
+from langchain_core.outputs import ChatResult, ChatGeneration
 from openai import OpenAI
 from starlette.testclient import TestClient
 
-from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api import app
 from language_model_gateway.gateway.api_container import get_container_async
-from language_model_gateway.gateway.providers.langchain_chat_completions_provider import (
-    LangChainCompletionsProvider,
-)
-from language_model_gateway.gateway.schema.openai.completions import ChatRequest
+from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
-from tests.gateway.mocks.mock_langchain_completions_provider import (
-    MockLangChainChatCompletionsProvider,
-)
+from tests.gateway.mocks.mock_chat_model import MockChatModel
+from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
 @pytest.fixture
@@ -45,26 +42,17 @@ async def test_chat_completions(
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container: SimpleContainer = await get_container_async()
 
-        def mock_fn_get_response(
-            model_config: ChatModelConfig,
-            headers: Dict[str, str],
-            chat_request: ChatRequest,
-        ) -> Dict[str, Any]:
-            return {
-                "choices": [
-                    {
-                        "message": {
-                            "content": "Barack",
-                            "role": "assistant",
-                        }
-                    }
-                ]
-            }
+        def mock_fn_get_response(messages: list[BaseMessage]) -> ChatResult:
+            return ChatResult(
+                generations=[ChatGeneration(message=AIMessage(content="Barack"))]
+            )
 
         test_container.register(
-            LangChainCompletionsProvider,
-            lambda c: MockLangChainChatCompletionsProvider(
-                fn_get_response=mock_fn_get_response
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda model_config: MockChatModel(
+                    fn_get_response=mock_fn_get_response
+                )
             ),
         )
 
@@ -106,26 +94,17 @@ async def test_chat_completions_with_chat_history(
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container: SimpleContainer = await get_container_async()
 
-        def mock_fn_get_response(
-            model_config: ChatModelConfig,
-            headers: Dict[str, str],
-            chat_request: ChatRequest,
-        ) -> Dict[str, Any]:
-            return {
-                "choices": [
-                    {
-                        "message": {
-                            "content": "Barack",
-                            "role": "assistant",
-                        }
-                    }
-                ]
-            }
+        def mock_fn_get_response(messages: list[BaseMessage]) -> ChatResult:
+            return ChatResult(
+                generations=[ChatGeneration(message=AIMessage(content="Barack"))]
+            )
 
         test_container.register(
-            LangChainCompletionsProvider,
-            lambda c: MockLangChainChatCompletionsProvider(
-                fn_get_response=mock_fn_get_response
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda model_config: MockChatModel(
+                    fn_get_response=mock_fn_get_response
+                )
             ),
         )
 

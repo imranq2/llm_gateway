@@ -11,7 +11,12 @@ from tests.gateway.mocks.mock_chat_response import MockChatResponseProtocol
 
 
 class MockOpenAiChatCompletionsProvider(OpenAiChatCompletionsProvider):
-    def __init__(self, fn_get_response: MockChatResponseProtocol) -> None:
+    def __init__(
+        self,
+        *,
+        fn_get_response: MockChatResponseProtocol,
+    ) -> None:
+        super().__init__()
         self.fn_get_response: MockChatResponseProtocol = fn_get_response
 
     async def chat_completions(

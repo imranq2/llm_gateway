@@ -3,15 +3,32 @@ from typing import Dict, Any
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_schema import ChatModelConfig
+from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
+    LangGraphToOpenAIConverter,
+)
+from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.providers.langchain_chat_completions_provider import (
     LangChainCompletionsProvider,
 )
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
+from language_model_gateway.gateway.tools.tool_provider import ToolProvider
 from tests.gateway.mocks.mock_chat_response import MockChatResponseProtocol
 
 
 class MockLangChainChatCompletionsProvider(LangChainCompletionsProvider):
-    def __init__(self, fn_get_response: MockChatResponseProtocol) -> None:
+    def __init__(
+        self,
+        *,
+        model_factory: ModelFactory,
+        lang_graph_to_open_ai_converter: LangGraphToOpenAIConverter,
+        tool_provider: ToolProvider,
+        fn_get_response: MockChatResponseProtocol,
+    ) -> None:
+        super().__init__(
+            model_factory=model_factory,
+            lang_graph_to_open_ai_converter=lang_graph_to_open_ai_converter,
+            tool_provider=tool_provider,
+        )
         self.fn_get_response: MockChatResponseProtocol = fn_get_response
 
     async def chat_completions(
