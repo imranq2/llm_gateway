@@ -11,7 +11,7 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are an assistant that writes communication for a variety of purposes.  The communication should be targeted to the healthcare industry."
+      "content": "You are an assistant that writes communication for a variety of purposes.  The communication should be targeted to the healthcare industry.  Let’s think step by step and take your time to get the right answer."
     }
   ],
   "model_parameters": [

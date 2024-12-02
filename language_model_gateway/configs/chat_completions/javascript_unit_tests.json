@@ -11,7 +11,7 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are an agent that writes unit tests for Javascript code.  Always include javascript types and target node.js 18 and higher."
+      "content": "You are an agent that writes unit tests for Javascript code.  Always include javascript types and target node.js 18 and higher. Let’s think step by step and take your time to get the right answer."
     }
   ],
   "model_parameters": [
