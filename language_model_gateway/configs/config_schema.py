@@ -98,7 +98,7 @@ class ChatModelConfig(BaseModel):
     """The model configuration"""
 
     system_prompts: List[PromptConfig] | None = None
-    """The prompts for the model"""
+    """The system prompts for the model"""
 
     model_parameters: List[ModelParameterConfig] | None = None
     """The model parameters"""
@@ -111,3 +111,6 @@ class ChatModelConfig(BaseModel):
 
     tools: List[ToolConfig] | None = None
     """The tools to use with the model"""
+
+    example_prompts: List[PromptConfig] | None = None
+    """Example prompts for the model"""
