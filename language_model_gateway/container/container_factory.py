@@ -17,7 +17,7 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
 from language_model_gateway.gateway.tools.tool_provider import ToolProvider
 
 
-class ContainerCreator:
+class ContainerFactory:
     # noinspection PyMethodMayBeStatic
     async def create_container_async(self) -> SimpleContainer:
         container = SimpleContainer()

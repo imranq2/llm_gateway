@@ -6,7 +6,7 @@ from typing import Callable, Awaitable
 from fastapi import Depends
 from typing_extensions import ParamSpec, TypeVar
 
-from language_model_gateway.container.container_creator import ContainerCreator
+from language_model_gateway.container.container_factory import ContainerFactory
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
@@ -41,7 +41,7 @@ def cached(f: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
 @cached  # makes it singleton-like
 async def get_container_async() -> SimpleContainer:
     """Create the container"""
-    return await ContainerCreator().create_container_async()
+    return await ContainerFactory().create_container_async()
 
 
 def get_chat_manager(
