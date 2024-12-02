@@ -58,7 +58,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
             )
 
         response_text: Optional[str] = None
-        async with httpx.AsyncClient(base_url=agent_url) as client:
+        async with self.create_http_client(agent_url) as client:
             try:
                 agent_response: Response = await client.post(
                     "/chat/completions",
@@ -101,8 +101,8 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
         )
         return generator
 
-    @staticmethod
     async def _stream_resp_async_generator(
+        self,
         *,
         request_id: str,
         agent_url: str,
@@ -111,7 +111,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
     ) -> AsyncGenerator[str, None]:
 
         logger.info(f"Streaming response {request_id} from agent")
-        async with httpx.AsyncClient(base_url=agent_url) as client:
+        async with self.create_http_client(agent_url) as client:
             async with aconnect_sse(
                 client,
                 "POST",
@@ -136,3 +136,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                             f"----- End data from stream {i} {event} {type(data)} ------"
                         )
                     yield f"data: {data}\n\n"
+
+    @staticmethod
+    def create_http_client(agent_url: str) -> httpx.AsyncClient:
+        return httpx.AsyncClient(base_url=agent_url)
