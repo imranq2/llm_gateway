@@ -11,11 +11,11 @@ from openai.types.chat import (
 )
 
 from language_model_gateway.configs.config_schema import ChatModelConfig
+from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 
 logger = logging.getLogger(__file__)
 from typing import Optional
 
-import httpx
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
@@ -25,6 +25,11 @@ from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 
 
 class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
+    def __init__(self, *, http_client_factory: HttpClientFactory) -> None:
+        self.http_client_factory: HttpClientFactory = http_client_factory
+        assert self.http_client_factory is not None
+        assert isinstance(self.http_client_factory, HttpClientFactory)
+
     async def chat_completions(
         self,
         *,
@@ -58,7 +63,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
             )
 
         response_text: Optional[str] = None
-        async with self.create_http_client(agent_url) as client:
+        async with self.http_client_factory.create_http_client(agent_url) as client:
             try:
                 agent_response: Response = await client.post(
                     "/chat/completions",
@@ -111,7 +116,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
     ) -> AsyncGenerator[str, None]:
 
         logger.info(f"Streaming response {request_id} from agent")
-        async with self.create_http_client(agent_url) as client:
+        async with self.http_client_factory.create_http_client(agent_url) as client:
             async with aconnect_sse(
                 client,
                 "POST",
@@ -136,7 +141,3 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                             f"----- End data from stream {i} {event} {type(data)} ------"
                         )
                     yield f"data: {data}\n\n"
-
-    @staticmethod
-    def create_http_client(agent_url: str) -> httpx.AsyncClient:
-        return httpx.AsyncClient(base_url=agent_url)

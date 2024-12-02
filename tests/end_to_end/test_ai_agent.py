@@ -6,6 +6,7 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionUserMess
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_schema import ChatModelConfig, ModelConfig
+from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.providers.openai_chat_completions_provider import (
     OpenAiChatCompletionsProvider,
 )
@@ -35,7 +36,9 @@ async def test_call_agent_with_input() -> None:
 
     provider: OpenAiChatCompletionsProvider
     if EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        provider = OpenAiChatCompletionsProvider()
+        provider = OpenAiChatCompletionsProvider(
+            http_client_factory=HttpClientFactory()
+        )
     else:
 
         def mock_fn_get_response(
@@ -55,7 +58,8 @@ async def test_call_agent_with_input() -> None:
             }
 
         provider = MockOpenAiChatCompletionsProvider(
-            fn_get_response=mock_fn_get_response
+            http_client_factory=HttpClientFactory(),
+            fn_get_response=mock_fn_get_response,
         )
 
     response: StreamingResponse | JSONResponse = await provider.chat_completions(

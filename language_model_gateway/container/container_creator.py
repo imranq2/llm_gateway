@@ -2,6 +2,7 @@ from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
 )
+from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
@@ -22,8 +23,13 @@ class ContainerCreator:
         container = SimpleContainer()
 
         # register services here
+        container.register(HttpClientFactory, lambda c: HttpClientFactory())
+
         container.register(
-            OpenAiChatCompletionsProvider, lambda c: OpenAiChatCompletionsProvider()
+            OpenAiChatCompletionsProvider,
+            lambda c: OpenAiChatCompletionsProvider(
+                http_client_factory=c.resolve(HttpClientFactory)
+            ),
         )
         container.register(ModelFactory, lambda c: ModelFactory())
         container.register(
