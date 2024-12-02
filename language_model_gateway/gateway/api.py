@@ -1,89 +1,108 @@
+# language_model_gateway/gateway/api.py
 import logging
 import os
-import traceback
-from inspect import stack
-from typing import Dict, Any, cast, TypedDict
-from typing import List
-from datetime import datetime
-
-from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Dict, Any, cast, List
+from fastapi import FastAPI, APIRouter
 from starlette.requests import Request
 from starlette.responses import StreamingResponse, JSONResponse
+
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
 from language_model_gateway.gateway.managers.model_manager import ModelManager
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 
-# Get log level from environment variable
-log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-
-# Set up basic configuration for logging
-logging.basicConfig(level=getattr(logging, log_level))
-
-# warnings.filterwarnings("ignore", category=LangChainBetaWarning)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="OpenAI-compatible API")
+
+def create_chat_router(chat_manager: ChatCompletionManager) -> APIRouter:
+    router = APIRouter()
+
+    async def chat_completions_handler(
+        request: Request, chat_request: Dict[str, Any]
+    ) -> StreamingResponse | JSONResponse:
+        try:
+            return await chat_manager.chat_completions(
+                headers={k: v for k, v in request.headers.items()},
+                chat_request=cast(ChatRequest, chat_request),
+            )
+        except Exception as e:
+            logger.error(f"Error in chat completions: {e}")
+            raise
+
+    router.add_api_route(
+        "/api/v1/chat/completions",
+        chat_completions_handler,
+        methods=["POST"],
+        response_model=None,
+    )
+    return router
 
 
-@app.get("/health")
-def health() -> str:
-    return "OK"
+def create_models_router(model_manager: ModelManager) -> APIRouter:
+    router = APIRouter()
+
+    async def models_handler() -> Dict[str, List[Dict[str, str]]]:
+        return await model_manager.get_models()
+
+    router.add_api_route("/api/v1/models", models_handler, methods=["GET"])
+    return router
 
 
-class ErrorDetail(TypedDict):
-    message: str
-    timestamp: str
-    trace_id: str
-    call_stack: str
+def create_health_router() -> APIRouter:
+    router = APIRouter()
+    router.add_api_route("/health", lambda: "OK", methods=["GET"])
+    return router
 
 
-@app.post("/api/v1/chat/completions", response_model=None)
-async def chat_completions(
-    request: Request,
-    chat_request: Dict[str, Any],
-) -> StreamingResponse | JSONResponse:
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """
+    Lifespan context manager for FastAPI application.
+    """
+    # Startup
     try:
-        return await ChatCompletionManager().chat_completions(
-            headers={k: v for k, v in request.headers.items()},
-            chat_request=cast(ChatRequest, chat_request),
+        # Configure logging
+        log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+        logging.basicConfig(
+            level=getattr(logging, log_level),
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
-    except* ConnectionError as e:
-        call_stack = traceback.format_exc()
-        error_detail: ErrorDetail = {
-            "message": "Service connection error",
-            "timestamp": datetime.now().isoformat(),
-            "trace_id": "",
-            # "trace_id": request.trace_id if hasattr(request, "trace_id") else "",
-            "call_stack": call_stack,
-        }
-        logger.error(f"Connection error: {e}\n{call_stack}")
-        raise HTTPException(status_code=503, detail=error_detail)
-    except* ValueError as e:
-        call_stack = traceback.format_exc()
-        error_detail = {
-            "message": str(e),
-            "timestamp": datetime.now().isoformat(),
-            "trace_id": "",
-            # "trace_id": request.trace_id if hasattr(request, "trace_id") else "",
-            "call_stack": call_stack,
-        }
-        logger.error(f"Validation error: {e}\n{stack}")
-        raise HTTPException(status_code=400, detail=error_detail)
-    except* Exception as e:
-        call_stack = traceback.format_exc()
-        error_detail = {
-            "message": "Internal server error",
-            "timestamp": datetime.now().isoformat(),
-            # "trace_id": request.trace_id if hasattr(request, "trace_id") else "",
-            "trace_id": "",
-            "call_stack": call_stack,
-        }
-        logger.error(f"Unexpected error: {e}\n{stack}")
-        raise HTTPException(status_code=500, detail=error_detail)
+        logger.info("Starting application initialization...")
+
+        # Initialize managers
+        chat_manager = ChatCompletionManager()
+
+        model_manager = ModelManager()
+
+        # Create and include routes with initialized managers
+        logger.info("Setting up routes...")
+        app.include_router(create_health_router())
+        app.include_router(create_chat_router(chat_manager))
+        app.include_router(create_models_router(model_manager))
+
+        logger.info("Application initialization completed")
+
+        # Store managers for cleanup
+        app.state.managers = [chat_manager, model_manager]
+        yield
+
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        raise
+
+    finally:
+        # Cleanup
+        try:
+            logger.info("Starting application shutdown...")
+
+            logger.info("Application shutdown completed")
+
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
+            raise
 
 
-@app.get("/api/v1/models")
-async def get_models() -> Dict[str, List[Dict[str, str]]]:
-    return await ModelManager.get_models()
+# Create the app instance at module level
+app = FastAPI(title="OpenAI-compatible API", lifespan=lifespan)
