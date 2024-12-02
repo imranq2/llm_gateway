@@ -3,7 +3,13 @@ from typing import Any, Dict, List
 
 import httpx
 import pytest
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletionUserMessageParam
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ChatCompletionUserMessageParam,
+    ChatCompletion,
+    ChatCompletionMessage,
+)
+from openai.types.chat.chat_completion import Choice
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_schema import ChatModelConfig, ModelConfig
@@ -39,7 +45,9 @@ async def test_call_agent_with_input(async_client: httpx.AsyncClient) -> None:
     provider: OpenAiChatCompletionsProvider
     if EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         provider = OpenAiChatCompletionsProvider(
-            http_client_factory=MockHttpClientFactory(http_client=async_client)
+            http_client_factory=MockHttpClientFactory(
+                fn_http_client=lambda: async_client
+            )
         )
     else:
 
@@ -48,16 +56,23 @@ async def test_call_agent_with_input(async_client: httpx.AsyncClient) -> None:
             headers: Dict[str, str],
             chat_request: ChatRequest,
         ) -> Dict[str, Any]:
-            return {
-                "choices": [
-                    {
-                        "message": {
-                            "content": "Barack",
-                            "role": "assistant",
-                        }
-                    }
-                ]
-            }
+            chat_response: ChatCompletion = ChatCompletion(
+                id="chat_1",
+                object="chat.completion",
+                created=1633660000,
+                model="b.well PHR",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        message=ChatCompletionMessage(
+                            content="Yes, you have taken the covid vaccine.",
+                            role="assistant",
+                        ),
+                    )
+                ],
+            )
+            return chat_response.model_dump()
 
         provider = MockOpenAiChatCompletionsProvider(
             http_client_factory=HttpClientFactory(),

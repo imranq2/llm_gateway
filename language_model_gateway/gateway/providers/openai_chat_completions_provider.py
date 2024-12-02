@@ -9,6 +9,7 @@ from httpx_sse import aconnect_sse, ServerSentEvent
 from openai.types.chat import (
     ChatCompletion,
 )
+from pydantic_core import ValidationError
 
 from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
@@ -87,7 +88,13 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                     status_code=500,
                 )
 
-            response: ChatCompletion = ChatCompletion.model_validate(response_dict)
+            try:
+                response: ChatCompletion = ChatCompletion.model_validate(response_dict)
+            except ValidationError as e:
+                return JSONResponse(
+                    content=f"Error validating response: {e}. url: {agent_url}\n{response_text}",
+                    status_code=500,
+                )
             logger.info(f"Non-streaming response {request_id}: {response}")
             return JSONResponse(content=response.model_dump())
 
