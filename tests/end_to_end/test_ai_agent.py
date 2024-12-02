@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict, List
 
+import httpx
 import pytest
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionUserMessageParam
 from starlette.responses import StreamingResponse, JSONResponse
@@ -14,13 +15,14 @@ from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
+from tests.gateway.mocks.mock_http_client_factory import MockHttpClientFactory
 from tests.gateway.mocks.mock_open_ai_completions_provider import (
     MockOpenAiChatCompletionsProvider,
 )
 
 
 @pytest.mark.asyncio
-async def test_call_agent_with_input() -> None:
+async def test_call_agent_with_input(async_client: httpx.AsyncClient) -> None:
     print("")
 
     chat_history: List[ChatCompletionMessageParam] = []
@@ -37,7 +39,7 @@ async def test_call_agent_with_input() -> None:
     provider: OpenAiChatCompletionsProvider
     if EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         provider = OpenAiChatCompletionsProvider(
-            http_client_factory=HttpClientFactory()
+            http_client_factory=MockHttpClientFactory(http_client=async_client)
         )
     else:
 
@@ -74,7 +76,7 @@ async def test_call_agent_with_input() -> None:
                 provider="openai",
                 model="gpt-3.5-turbo",
             ),
-            url="http://localhost:5000",
+            url="http://localhost:5000/api/v1/chat/completions",
         ),
     )
 

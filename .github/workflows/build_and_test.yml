@@ -20,6 +20,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: create docker.env
+        run: |
+          touch ./docker.env
+
       - name: pre-commit
         run: make run-pre-commit && make clean-pre-commit
 
@@ -32,7 +36,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose down -v --remove-orphans
+          docker compose down -v --remove-orphans
 
       - name: 'Cleanup build folder'
         if: always()
