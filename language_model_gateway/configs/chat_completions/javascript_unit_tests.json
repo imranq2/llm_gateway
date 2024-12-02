@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
-  "id": "general_purpose",
-  "name": "General Purpose",
-  "description": "General Purpose Language Model",
+  "id": "javascript_unit_tests",
+  "name": "Javascript Unit Tests",
+  "description": "Javascript Unit Tests",
   "type": "langchain",
   "model": {
     "provider": "bedrock",
@@ -11,17 +11,13 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are a tool that answers questions and generates text."
+      "content": "You are an agent that writes unit tests for Javascript code.  Always include javascript types and target node.js 18 and higher."
     }
   ],
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0.5
-    },
-    {
-      "key": "max_tokens",
-      "value": 1000
+      "value": 0
     }
   ],
   "few_shot_examples": [
@@ -45,9 +41,6 @@
           "value": "YYYY-MM-DD"
         }
       ]
-    },
-    {
-      "name": "pubmed"
     },
     {
       "name": "web_search"

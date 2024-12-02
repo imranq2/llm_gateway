@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
   "id": "python_unit_tests",
   "name": "Python Unit Tests",
-  "description": "General Purpose Language Model",
+  "description": "Python Unit Tests",
   "type": "langchain",
   "model": {
     "provider": "bedrock",
@@ -11,17 +11,13 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are an agent that writes unit tests using pytest.  Always include python types and target python 3.12."
+      "content": "You are an agent that writes unit tests for Python code using pytest.  Always include python types and target python 3.12."
     }
   ],
   "model_parameters": [
     {
       "key": "temperature",
       "value": 0
-    },
-    {
-      "key": "max_tokens",
-      "value": 100
     }
   ],
   "few_shot_examples": [
