@@ -2,8 +2,6 @@ from typing import Generator, AsyncGenerator
 
 import httpx
 import pytest
-from langchain_core.messages import BaseMessage, AIMessage
-from langchain_core.outputs import ChatResult, ChatGeneration
 from openai import OpenAI
 from starlette.testclient import TestClient
 
@@ -42,16 +40,11 @@ async def test_chat_completions(
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container: SimpleContainer = await get_container_async()
 
-        def mock_fn_get_response(messages: list[BaseMessage]) -> ChatResult:
-            return ChatResult(
-                generations=[ChatGeneration(message=AIMessage(content="Barack"))]
-            )
-
         test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda model_config: MockChatModel(
-                    fn_get_response=mock_fn_get_response
+                    fn_get_response=lambda messages: "Barack"
                 )
             ),
         )
@@ -103,16 +96,11 @@ async def test_chat_completions_with_chat_history(
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container: SimpleContainer = await get_container_async()
 
-        def mock_fn_get_response(messages: list[BaseMessage]) -> ChatResult:
-            return ChatResult(
-                generations=[ChatGeneration(message=AIMessage(content="Barack"))]
-            )
-
         test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda model_config: MockChatModel(
-                    fn_get_response=mock_fn_get_response
+                    fn_get_response=lambda messages: "Barack"
                 )
             ),
         )
