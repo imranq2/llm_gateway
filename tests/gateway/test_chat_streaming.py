@@ -2,7 +2,7 @@ import json
 from typing import List
 
 import httpx
-import pytest
+from httpx import Response
 from openai import OpenAI
 from openai.types import CompletionUsage
 from openai.types.chat import ChatCompletionChunk
@@ -14,9 +14,6 @@ from language_model_gateway.gateway.utilities.environment_reader import (
 from openai.types.chat.chat_completion_chunk import ChoiceDelta, Choice as ChunkChoice
 
 
-@pytest.mark.httpx_mock(
-    should_mock=lambda request: request.url.host == "host.docker.internal"
-)
 async def test_chat_completions_streaming(
     async_client: httpx.AsyncClient, sync_client: httpx.Client, httpx_mock: HTTPXMock
 ) -> None:
@@ -74,10 +71,13 @@ async def test_chat_completions_streaming(
             f"data: {json.dumps(chunks_json[2].model_dump())}\n\n".encode("utf-8"),
             b"data: [DONE]\n\n",
         ]
-        httpx_mock.add_response(
+        httpx_mock.add_callback(
+            callback=lambda request: Response(
+                status_code=200,
+                headers={"Content-Type": "text/event-stream"},
+                stream=IteratorStream(chunks),
+            ),
             url="http://host.docker.internal:5055/api/v1/chat/completions",
-            stream=IteratorStream(chunks),
-            headers={"Content-Type": "text/event-stream"},
         )
 
     # init client and connect to localhost server
