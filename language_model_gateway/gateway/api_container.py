@@ -1,10 +1,7 @@
 import logging
-from functools import wraps
 from typing import Annotated
-from typing import Callable, Awaitable
 
 from fastapi import Depends
-from typing_extensions import ParamSpec, TypeVar
 
 from language_model_gateway.container.container_factory import ContainerFactory
 from language_model_gateway.container.simple_container import SimpleContainer
@@ -12,30 +9,9 @@ from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
 from language_model_gateway.gateway.managers.model_manager import ModelManager
+from language_model_gateway.gateway.utilities.cached import cached
 
 logger = logging.getLogger(__name__)
-
-# Dependencies
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-def cached(f: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
-    """Decorator to cache the result of an async function"""
-
-    cache: R | None = None
-
-    @wraps(f)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        nonlocal cache
-
-        if cache is not None:
-            return cache
-
-        cache = await f(*args, **kwargs)
-        return cache
-
-    return wrapper
 
 
 @cached  # makes it singleton-like
