@@ -9,13 +9,14 @@ from httpx_sse import aconnect_sse, ServerSentEvent
 from openai.types.chat import (
     ChatCompletion,
 )
+from pydantic_core import ValidationError
 
 from language_model_gateway.configs.config_schema import ChatModelConfig
+from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 
 logger = logging.getLogger(__file__)
 from typing import Optional
 
-import httpx
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
@@ -25,6 +26,11 @@ from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 
 
 class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
+    def __init__(self, *, http_client_factory: HttpClientFactory) -> None:
+        self.http_client_factory: HttpClientFactory = http_client_factory
+        assert self.http_client_factory is not None
+        assert isinstance(self.http_client_factory, HttpClientFactory)
+
     async def chat_completions(
         self,
         *,
@@ -43,7 +49,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
         assert chat_request
 
         request_id: str = str(randint(1, 1000))
-        agent_url: Optional[str] = environ["OPENAI_AGENT_URL"]
+        agent_url: Optional[str] = model_config.url or environ["OPENAI_AGENT_URL"]
         assert agent_url
 
         if chat_request.get("stream"):
@@ -57,23 +63,38 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                 media_type="text/event-stream",
             )
 
-        async with httpx.AsyncClient(base_url=agent_url) as client:
+        response_text: Optional[str] = None
+        async with self.http_client_factory.create_http_client(
+            base_url="http://test"
+        ) as client:
             try:
                 agent_response: Response = await client.post(
-                    "/chat/completions",
+                    agent_url,
                     json=chat_request,
                     timeout=60 * 60,
                     headers=headers,
                 )
 
-                response_text: str = agent_response.text
+                response_text = agent_response.text
                 response_dict: Dict[str, Any] = agent_response.json()
             except json.JSONDecodeError:
-                return JSONResponse(content="Error decoding response", status_code=500)
+                return JSONResponse(
+                    content=f"Error decoding response. url: {agent_url}\n{response_text}",
+                    status_code=500,
+                )
             except Exception as e:
-                return JSONResponse(content=f"Error from agent: {e}", status_code=500)
+                return JSONResponse(
+                    content=f"Error from agent: {e} url: {agent_url}\n{response_text}",
+                    status_code=500,
+                )
 
-            response: ChatCompletion = ChatCompletion.parse_obj(response_dict)
+            try:
+                response: ChatCompletion = ChatCompletion.model_validate(response_dict)
+            except ValidationError as e:
+                return JSONResponse(
+                    content=f"Error validating response: {e}. url: {agent_url}\n{response_text}",
+                    status_code=500,
+                )
             logger.info(f"Non-streaming response {request_id}: {response}")
             return JSONResponse(content=response.model_dump())
 
@@ -94,8 +115,8 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
         )
         return generator
 
-    @staticmethod
     async def _stream_resp_async_generator(
+        self,
         *,
         request_id: str,
         agent_url: str,
@@ -104,11 +125,13 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
     ) -> AsyncGenerator[str, None]:
 
         logger.info(f"Streaming response {request_id} from agent")
-        async with httpx.AsyncClient(base_url=agent_url) as client:
+        async with self.http_client_factory.create_http_client(
+            base_url="http://test"
+        ) as client:
             async with aconnect_sse(
                 client,
                 "POST",
-                "/chat/completions",
+                agent_url,
                 json=chat_request,
                 timeout=60 * 60,
                 headers=headers,

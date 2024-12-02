@@ -1,28 +1,8 @@
-from typing import Generator, AsyncGenerator
-
 import httpx
 import pytest
 from openai import OpenAI
 from openai.pagination import SyncPage
 from openai.types import Model
-from starlette.testclient import TestClient
-
-from language_model_gateway.gateway.api import app
-
-
-@pytest.fixture
-async def async_client() -> AsyncGenerator[httpx.AsyncClient, None]:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        yield client
-
-
-# If you need a sync client for OpenAI
-@pytest.fixture
-def sync_client() -> Generator[httpx.Client, None, None]:
-    with TestClient(app) as client:
-        yield client
 
 
 @pytest.mark.asyncio
@@ -37,7 +17,7 @@ async def test_models(
         http_client=sync_client,
     )
     models: SyncPage[Model] = client.models.list()
-    print(models.json())
+    print(models.model_dump_json())
     assert models
     for model in models:
         print(model.id)

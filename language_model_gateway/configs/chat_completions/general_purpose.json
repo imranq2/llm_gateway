@@ -1,23 +1,23 @@
 {
+  "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
   "id": "general_purpose",
   "name": "General Purpose",
   "description": "General Purpose Language Model",
   "type": "langchain",
-  "url": "https://api.openai.com/v1/engines/gpt-2/completions",
   "model": {
     "provider": "bedrock",
     "model": "anthropic.claude-3-5-sonnet-20240620-v1:0"
   },
-  "prompts": [
+  "system_prompts": [
     {
       "role": "system",
-      "message": "You are a tool"
+      "content": "You are a tool that answers questions and generates text."
     }
   ],
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0.7
+      "value": 0.5
     },
     {
       "key": "max_tokens",

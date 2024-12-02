@@ -1,23 +1,24 @@
 {
+  "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
   "id": "b.well",
   "name": "b.well PHR",
   "description": "Conversational PHR",
   "type": "openai",
-  "url": "https://api.openai.com/v1/engines/gpt-2/completions",
+  "url": "http://host.docker.internal:5055/api/v1/chat/completions",
   "model": {
     "provider": "bedrock",
     "model": "gpt-1337-turbo-pro-max"
   },
-  "prompts": [
+  "system_prompts": [
     {
       "role": "system",
-      "message": "You are a tool"
+      "content": "You are a tool"
     }
   ],
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0.7
+      "value": 0
     },
     {
       "key": "max_tokens",

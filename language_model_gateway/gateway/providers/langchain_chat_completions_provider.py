@@ -1,19 +1,17 @@
 import datetime
-import os
 import random
 from typing import Dict, Any, Sequence
 
-from langchain_aws import ChatBedrockConverse
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
-from langchain_openai import ChatOpenAI
 from langgraph.graph.state import CompiledStateGraph
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.configs.config_schema import ChatModelConfig, ModelChoice
+from language_model_gateway.configs.config_schema import ChatModelConfig, ModelConfig
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
 )
+from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
     BaseChatCompletionsProvider,
 )
@@ -22,6 +20,27 @@ from language_model_gateway.gateway.tools.tool_provider import ToolProvider
 
 
 class LangChainCompletionsProvider(BaseChatCompletionsProvider):
+    def __init__(
+        self,
+        *,
+        model_factory: ModelFactory,
+        lang_graph_to_open_ai_converter: LangGraphToOpenAIConverter,
+        tool_provider: ToolProvider
+    ) -> None:
+        self.model_factory: ModelFactory = model_factory
+        assert self.model_factory is not None
+        assert isinstance(self.model_factory, ModelFactory)
+        self.lang_graph_to_open_ai_converter: LangGraphToOpenAIConverter = (
+            lang_graph_to_open_ai_converter
+        )
+        assert self.lang_graph_to_open_ai_converter is not None
+        assert isinstance(
+            self.lang_graph_to_open_ai_converter, LangGraphToOpenAIConverter
+        )
+        self.tool_provider: ToolProvider = tool_provider
+        assert self.tool_provider is not None
+        assert isinstance(self.tool_provider, ToolProvider)
+
     async def chat_completions(
         self,
         *,
@@ -29,23 +48,12 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
         headers: Dict[str, str],
         chat_request: ChatRequest
     ) -> StreamingResponse | JSONResponse:
-        model: ModelChoice | None = model_config.model
+        model: ModelConfig | None = model_config.model
         assert model is not None
-        model_vendor: str = model.provider
-        model_name: str = model.model
 
         # noinspection PyArgumentList
-        llm: BaseChatModel = (
-            ChatOpenAI(model=model_name, temperature=0)
-            if model_vendor == "openai"
-            else ChatBedrockConverse(
-                client=None,
-                provider="anthropic",
-                credentials_profile_name=os.environ.get("AWS_CREDENTIALS_PROFILE"),
-                # Setting temperature to 0 for deterministic results
-                temperature=0,
-                model=model_name,
-            )
+        llm: BaseChatModel = self.model_factory.get_model(
+            chat_model_config=model_config
         )
 
         # noinspection PyUnusedLocal
@@ -56,21 +64,20 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
 
         # Initialize tools
         tools: Sequence[BaseTool] = (
-            ToolProvider().get_tools(tools=[t for t in model_config.tools])
+            self.tool_provider.get_tools(tools=[t for t in model_config.tools])
             if model_config.tools is not None
             else []
         )
 
-        converter: LangGraphToOpenAIConverter = LangGraphToOpenAIConverter()
         compiled_state_graph: CompiledStateGraph = (
-            LangGraphToOpenAIConverter.create_graph_for_llm(
+            await self.lang_graph_to_open_ai_converter.create_graph_for_llm_async(
                 llm=llm,
                 tools=tools,
             )
         )
         request_id = random.randint(1, 1000)
 
-        return await converter.call_agent_with_input(
+        return await self.lang_graph_to_open_ai_converter.call_agent_with_input(
             request_id=str(request_id),
             compiled_state_graph=compiled_state_graph,
             request=chat_request,

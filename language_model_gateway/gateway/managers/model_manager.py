@@ -6,11 +6,13 @@ from language_model_gateway.configs.config_schema import ChatModelConfig
 
 
 class ModelManager:
-    @staticmethod
-    async def get_models() -> Dict[str, List[Dict[str, str]]]:
+    # noinspection PyMethodMayBeStatic
+    async def get_models(
+        self, *, headers: Dict[str, str]
+    ) -> Dict[str, List[Dict[str, str]]]:
         logger = logging.getLogger(__name__)
         logger.info("Received request for models")
-        configs: List[ChatModelConfig] = ConfigReader().read_model_config()
+        configs: List[ChatModelConfig] = ConfigReader().read_model_configs()
         models = [
             {"id": config.name, "description": config.description} for config in configs
         ]

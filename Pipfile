@@ -88,6 +88,8 @@ black = ">=24.10.0"
 # deepdiff is a Python library for comparing objects
 deepdiff = { version = ">=8.0.1", extras = ["murmur"] }
 types-requests = "*"
+# pytest-httpx is a Python library for mocking HTTPX tests
+pytest-httpx = ">=0.35.0"
 
 [requires]
 python_version = "3.12"

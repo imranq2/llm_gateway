@@ -403,9 +403,9 @@ class LangGraphToOpenAIConverter:
         )
         return output_messages
 
-    @staticmethod
-    def create_graph_for_llm(
-        *, llm: BaseChatModel, tools: Sequence[BaseTool]
+    # noinspection PyMethodMayBeStatic
+    async def create_graph_for_llm_async(
+        self, *, llm: BaseChatModel, tools: Sequence[BaseTool]
     ) -> CompiledStateGraph:
         tool_node: ToolNode = ToolNode(tools)
         model_with_tools = llm.bind_tools(tools)
@@ -422,20 +422,23 @@ class LangGraphToOpenAIConverter:
                 return "tools"
             return END
 
-        def call_model(state: MessagesState) -> MessagesState:
+        async def call_model(state: MessagesState) -> MessagesState:
             messages: List[AnyMessage] = state["messages"]
-            base_message: BaseMessage = model_with_tools.invoke(messages)
+            base_message: BaseMessage = await model_with_tools.ainvoke(messages)
             # assert isinstance(base_message, AnyMessage)
             response: AnyMessage = cast(AnyMessage, base_message)
             return {"messages": [response]}
 
         workflow = StateGraph(MessagesState)
+
         # Define the two nodes we will cycle between
-        workflow.add_node("agent", call_model)
+        workflow.add_node("agent", call_model)  # Now using async call_model
         workflow.add_node("tools", tool_node)
+
         workflow.add_edge(START, "agent")
         workflow.add_conditional_edges("agent", should_continue, ["tools", END])
         workflow.add_edge("tools", "agent")
         workflow.add_edge("agent", END)
+
         compiled_state_graph: CompiledStateGraph = workflow.compile()
         return compiled_state_graph
