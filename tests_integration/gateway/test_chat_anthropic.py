@@ -1,3 +1,4 @@
+from os import environ
 from typing import Generator, AsyncGenerator, Optional, Dict, Any
 
 import httpx
@@ -13,6 +14,9 @@ from language_model_gateway.gateway.providers.langchain_chat_completions_provide
     LangChainCompletionsProvider,
 )
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
+from language_model_gateway.gateway.utilities.environment_reader import (
+    EnvironmentReader,
+)
 from tests_integration.gateway.mocks.mock_langchain_completions_provider import (
     MockLangChainChatCompletionsProvider,
 )
@@ -39,33 +43,34 @@ async def test_chat_completions(
 ) -> None:
     print("")
 
-    test_container: SimpleContainer = await get_container_async()
-    # test_container.register(
-    #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
-    # )
+    if not EnvironmentReader.is_truthy(environ.get("RUN_INTEGRATION_TESTS")):
+        test_container: SimpleContainer = await get_container_async()
+        # test_container.register(
+        #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
+        # )
 
-    def mock_fn_get_response(
-        model_config: ChatModelConfig,
-        headers: Dict[str, str],
-        chat_request: ChatRequest,
-    ) -> Dict[str, Any]:
-        return {
-            "choices": [
-                {
-                    "message": {
-                        "content": "Barack",
-                        "role": "assistant",
+        def mock_fn_get_response(
+            model_config: ChatModelConfig,
+            headers: Dict[str, str],
+            chat_request: ChatRequest,
+        ) -> Dict[str, Any]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "Barack",
+                            "role": "assistant",
+                        }
                     }
-                }
-            ]
-        }
+                ]
+            }
 
-    test_container.register(
-        LangChainCompletionsProvider,
-        lambda c: MockLangChainChatCompletionsProvider(
-            fn_get_response=mock_fn_get_response
-        ),
-    )
+        test_container.register(
+            LangChainCompletionsProvider,
+            lambda c: MockLangChainChatCompletionsProvider(
+                fn_get_response=mock_fn_get_response
+            ),
+        )
 
     # Test health endpoint
     # response = await async_client.get("/health")
@@ -102,33 +107,34 @@ async def test_chat_completions_with_chat_history(
 ) -> None:
     print("")
 
-    test_container: SimpleContainer = await get_container_async()
+    if not EnvironmentReader.is_truthy(environ.get("RUN_INTEGRATION_TESTS")):
+        test_container: SimpleContainer = await get_container_async()
 
-    # test_container.register(
-    #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
-    # )
-    def mock_fn_get_response(
-        model_config: ChatModelConfig,
-        headers: Dict[str, str],
-        chat_request: ChatRequest,
-    ) -> Dict[str, Any]:
-        return {
-            "choices": [
-                {
-                    "message": {
-                        "content": "Barack",
-                        "role": "assistant",
+        # test_container.register(
+        #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
+        # )
+        def mock_fn_get_response(
+            model_config: ChatModelConfig,
+            headers: Dict[str, str],
+            chat_request: ChatRequest,
+        ) -> Dict[str, Any]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "Barack",
+                            "role": "assistant",
+                        }
                     }
-                }
-            ]
-        }
+                ]
+            }
 
-    test_container.register(
-        LangChainCompletionsProvider,
-        lambda c: MockLangChainChatCompletionsProvider(
-            fn_get_response=mock_fn_get_response
-        ),
-    )
+        test_container.register(
+            LangChainCompletionsProvider,
+            lambda c: MockLangChainChatCompletionsProvider(
+                fn_get_response=mock_fn_get_response
+            ),
+        )
 
     # Test health endpoint
     response = await async_client.get("/health")
