@@ -4,7 +4,7 @@
   "name": "b.well PHR",
   "description": "Conversational PHR",
   "type": "openai",
-  "url": "https://api.openai.com/v1/engines/gpt-2/completions",
+  "url": "http://host.docker.internal:5055/api/v1/chat/completions",
   "model": {
     "provider": "bedrock",
     "model": "gpt-1337-turbo-pro-max"

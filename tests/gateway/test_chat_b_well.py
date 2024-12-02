@@ -2,31 +2,39 @@ import httpx
 import pytest
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
+from pytest_httpx import HTTPXMock
 
-from language_model_gateway.container.simple_container import SimpleContainer
-from language_model_gateway.gateway.api_container import get_container_async
-from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
-from tests.gateway.mocks.mock_chat_model import MockChatModel
-from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
-@pytest.mark.asyncio
+@pytest.mark.httpx_mock(
+    should_mock=lambda request: request.url.host == "host.docker.internal"
+)
 async def test_chat_completions_b_well(
-    async_client: httpx.AsyncClient, sync_client: httpx.Client
+    async_client: httpx.AsyncClient, sync_client: httpx.Client, httpx_mock: HTTPXMock
 ) -> None:
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        test_container: SimpleContainer = await get_container_async()
-        test_container.register(
-            ModelFactory,
-            lambda c: MockModelFactory(
-                fn_get_model=lambda model_config: MockChatModel(
-                    fn_get_response=lambda messages: "This is a test"
-                )
-            ),
+        httpx_mock.add_response(
+            url="http://host.docker.internal:5055/api/v1/chat/completions",
+            json={
+                "id": "chat_1",
+                "object": "chat.completion",
+                "created": 1633660000,
+                "model": "b.well PHR",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "index": 0,
+                        "message": {
+                            "content": "Barack",
+                            "role": "assistant",
+                        },
+                    }
+                ],
+            },
         )
 
     # Test health endpoint

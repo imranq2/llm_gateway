@@ -63,10 +63,12 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
             )
 
         response_text: Optional[str] = None
-        async with self.http_client_factory.create_http_client(agent_url) as client:
+        async with self.http_client_factory.create_http_client(
+            base_url="http://test"
+        ) as client:
             try:
                 agent_response: Response = await client.post(
-                    "/chat/completions",
+                    agent_url,
                     json=chat_request,
                     timeout=60 * 60,
                     headers=headers,
@@ -116,11 +118,13 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
     ) -> AsyncGenerator[str, None]:
 
         logger.info(f"Streaming response {request_id} from agent")
-        async with self.http_client_factory.create_http_client(agent_url) as client:
+        async with self.http_client_factory.create_http_client(
+            base_url="http://test"
+        ) as client:
             async with aconnect_sse(
                 client,
                 "POST",
-                "/chat/completions",
+                agent_url,
                 json=chat_request,
                 timeout=60 * 60,
                 headers=headers,
