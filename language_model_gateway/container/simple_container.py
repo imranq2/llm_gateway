@@ -6,7 +6,6 @@ from typing import (
     TypeVar,
     TypeAlias,
     runtime_checkable,
-    cast,
 )
 
 T = TypeVar("T")
@@ -62,14 +61,15 @@ class SimpleContainer:
         Returns:
             An instance of the requested service
         """
-        if service_type not in self._services:
-            if service_type not in self._factories:
-                raise ServiceNotFoundError(f"No factory registered for {service_type}")
+        # if service_type not in self._services:
+        if service_type not in self._factories:
+            raise ServiceNotFoundError(f"No factory registered for {service_type}")
 
-            factory = self._factories[service_type]
-            self._services[service_type] = factory(self)
+        factory = self._factories[service_type]
+        service: T = factory(self)
+        # self._services[service_type] = service
 
-        return cast(T, self._services[service_type])
+        return service
 
     def singleton(self, service_type: type[T], instance: T) -> "SimpleContainer":
         """Register a singleton instance"""

@@ -53,12 +53,15 @@ async def lifespan(app1: FastAPI) -> AsyncGenerator[None, None]:
             raise
 
 
-# Create the FastAPI app instance
-app = FastAPI(title="OpenAI-compatible API", lifespan=lifespan)
+def create_app() -> FastAPI:
+    app1: FastAPI = FastAPI(title="OpenAI-compatible API", lifespan=lifespan)
+    app1.include_router(ChatCompletionsRouter().get_router())
+    app1.include_router(ModelsRouter().get_router())
+    return app1
 
-# Include routers
-app.include_router(ChatCompletionsRouter().get_router())
-app.include_router(ModelsRouter().get_router())
+
+# Create the FastAPI app instance
+app = create_app()
 
 
 @app.get("/health")

@@ -39,13 +39,13 @@ def cached(f: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
 
 
 @cached  # makes it singleton-like
-async def get_container() -> SimpleContainer:
+async def get_container_async() -> SimpleContainer:
     """Create the container"""
     return await ContainerCreator().create_container_async()
 
 
 def get_chat_manager(
-    container: Annotated[SimpleContainer, Depends(get_container)]
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
 ) -> ChatCompletionManager:
     """helper function to get the chat manager"""
     assert isinstance(container, SimpleContainer), type(container)
@@ -53,7 +53,7 @@ def get_chat_manager(
 
 
 def get_model_manager(
-    container: Annotated[SimpleContainer, Depends(get_container)]
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
 ) -> ModelManager:
     """helper function to get the model manager"""
     assert isinstance(container, SimpleContainer), type(container)
