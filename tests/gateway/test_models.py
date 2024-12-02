@@ -17,7 +17,7 @@ async def test_models(
         http_client=sync_client,
     )
     models: SyncPage[Model] = client.models.list()
-    print(models.json())
+    print(models.model_dump_json())
     assert models
     for model in models:
         print(model.id)

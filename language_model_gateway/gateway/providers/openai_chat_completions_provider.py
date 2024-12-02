@@ -87,7 +87,7 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                     status_code=500,
                 )
 
-            response: ChatCompletion = ChatCompletion.parse_obj(response_dict)
+            response: ChatCompletion = ChatCompletion.model_validate(response_dict)
             logger.info(f"Non-streaming response {request_id}: {response}")
             return JSONResponse(content=response.model_dump())
 
