@@ -1,12 +1,10 @@
-from typing import Generator, AsyncGenerator, Optional
+from typing import Optional
 
 import httpx
 import pytest
 from openai import OpenAI
-from starlette.testclient import TestClient
 
 from language_model_gateway.container.simple_container import SimpleContainer
-from language_model_gateway.gateway.api import app
 from language_model_gateway.gateway.api_container import get_container_async
 from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.utilities.environment_reader import (
@@ -14,21 +12,6 @@ from language_model_gateway.gateway.utilities.environment_reader import (
 )
 from tests.gateway.mocks.mock_chat_model import MockChatModel
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
-
-
-@pytest.fixture
-async def async_client() -> AsyncGenerator[httpx.AsyncClient, None]:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        yield client
-
-
-# If you need a sync client for OpenAI
-@pytest.fixture
-def sync_client() -> Generator[httpx.Client, None, None]:
-    with TestClient(app) as client:
-        yield client
 
 
 @pytest.mark.asyncio
