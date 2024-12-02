@@ -10,6 +10,9 @@ from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api import app
 from language_model_gateway.gateway.api_container import get_container_async
+from language_model_gateway.gateway.providers.langchain_chat_completions_provider import (
+    LangChainCompletionsProvider,
+)
 from language_model_gateway.gateway.providers.openai_chat_completions_provider import (
     OpenAiChatCompletionsProvider,
 )
@@ -58,14 +61,39 @@ class MockOpenAiChatCompletionsProvider(OpenAiChatCompletionsProvider):
         return JSONResponse(content=result)
 
 
+class MockLangChainChatCompletionsProvider(LangChainCompletionsProvider):
+    async def chat_completions(
+        self,
+        *,
+        model_config: ChatModelConfig,
+        headers: Dict[str, str],
+        chat_request: ChatRequest,
+    ) -> StreamingResponse | JSONResponse:
+        result: Dict[str, Any] = {
+            "choices": [
+                {
+                    "message": {
+                        "content": "Barack",
+                        "role": "assistant",
+                    }
+                }
+            ]
+        }
+        return JSONResponse(content=result)
+
+
 @pytest.mark.asyncio
 async def test_chat_completions(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
+    print("")
 
     test_container: SimpleContainer = await get_container_async()
+    # test_container.register(
+    #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
+    # )
     test_container.register(
-        OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
+        LangChainCompletionsProvider, lambda c: MockLangChainChatCompletionsProvider()
     )
 
     # Test health endpoint
@@ -101,6 +129,15 @@ async def test_chat_completions(
 async def test_chat_completions_with_chat_history(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
+    print("")
+
+    test_container: SimpleContainer = await get_container_async()
+    # test_container.register(
+    #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
+    # )
+    test_container.register(
+        LangChainCompletionsProvider, lambda c: MockLangChainChatCompletionsProvider()
+    )
 
     # Test health endpoint
     response = await async_client.get("/health")
