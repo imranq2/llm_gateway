@@ -403,9 +403,9 @@ class LangGraphToOpenAIConverter:
         )
         return output_messages
 
-    @staticmethod
+    # noinspection PyMethodMayBeStatic
     def create_graph_for_llm(
-        *, llm: BaseChatModel, tools: Sequence[BaseTool]
+        self, *, llm: BaseChatModel, tools: Sequence[BaseTool]
     ) -> CompiledStateGraph:
         tool_node: ToolNode = ToolNode(tools)
         model_with_tools = llm.bind_tools(tools)

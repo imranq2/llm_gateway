@@ -1,5 +1,4 @@
-from os import environ
-from typing import Generator, AsyncGenerator, Optional, Dict, Any
+from typing import Generator, AsyncGenerator, Dict, Any
 
 import httpx
 import pytest
@@ -17,7 +16,7 @@ from language_model_gateway.gateway.schema.openai.completions import ChatRequest
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
-from tests_integration.gateway.mocks.mock_langchain_completions_provider import (
+from tests.gateway.mocks.mock_langchain_completions_provider import (
     MockLangChainChatCompletionsProvider,
 )
 
@@ -43,76 +42,9 @@ async def test_chat_completions(
 ) -> None:
     print("")
 
-    if not EnvironmentReader.is_truthy(environ.get("RUN_INTEGRATION_TESTS")):
-        test_container: SimpleContainer = await get_container_async()
-        # test_container.register(
-        #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
-        # )
-
-        def mock_fn_get_response(
-            model_config: ChatModelConfig,
-            headers: Dict[str, str],
-            chat_request: ChatRequest,
-        ) -> Dict[str, Any]:
-            return {
-                "choices": [
-                    {
-                        "message": {
-                            "content": "Barack",
-                            "role": "assistant",
-                        }
-                    }
-                ]
-            }
-
-        test_container.register(
-            LangChainCompletionsProvider,
-            lambda c: MockLangChainChatCompletionsProvider(
-                fn_get_response=mock_fn_get_response
-            ),
-        )
-
-    # Test health endpoint
-    # response = await async_client.get("/health")
-    # assert response.status_code == 200
-
-    # init client and connect to localhost server
-    client = OpenAI(
-        api_key="fake-api-key",
-        base_url="http://localhost:5000/api/v1",  # change the default port if needed
-        http_client=sync_client,
-    )
-
-    # call API
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": "what is the first name of Obama?",
-            }
-        ],
-        model="General Purpose",
-    )
-
-    # print the top "choice"
-    content: Optional[str] = chat_completion.choices[0].message.content
-    assert content is not None
-    print(content)
-    assert "Barack" in content
-
-
-@pytest.mark.asyncio
-async def test_chat_completions_with_chat_history(
-    async_client: httpx.AsyncClient, sync_client: httpx.Client
-) -> None:
-    print("")
-
-    if not EnvironmentReader.is_truthy(environ.get("RUN_INTEGRATION_TESTS")):
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container: SimpleContainer = await get_container_async()
 
-        # test_container.register(
-        #     OpenAiChatCompletionsProvider, lambda c: MockOpenAiChatCompletionsProvider()
-        # )
         def mock_fn_get_response(
             model_config: ChatModelConfig,
             headers: Dict[str, str],
@@ -148,7 +80,77 @@ async def test_chat_completions_with_chat_history(
     )
 
     # call API
-    chat_completion = client.chat.completions.create(
+    stream = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": "what is the first name of Obama?",
+            }
+        ],
+        model="General Purpose",
+        stream=True,
+    )
+    content: str = ""
+    i: int = 0
+    for chunk in stream:
+        i += 1
+        print(f"======== Chunk {i} ========")
+        delta_content = chunk.choices[0].delta.content
+        content += delta_content or ""
+        print(delta_content or "")
+        print(f"====== End of Chunk {i} ======")
+
+    print("======== Final Content ========")
+    print(content)
+    print("====== End of Final Content ======")
+    assert "Barack" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_with_chat_history(
+    async_client: httpx.AsyncClient, sync_client: httpx.Client
+) -> None:
+    print("")
+
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container: SimpleContainer = await get_container_async()
+
+        def mock_fn_get_response(
+            model_config: ChatModelConfig,
+            headers: Dict[str, str],
+            chat_request: ChatRequest,
+        ) -> Dict[str, Any]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "Barack",
+                            "role": "assistant",
+                        }
+                    }
+                ]
+            }
+
+        test_container.register(
+            LangChainCompletionsProvider,
+            lambda c: MockLangChainChatCompletionsProvider(
+                fn_get_response=mock_fn_get_response
+            ),
+        )
+
+    # Test health endpoint
+    response = await async_client.get("/health")
+    assert response.status_code == 200
+
+    # init client and connect to localhost server
+    client = OpenAI(
+        api_key="fake-api-key",
+        base_url="http://localhost:5000/api/v1",  # change the default port if needed
+        http_client=sync_client,
+    )
+
+    # call API
+    stream = client.chat.completions.create(
         messages=[
             {
                 "role": "user",
@@ -161,13 +163,19 @@ async def test_chat_completions_with_chat_history(
             },
         ],
         model="General Purpose",
+        stream=True,
     )
+    content: str = ""
+    i: int = 0
+    for chunk in stream:
+        i += 1
+        print(f"======== Chunk {i} ========")
+        delta_content = chunk.choices[0].delta.content
+        content += delta_content or ""
+        print(delta_content or "")
+        print(f"====== End of Chunk {i} ======")
 
-    # print the top "choice"
-    print("========  Response ======")
-    print(chat_completion)
-    print("====== End of Response ======")
-    content: Optional[str] = chat_completion.choices[0].message.content
-    assert content is not None
+    print("======== Final Content ========")
     print(content)
+    print("====== End of Final Content ======")
     assert "Barack" in content

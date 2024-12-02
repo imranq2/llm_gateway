@@ -13,7 +13,7 @@ services:
       OPENAI_AGENT_URL: 'http://host.docker.internal:5055/api/v1'
       DEFAULT_PATIENT_ID: "eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
       DEFAULT_WEB_SEARCH_TOOL: "duckduckgo_search"
-      RUN_INTEGRATION_TESTS: 0
+      RUN_TESTS_WITH_REAL_LLM: 0
 #      DEFAULT_WEB_SEARCH_TOOL: "google_search"
     env_file: docker.env
     ports:

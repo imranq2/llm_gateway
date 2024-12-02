@@ -2,7 +2,6 @@ import json
 from typing import Any, Dict, List
 
 import pytest
-
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionUserMessageParam
 from starlette.responses import StreamingResponse, JSONResponse
 
@@ -11,6 +10,12 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
     OpenAiChatCompletionsProvider,
 )
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
+from language_model_gateway.gateway.utilities.environment_reader import (
+    EnvironmentReader,
+)
+from tests.gateway.mocks.mock_open_ai_completions_provider import (
+    MockOpenAiChatCompletionsProvider,
+)
 
 
 @pytest.mark.asyncio
@@ -28,7 +33,31 @@ async def test_call_agent_with_input() -> None:
         messages=chat_history + [user_message],
     )
 
-    provider = OpenAiChatCompletionsProvider()
+    provider: OpenAiChatCompletionsProvider
+    if EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        provider = OpenAiChatCompletionsProvider()
+    else:
+
+        def mock_fn_get_response(
+            model_config: ChatModelConfig,
+            headers: Dict[str, str],
+            chat_request: ChatRequest,
+        ) -> Dict[str, Any]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "Barack",
+                            "role": "assistant",
+                        }
+                    }
+                ]
+            }
+
+        provider = MockOpenAiChatCompletionsProvider(
+            fn_get_response=mock_fn_get_response
+        )
+
     response: StreamingResponse | JSONResponse = await provider.chat_completions(
         headers={},
         chat_request=request,
