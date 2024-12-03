@@ -22,7 +22,7 @@ class ImageGeneratorEmbeddedTool(BaseTool):
     description: str = (
         "Generates an image from a given text. "
         "Provide the text as input. "
-        "The tool will return the image as a base64 encoded string in PNG format: `data:image/png;base64,{base64_image}`."
+        "The tool will return the url to the image and a markdown containing a base64 encoded string in PNG format: `data:image/png;base64,{base64_image}`."
         # "The tool will return a url to the generated image."
     )
     return_direct: bool = True
@@ -123,14 +123,17 @@ class ImageGeneratorEmbeddedTool(BaseTool):
             image_generation_path = Path(os.environ["IMAGE_GENERATION_PATH"])
             makedirs(image_generation_path, exist_ok=True)
             # image_file_name = f"{prompt.replace(' ', '_')}_{style}.png"
+            base64_image: str = base64.b64encode(image_data).decode("utf-8")
+            embedded_url = f"data:image/png;base64,{base64_image}"
+            markdown_image = f"![Generated Image]({embedded_url})"
+
+            # now save the image on the server
             # create a random image file name
             image_file_name = f"{uuid4()}.png"
             self.save_image(image_data, image_generation_path.joinpath(image_file_name))
-            base64_image: str = base64.b64encode(image_data).decode("utf-8")
-            embedded_url = f"data:image/png;base64,{base64_image}"
             image_generation_url = os.environ["IMAGE_GENERATION_URL"]
             url = f"{image_generation_url}/{image_file_name}"
-            return f"here's the image url: {url} ", embedded_url
+            return f"{url} ", markdown_image
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             raise ValueError(f"Failed to generate image: {str(e)}")

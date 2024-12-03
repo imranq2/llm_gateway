@@ -50,4 +50,4 @@ async def test_chat_completions(
     content: Optional[str] = choices[1].message.content
     assert content is not None
     print(content)
-    assert "image url" in content
+    assert "http://dev:5000/image_generation/" in content
