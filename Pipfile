@@ -73,6 +73,7 @@ tavily-python = ">=0.5.0"
 youtube_search = ">=2.1.2"
 # llm-guard is a Python library designed to protect the LLM API from abuse
 #llm-guard= ">=0.3.15"
+langchain_experimental = ">=0.3.3"
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks

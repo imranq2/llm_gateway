@@ -3,7 +3,6 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
-from typing import TypedDict
 
 from fastapi import FastAPI, HTTPException
 from starlette.staticfiles import StaticFiles
@@ -17,13 +16,6 @@ from fastapi.responses import FileResponse
 # warnings.filterwarnings("ignore", category=LangChainBetaWarning)
 
 logger = logging.getLogger(__name__)
-
-
-class ErrorDetail(TypedDict):
-    message: str
-    timestamp: str
-    trace_id: str
-    call_stack: str
 
 
 @asynccontextmanager

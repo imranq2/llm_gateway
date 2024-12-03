@@ -9,6 +9,7 @@ from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTo
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
+from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
 
 
 class ToolProvider:
@@ -33,6 +34,7 @@ class ToolProvider:
             "pubmed": PubmedQueryRun(),
             "google_search": GoogleSearchTool(),
             "duckduckgo_search": DuckDuckGoSearchRun(),
+            "python_repl": PythonReplTool(),
         }
 
     def get_tool_by_name(self, *, tool: ToolConfig) -> BaseTool:

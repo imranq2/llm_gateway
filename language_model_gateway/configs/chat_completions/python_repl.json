@@ -1,28 +1,27 @@
 {
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
-  "id": "b.well",
-  "name": "b.well PHR",
-  "description": "Conversational PHR",
-  "type": "openai",
-  "url": "http://host.docker.internal:5055/api/v1/chat/completions",
+  "id": "python_repl",
+  "name": "Python REPL",
+  "description": "Python REPL Model",
+  "type": "langchain",
   "model": {
     "provider": "bedrock",
-    "model": "gpt-1337-turbo-pro-max"
+    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0"
   },
   "system_prompts": [
     {
       "role": "system",
-      "content": "Use the patient id eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
+      "content": "You are a tool that runs Python code to answer questions.  Let’s think step by step and take your time to get the right answer."
     }
   ],
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0
+      "value": 0.5
     },
     {
       "key": "max_tokens",
-      "value": 100
+      "value": 1000
     }
   ],
   "few_shot_examples": [
@@ -46,6 +45,9 @@
           "value": "YYYY-MM-DD"
         }
       ]
+    },
+    {
+      "name": "python_repl"
     },
     {
       "name": "web_search"
