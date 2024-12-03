@@ -1,17 +1,14 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, HTTPException
-from starlette.staticfiles import StaticFiles
+from fastapi import FastAPI
 
 from language_model_gateway.gateway.routers.chat_completion_router import (
     ChatCompletionsRouter,
 )
 from language_model_gateway.gateway.routers.models_router import ModelsRouter
-from fastapi.responses import FileResponse
 
 # warnings.filterwarnings("ignore", category=LangChainBetaWarning)
 
@@ -62,18 +59,3 @@ app = create_app()
 @app.get("/health")
 async def health() -> str:
     return "OK"
-
-
-# Mount the static directory
-app.mount(
-    "/static", StaticFiles(directory="language_model_gateway/static"), name="static"
-)
-
-
-@app.get("/favicon.png", include_in_schema=False)
-async def favicon() -> FileResponse:
-    # Get absolute path
-    file_path = Path("language_model_gateway/static/bwell-web.png")
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
-    return FileResponse(file_path)
