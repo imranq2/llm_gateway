@@ -8,6 +8,7 @@ from typing import (
     Union,
     Literal,
     cast,
+    Optional,
 )
 from typing import (
     Dict,
@@ -24,9 +25,10 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_core.messages import AIMessageChunk
+from langchain_core.messages.ai import UsageMetadata
 from langchain_core.runnables.schema import CustomStreamEvent, StandardStreamEvent
 from langchain_core.tools import BaseTool
-from langgraph.graph import END, START, StateGraph, MessagesState
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 from openai.types import CompletionUsage
@@ -41,6 +43,7 @@ from openai.types.chat.chat_completion import Choice
 from openai.types.chat.chat_completion_chunk import ChoiceDelta, Choice as ChunkChoice
 from starlette.responses import StreamingResponse, JSONResponse
 
+from language_model_gateway.gateway.converters.my_messages_state import MyMessagesState
 from language_model_gateway.gateway.schema.openai.completions import (
     ChatRequest,
     ROLE_TYPES,
@@ -48,6 +51,7 @@ from language_model_gateway.gateway.schema.openai.completions import (
 )
 from language_model_gateway.gateway.utilities.chat_message_helpers import (
     langchain_to_chat_message,
+    convert_message_content_to_string,
 )
 
 logger = logging.getLogger(__file__)
@@ -95,26 +99,12 @@ class LangGraphToOpenAIConverter:
                     chunk: AIMessageChunk = event["data"]["chunk"]
                     content: str | list[str | dict[str, Any]] = chunk.content
 
-                    content_text: str
-                    if isinstance(content, list):
-                        content_text_or_dict: str | dict[str, Any] = (
-                            content[0] if len(content) > 0 else ""
-                        )
-                        if isinstance(content_text_or_dict, dict):
-                            content_text = (
-                                cast(str, content_text_or_dict.get("text"))
-                                if content_text_or_dict.get("text")
-                                else ""
-                            )
-                            assert isinstance(
-                                content_text, str
-                            ), f"content_text: {content_text} (type: {type(content_text)})"
-                        else:
-                            assert isinstance(content_text_or_dict, str)
-                            content_text = content_text_or_dict
-                    else:
-                        assert isinstance(content, str)
-                        content_text = content
+                    usage_metadata: Optional[UsageMetadata] = chunk.usage_metadata
+                    total_usage_metadata = self.convert_usage_meta_data_to_openai(
+                        usages=[usage_metadata] if usage_metadata else []
+                    )
+
+                    content_text: str = convert_message_content_to_string(content)
 
                     assert isinstance(
                         content_text, str
@@ -133,9 +123,7 @@ class LangGraphToOpenAIConverter:
                                     ),
                                 )
                             ],
-                            usage=CompletionUsage(
-                                prompt_tokens=0, completion_tokens=0, total_tokens=0
-                            ),
+                            usage=total_usage_metadata,
                             object="chat.completion.chunk",
                         )
                         yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
@@ -183,16 +171,28 @@ class LangGraphToOpenAIConverter:
             )
         else:
             try:
-                response: List[AnyMessage] = await self.ainvoke(
+                responses: List[AnyMessage] = await self.ainvoke(
                     compiled_state_graph=compiled_state_graph,
                     request=request,
                     system_messages=system_messages,
                 )
+                # add usage metadata from each message into a total usage metadata
+                total_usage_metadata: CompletionUsage = (
+                    self.convert_usage_meta_data_to_openai(
+                        usages=[
+                            m.usage_metadata
+                            for m in responses
+                            if hasattr(m, "usage_metadata") and m.usage_metadata
+                        ]
+                    )
+                )
+
                 output_messages: List[ChatCompletionMessage] = [
                     langchain_to_chat_message(m)
-                    for m in response
+                    for m in responses
                     if isinstance(m, AIMessage) or isinstance(m, ToolMessage)
                 ]
+
                 choices: List[Choice] = [
                     Choice(index=i, message=m, finish_reason="stop")
                     for i, m in enumerate(output_messages)
@@ -201,9 +201,7 @@ class LangGraphToOpenAIConverter:
                     id=request_id,
                     model=request["model"],
                     choices=choices,
-                    usage=CompletionUsage(
-                        prompt_tokens=0, completion_tokens=0, total_tokens=0
-                    ),
+                    usage=total_usage_metadata,
                     created=int(time.time()),
                     object="chat.completion",
                 )
@@ -211,6 +209,20 @@ class LangGraphToOpenAIConverter:
             except Exception as e:
                 logger.error(f"An exception occurred: {e}")
                 raise HTTPException(status_code=500, detail="Unexpected error")
+
+    # noinspection PyMethodMayBeStatic
+    def convert_usage_meta_data_to_openai(
+        self, *, usages: List[UsageMetadata]
+    ) -> CompletionUsage:
+        total_usage_metadata: CompletionUsage = CompletionUsage(
+            prompt_tokens=0, completion_tokens=0, total_tokens=0
+        )
+        usage_metadata: UsageMetadata
+        for usage_metadata in usages:
+            total_usage_metadata.prompt_tokens += usage_metadata["input_tokens"]
+            total_usage_metadata.completion_tokens += usage_metadata["output_tokens"]
+            total_usage_metadata.total_tokens += usage_metadata["total_tokens"]
+        return total_usage_metadata
 
     async def get_streaming_response_async(
         self,
@@ -441,7 +453,7 @@ class LangGraphToOpenAIConverter:
         model_with_tools = llm.bind_tools(tools)
 
         def should_continue(
-            state: MessagesState,
+            state: MyMessagesState,
         ) -> Union[Literal["tools"], str]:
             messages: List[AnyMessage] = state["messages"]
             last_message: AnyMessage = messages[-1]
@@ -452,14 +464,17 @@ class LangGraphToOpenAIConverter:
                 return "tools"
             return END
 
-        async def call_model(state: MessagesState) -> MessagesState:
+        async def call_model(state: MyMessagesState) -> MyMessagesState:
             messages: List[AnyMessage] = state["messages"]
             base_message: BaseMessage = await model_with_tools.ainvoke(messages)
             # assert isinstance(base_message, AnyMessage)
             response: AnyMessage = cast(AnyMessage, base_message)
-            return {"messages": [response]}
+            usage_metadata: Optional[UsageMetadata] = (
+                response.usage_metadata if hasattr(response, "usage_metadata") else None
+            )
+            return MyMessagesState(messages=[response], usage_metadata=usage_metadata)
 
-        workflow = StateGraph(MessagesState)
+        workflow = StateGraph(MyMessagesState)
 
         # Define the two nodes we will cycle between
         workflow.add_node("agent", call_model)  # Now using async call_model
@@ -485,14 +500,17 @@ class LangGraphToOpenAIConverter:
         :return: compiled state graph
         """
 
-        async def call_model(state: MessagesState) -> MessagesState:
+        async def call_model(state: MyMessagesState) -> MyMessagesState:
             messages: List[AnyMessage] = state["messages"]
             base_message: BaseMessage = await llm.ainvoke(messages)
             # assert isinstance(base_message, AnyMessage)
             response: AnyMessage = cast(AnyMessage, base_message)
-            return {"messages": [response]}
+            usage_metadata: Optional[UsageMetadata] = (
+                response.usage_metadata if hasattr(response, "usage_metadata") else None
+            )
+            return MyMessagesState(messages=[response], usage_metadata=usage_metadata)
 
-        workflow = StateGraph(MessagesState)
+        workflow = StateGraph(MyMessagesState)
 
         # Define the two nodes we will cycle between
         workflow.add_node("agent", call_model)  # Now using async call_model
