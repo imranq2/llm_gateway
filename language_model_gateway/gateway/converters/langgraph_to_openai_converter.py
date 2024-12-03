@@ -410,6 +410,27 @@ class LangGraphToOpenAIConverter:
         """
         Create a graph for the language model asynchronously.
 
+        Args:
+            llm: The base chat model.
+            tools: The sequence of tools.
+
+        Returns:
+            The compiled state graph.
+        """
+        if len(tools) > 0:
+            return await self._create_graph_for_llm_with_tools_async(
+                llm=llm, tools=tools
+            )
+        else:
+            return await self._create_graph_for_llm_without_tools_async(llm=llm)
+
+    # noinspection PyMethodMayBeStatic
+    async def _create_graph_for_llm_with_tools_async(
+        self, *, llm: BaseChatModel, tools: Sequence[BaseTool]
+    ) -> CompiledStateGraph:
+        """
+        Create a graph for the language model asynchronously.
+
 
         :param llm: base chat model
         :param tools: list of tools
@@ -446,6 +467,36 @@ class LangGraphToOpenAIConverter:
         workflow.add_edge(START, "agent")
         workflow.add_conditional_edges("agent", should_continue, ["tools", END])
         workflow.add_edge("tools", "agent")
+        workflow.add_edge("agent", END)
+
+        compiled_state_graph: CompiledStateGraph = workflow.compile()
+        return compiled_state_graph
+
+    # noinspection PyMethodMayBeStatic
+    async def _create_graph_for_llm_without_tools_async(
+        self, *, llm: BaseChatModel
+    ) -> CompiledStateGraph:
+        """
+        Create a graph for the language model asynchronously.
+
+
+        :param llm: base chat model
+        :return: compiled state graph
+        """
+
+        async def call_model(state: MessagesState) -> MessagesState:
+            messages: List[AnyMessage] = state["messages"]
+            base_message: BaseMessage = await llm.ainvoke(messages)
+            # assert isinstance(base_message, AnyMessage)
+            response: AnyMessage = cast(AnyMessage, base_message)
+            return {"messages": [response]}
+
+        workflow = StateGraph(MessagesState)
+
+        # Define the two nodes we will cycle between
+        workflow.add_node("agent", call_model)  # Now using async call_model
+
+        workflow.add_edge(START, "agent")
         workflow.add_edge("agent", END)
 
         compiled_state_graph: CompiledStateGraph = workflow.compile()
