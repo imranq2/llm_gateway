@@ -76,7 +76,7 @@ def save_image(image_data: bytes, filename: str = "generated_image.png") -> None
 
 def test_chat_aws_image_model() -> None:
     data_dir: Path = Path(__file__).parent.joinpath("./")
-    temp_folder = data_dir.joinpath("./temp")
+    temp_folder = data_dir.joinpath("../temp")
     if path.isdir(temp_folder):
         rmtree(temp_folder)
     makedirs(temp_folder)

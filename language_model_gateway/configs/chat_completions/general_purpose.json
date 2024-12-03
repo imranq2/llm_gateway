@@ -54,6 +54,9 @@
     },
     {
       "name": "arxiv_search"
+    },
+    {
+      "name": "image_generator"
     }
   ]
 }

@@ -4,6 +4,7 @@ import logging
 import os
 from os import makedirs
 from pathlib import Path
+from typing import Tuple, Literal
 from uuid import uuid4
 
 import boto3
@@ -12,7 +13,7 @@ from langchain.tools import BaseTool
 logger = logging.getLogger(__name__)
 
 
-class ImageGeneratorTool(BaseTool):
+class ImageGeneratorEmbeddedTool(BaseTool):
     """
     LangChain-compatible tool for generating an image from a given text.
     """
@@ -21,10 +22,11 @@ class ImageGeneratorTool(BaseTool):
     description: str = (
         "Generates an image from a given text. "
         "Provide the text as input. "
-        # "The tool will return the image as a base64 encoded string in PNG format: `data:image/png;base64,{base64_image}`."
-        "The tool will return a url to the generated image."
+        "The tool will return the image as a base64 encoded string in PNG format: `data:image/png;base64,{base64_image}`."
+        # "The tool will return a url to the generated image."
     )
     return_direct: bool = True
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
     # noinspection PyMethodMayBeStatic
     def create_bedrock_client(self) -> boto3.client:
@@ -98,7 +100,7 @@ class ImageGeneratorTool(BaseTool):
         else:
             print("No image to save")
 
-    def _run(self, prompt: str) -> str:
+    def _run(self, prompt: str) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
         :param prompt: The URL of the webpage to fetch.
@@ -106,7 +108,7 @@ class ImageGeneratorTool(BaseTool):
         """
         raise NotImplementedError("Use async version of this tool")
 
-    async def _arun(self, prompt: str) -> str:
+    async def _arun(self, prompt: str) -> Tuple[str, str]:
         """
         Asynchronous version of the tool.
         :param prompt: The URL of the webpage to fetch.
@@ -118,17 +120,17 @@ class ImageGeneratorTool(BaseTool):
             image_data: bytes = self.generate_image(
                 prompt=prompt, style=style, image_size="1024x1024"
             )
-            # base64_image: str = base64.b64encode(image_data).decode("utf-8")
             image_generation_path = Path(os.environ["IMAGE_GENERATION_PATH"])
             makedirs(image_generation_path, exist_ok=True)
             # image_file_name = f"{prompt.replace(' ', '_')}_{style}.png"
             # create a random image file name
             image_file_name = f"{uuid4()}.png"
             self.save_image(image_data, image_generation_path.joinpath(image_file_name))
-            # url = f"data:image/png;base64,{base64_image}"
+            base64_image: str = base64.b64encode(image_data).decode("utf-8")
+            embedded_url = f"data:image/png;base64,{base64_image}"
             image_generation_url = os.environ["IMAGE_GENERATION_URL"]
             url = f"{image_generation_url}/{image_file_name}"
-            return url
+            return f"here's the image url: {url} ", embedded_url
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             raise ValueError(f"Failed to generate image: {str(e)}")
