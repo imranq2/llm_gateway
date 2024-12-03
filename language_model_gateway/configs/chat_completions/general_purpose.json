@@ -51,6 +51,9 @@
     },
     {
       "name": "web_search"
+    },
+    {
+      "name": "arxiv_search"
     }
   ]
 }

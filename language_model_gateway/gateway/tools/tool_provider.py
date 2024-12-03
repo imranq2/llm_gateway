@@ -1,7 +1,12 @@
 from os import environ
 from typing import Dict
 
-from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.tools import (
+    DuckDuckGoSearchRun,
+    RequestsGetTool,
+    ArxivQueryRun,
+)
+from langchain_community.utilities.requests import GenericRequestsWrapper
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolConfig
@@ -35,6 +40,19 @@ class ToolProvider:
             "google_search": GoogleSearchTool(),
             "duckduckgo_search": DuckDuckGoSearchRun(),
             "python_repl": PythonReplTool(),
+            "get_web_page": RequestsGetTool(
+                requests_wrapper=GenericRequestsWrapper(), allow_dangerous_requests=True
+            ),
+            "arxiv_search": ArxivQueryRun(),
+            # "sql_query": QuerySQLDataBaseTool(
+            #     db=SQLDatabase(
+            #         engine=Engine(
+            #             url=environ.get("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:"),
+            #             pool=Pool(),
+            #             dialect=Dialect()
+            #         )
+            #     )
+            # ),
         }
 
     def get_tool_by_name(self, *, tool: ToolConfig) -> BaseTool:
