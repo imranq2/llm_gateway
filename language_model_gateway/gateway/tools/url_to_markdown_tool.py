@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 from bs4 import BeautifulSoup
 from langchain.tools import BaseTool
 
@@ -8,23 +8,33 @@ class URLToMarkdownTool(BaseTool):
     LangChain-compatible tool for downloading the content of a URL and converting it to Markdown.
     """
 
-    name = "url_to_markdown"
-    description = (
+    name: str = "url_to_markdown"
+    description: str = (
         "Fetches the content of a webpage from a given URL and converts it to Markdown format. "
         "Provide the URL as input. The tool will return the main content of the page formatted as Markdown."
     )
 
     def _run(self, url: str) -> str:
         """
-        Run the tool to fetch and convert a webpage to Markdown.
+        Synchronous version of the tool (falls back to async implementation).
+        :param url: The URL of the webpage to fetch.
+        :return: The content of the webpage in Markdown format.
+        """
+        raise NotImplementedError("Use async version of this tool")
+
+    async def _arun(self, url: str) -> str:
+        """
+        Asynchronous version of the tool.
         :param url: The URL of the webpage to fetch.
         :return: The content of the webpage in Markdown format.
         """
         try:
-            # Fetch the webpage content
-            response = requests.get(url)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    response.raise_for_status()
+                    html_content = await response.text()
+
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Extract the main content (e.g., headings and paragraphs)
             markdown_content = ""
@@ -46,12 +56,3 @@ class URLToMarkdownTool(BaseTool):
             return markdown_content.strip()
         except Exception as e:
             raise ValueError(f"Failed to fetch or process the URL: {str(e)}")
-
-    async def _arun(self, url: str) -> str:
-        """
-        Asynchronous version of the tool.
-        :param url: The URL of the webpage to fetch.
-        :return: The content of the webpage in Markdown format.
-        """
-        # For simplicity, call the synchronous version
-        return self._run(url)

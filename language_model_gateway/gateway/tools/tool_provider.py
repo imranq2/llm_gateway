@@ -3,10 +3,8 @@ from typing import Dict
 
 from langchain_community.tools import (
     DuckDuckGoSearchRun,
-    RequestsGetTool,
     ArxivQueryRun,
 )
-from langchain_community.utilities.requests import GenericRequestsWrapper
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolConfig
@@ -15,6 +13,7 @@ from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
+from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
 
 
 class ToolProvider:
@@ -40,9 +39,7 @@ class ToolProvider:
             "google_search": GoogleSearchTool(),
             "duckduckgo_search": DuckDuckGoSearchRun(),
             "python_repl": PythonReplTool(),
-            "get_web_page": RequestsGetTool(
-                requests_wrapper=GenericRequestsWrapper(), allow_dangerous_requests=True
-            ),
+            "get_web_page": URLToMarkdownTool(),
             "arxiv_search": ArxivQueryRun(),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
