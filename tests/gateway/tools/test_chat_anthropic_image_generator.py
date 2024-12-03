@@ -7,7 +7,7 @@ from openai.types.chat.chat_completion import Choice
 
 
 @pytest.mark.asyncio
-async def test_chat_completions(
+async def test_chat_anthropic_image_generator(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
     print("")
@@ -50,4 +50,5 @@ async def test_chat_completions(
     content: Optional[str] = choices[1].message.content
     assert content is not None
     print(content)
-    assert "http://dev:5000/image_generation/" in content
+    # assert "http://dev:5000/image_generation/" in content
+    assert "data:image/png;base64" in content

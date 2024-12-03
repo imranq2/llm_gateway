@@ -133,7 +133,7 @@ class ImageGeneratorEmbeddedTool(BaseTool):
             self.save_image(image_data, image_generation_path.joinpath(image_file_name))
             image_generation_url = os.environ["IMAGE_GENERATION_URL"]
             url = f"{image_generation_url}/{image_file_name}"
-            return f"{url} ", markdown_image
+            return f"{url}", markdown_image
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             raise ValueError(f"Failed to generate image: {str(e)}")
