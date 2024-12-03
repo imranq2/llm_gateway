@@ -5,6 +5,7 @@ from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
     ToolMessage,
+    SystemMessage,
 )
 from langchain_core.messages import (
     ChatMessage as LangchainChatMessage,
@@ -28,6 +29,10 @@ def convert_message_content_to_string(content: str | list[str | Dict[str, Any]])
 def langchain_to_chat_message(message: BaseMessage) -> ChatCompletionMessage:
     """Create a ChatMessage from a LangChain message."""
     match message:
+        case SystemMessage():
+            assert (
+                False
+            ), "System messages should not be converted to ChatCompletionMessage"
         case HumanMessage():
             assert (
                 False
@@ -43,9 +48,11 @@ def langchain_to_chat_message(message: BaseMessage) -> ChatCompletionMessage:
             #     ai_message.response_metadata = message.response_metadata
             return ai_message
         case ToolMessage():
-            assert (
-                False
-            ), "Tool messages should not be converted to ChatCompletionMessage"
+            ai_message = ChatCompletionMessage(
+                role="assistant",
+                content=convert_message_content_to_string(message.content),
+            )
+            return ai_message
         case LangchainChatMessage():
             assert (
                 False

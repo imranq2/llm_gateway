@@ -21,6 +21,7 @@ from langchain_core.messages import (
     AIMessage,
     AnyMessage,
     BaseMessage,
+    ToolMessage,
 )
 from langchain_core.messages import AIMessageChunk
 from langchain_core.runnables.schema import CustomStreamEvent, StandardStreamEvent
@@ -73,13 +74,6 @@ class LangGraphToOpenAIConverter:
         Yields:
             The streaming response as a string.
         """
-        user_message: str = cast(str, messages[-1]["content"])
-
-        logger.info(
-            f"Streaming response from generator {request_id} from agent."
-            f" Question: {user_message}"
-        )
-
         # Process streamed events from the graph and yield messages over the SSE stream.
         event: StandardStreamEvent | CustomStreamEvent
         async for event in self.astream_events(
@@ -194,11 +188,19 @@ class LangGraphToOpenAIConverter:
                     request=request,
                     system_messages=system_messages,
                 )
-                output: ChatCompletionMessage = langchain_to_chat_message(response[-1])
+                output_messages: List[ChatCompletionMessage] = [
+                    langchain_to_chat_message(m)
+                    for m in response
+                    if isinstance(m, AIMessage) or isinstance(m, ToolMessage)
+                ]
+                choices: List[Choice] = [
+                    Choice(index=i, message=m, finish_reason="stop")
+                    for i, m in enumerate(output_messages)
+                ]
                 chat_response: ChatCompletion = ChatCompletion(
                     id=request_id,
                     model=request["model"],
-                    choices=[Choice(index=0, message=output, finish_reason="stop")],
+                    choices=choices,
                     usage=CompletionUsage(
                         prompt_tokens=0, completion_tokens=0, total_tokens=0
                     ),
@@ -269,8 +271,7 @@ class LangGraphToOpenAIConverter:
         }
         output: Dict[str, Any] = await compiled_state_graph.ainvoke(input=input1)
         out_messages: List[AnyMessage] = output["messages"]
-        last_message: AnyMessage = out_messages[-1]  # Get last message
-        return [last_message]
+        return out_messages
 
     # noinspection PyMethodMayBeStatic
     async def _stream_graph_with_messages_async(

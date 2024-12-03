@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Optional, List
 
 import httpx
 import pytest
 from openai import OpenAI
+from openai.types.chat.chat_completion import Choice
 
 
 @pytest.mark.asyncio
@@ -45,7 +46,8 @@ async def test_chat_completions(
     )
 
     # print the top "choice"
-    content: Optional[str] = chat_completion.choices[0].message.content
+    choices: List[Choice] = chat_completion.choices
+    content: Optional[str] = choices[1].message.content
     assert content is not None
     print(content)
-    assert "Barack" in content
+    assert "image url" in content
