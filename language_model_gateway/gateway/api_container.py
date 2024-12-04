@@ -8,6 +8,9 @@ from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
+from language_model_gateway.gateway.managers.image_generation_manager import (
+    ImageGenerationManager,
+)
 from language_model_gateway.gateway.managers.model_manager import ModelManager
 from language_model_gateway.gateway.utilities.cached import cached
 
@@ -34,3 +37,11 @@ def get_model_manager(
     """helper function to get the model manager"""
     assert isinstance(container, SimpleContainer), type(container)
     return container.resolve(ModelManager)
+
+
+def get_image_generation_manager(
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
+) -> ImageGenerationManager:
+    """helper function to get the model manager"""
+    assert isinstance(container, SimpleContainer), type(container)
+    return container.resolve(ImageGenerationManager)

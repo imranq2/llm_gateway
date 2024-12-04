@@ -6,8 +6,14 @@ from language_model_gateway.gateway.http.http_client_factory import HttpClientFa
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
+from language_model_gateway.gateway.managers.image_generation_manager import (
+    ImageGenerationManager,
+)
 from language_model_gateway.gateway.managers.model_manager import ModelManager
 from language_model_gateway.gateway.models.model_factory import ModelFactory
+from language_model_gateway.gateway.providers.aws_image_generation_provider import (
+    AwsImageGenerationProvider,
+)
 from language_model_gateway.gateway.providers.langchain_chat_completions_provider import (
     LangChainCompletionsProvider,
 )
@@ -51,5 +57,16 @@ class ContainerFactory:
                 langchain_provider=c.resolve(LangChainCompletionsProvider),
             ),
         )
+
+        container.register(
+            AwsImageGenerationProvider, lambda c: AwsImageGenerationProvider()
+        )
+        container.register(
+            ImageGenerationManager,
+            lambda c: ImageGenerationManager(
+                image_generation_provider=c.resolve(AwsImageGenerationProvider)
+            ),
+        )
+
         container.register(ModelManager, lambda c: ModelManager())
         return container

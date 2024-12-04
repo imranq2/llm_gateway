@@ -11,6 +11,9 @@ from starlette.staticfiles import StaticFiles
 from language_model_gateway.gateway.routers.chat_completion_router import (
     ChatCompletionsRouter,
 )
+from language_model_gateway.gateway.routers.image_generation_router import (
+    ImageGenerationRouter,
+)
 from language_model_gateway.gateway.routers.models_router import ModelsRouter
 
 # warnings.filterwarnings("ignore", category=LangChainBetaWarning)
@@ -52,6 +55,7 @@ def create_app() -> FastAPI:
     app1: FastAPI = FastAPI(title="OpenAI-compatible API", lifespan=lifespan)
     app1.include_router(ChatCompletionsRouter().get_router())
     app1.include_router(ModelsRouter().get_router())
+    app1.include_router(ImageGenerationRouter().get_router())
     return app1
 
 
