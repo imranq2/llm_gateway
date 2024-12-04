@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class AwsImageGenerator:
     # noinspection PyMethodMayBeStatic
-    def create_bedrock_client(self) -> boto3.client:
+    def _create_bedrock_client(self) -> boto3.client:
         """Create and return a Bedrock client"""
         session1 = boto3.Session(profile_name=os.environ.get("AWS_CREDENTIALS_PROFILE"))
         bedrock_client = session1.client(
@@ -31,7 +31,7 @@ class AwsImageGenerator:
         logger.info(f"Generating image for prompt: {prompt}")
 
         # Create Bedrock client
-        client = self.create_bedrock_client()
+        client = self._create_bedrock_client()
 
         # Prepare the request parameters
         request_body = {

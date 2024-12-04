@@ -1,6 +1,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from os import makedirs, environ
 from pathlib import Path
 from typing import AsyncGenerator
 
@@ -76,9 +77,18 @@ app.mount(
     ),
     name="static",
 )
+
+image_generation_path: str = environ["IMAGE_GENERATION_PATH"]
+
+assert (
+    image_generation_path is not None
+), "IMAGE_GENERATION_PATH environment variable must be set"
+
+makedirs(image_generation_path, exist_ok=True)
+
 app.mount(
     "/image_generation",
-    StaticFiles(directory="/usr/src/language_model_gateway/image_generation"),
+    StaticFiles(directory=image_generation_path),
     name="static",
 )
 
