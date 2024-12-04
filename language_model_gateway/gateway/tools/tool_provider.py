@@ -8,6 +8,9 @@ from langchain_community.tools import (
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolConfig
+from language_model_gateway.gateway.image_generation.image_generator_factory import (
+    ImageGeneratorFactory,
+)
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
@@ -23,7 +26,7 @@ from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkd
 
 
 class ToolProvider:
-    def __init__(self) -> None:
+    def __init__(self, *, image_generator_factory: ImageGeneratorFactory) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
             "DEFAULT_WEB_SEARCH_TOOL", "duckduckgo"
@@ -47,7 +50,9 @@ class ToolProvider:
             "python_repl": PythonReplTool(),
             "get_web_page": URLToMarkdownTool(),
             "arxiv_search": ArxivQueryRun(),
-            "image_generator": ImageGeneratorEmbeddedTool(),
+            "image_generator": ImageGeneratorEmbeddedTool(
+                image_generator_factory=image_generator_factory
+            ),
             "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(

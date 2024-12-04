@@ -6,10 +6,14 @@ from pathlib import Path
 
 import boto3
 
+from language_model_gateway.gateway.image_generation.image_generator import (
+    ImageGenerator,
+)
+
 logger = logging.getLogger(__name__)
 
 
-class AwsImageGenerator:
+class AwsImageGenerator(ImageGenerator):
     # noinspection PyMethodMayBeStatic
     def _create_bedrock_client(self) -> boto3.client:
         """Create and return a Bedrock client"""

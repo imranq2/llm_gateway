@@ -1,12 +1,11 @@
 # Copied from openai/resources/images.py
-from typing import TypedDict, Union, Optional, Literal, TypeAlias
+from typing import TypedDict, Union, Optional, Literal
 from openai import NotGiven
 
 # noinspection PyProtectedMember
 from openai._types import Headers, Query, Body
 import httpx
-
-ImageModel: TypeAlias = Literal["dall-e-2", "dall-e-3"]
+from openai.types import ImageModel
 
 
 class ImageGenerationRequest(TypedDict, total=False):

@@ -3,6 +3,9 @@ from language_model_gateway.gateway.converters.langgraph_to_openai_converter imp
     LangGraphToOpenAIConverter,
 )
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
+from language_model_gateway.gateway.image_generation.image_generator_factory import (
+    ImageGeneratorFactory,
+)
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
@@ -11,9 +14,10 @@ from language_model_gateway.gateway.managers.image_generation_manager import (
 )
 from language_model_gateway.gateway.managers.model_manager import ModelManager
 from language_model_gateway.gateway.models.model_factory import ModelFactory
-from language_model_gateway.gateway.providers.aws_image_generation_provider import (
-    AwsImageGenerationProvider,
+from language_model_gateway.gateway.providers.image_generation_provider import (
+    ImageGenerationProvider,
 )
+
 from language_model_gateway.gateway.providers.langchain_chat_completions_provider import (
     LangChainCompletionsProvider,
 )
@@ -38,10 +42,18 @@ class ContainerFactory:
             ),
         )
         container.register(ModelFactory, lambda c: ModelFactory())
+
+        container.register(ImageGeneratorFactory, lambda c: ImageGeneratorFactory())
+
         container.register(
             LangGraphToOpenAIConverter, lambda c: LangGraphToOpenAIConverter()
         )
-        container.register(ToolProvider, lambda c: ToolProvider())
+        container.register(
+            ToolProvider,
+            lambda c: ToolProvider(
+                image_generator_factory=c.resolve(ImageGeneratorFactory)
+            ),
+        )
         container.register(
             LangChainCompletionsProvider,
             lambda c: LangChainCompletionsProvider(
@@ -59,12 +71,15 @@ class ContainerFactory:
         )
 
         container.register(
-            AwsImageGenerationProvider, lambda c: AwsImageGenerationProvider()
+            ImageGenerationProvider,
+            lambda c: ImageGenerationProvider(
+                image_generator_factory=c.resolve(ImageGeneratorFactory)
+            ),
         )
         container.register(
             ImageGenerationManager,
             lambda c: ImageGenerationManager(
-                image_generation_provider=c.resolve(AwsImageGenerationProvider)
+                image_generation_provider=c.resolve(ImageGenerationProvider)
             ),
         )
 

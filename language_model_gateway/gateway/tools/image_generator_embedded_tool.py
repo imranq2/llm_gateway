@@ -4,8 +4,11 @@ from typing import Tuple, Literal
 
 from langchain.tools import BaseTool
 
-from language_model_gateway.gateway.utilities.aws_image_generator import (
-    AwsImageGenerator,
+from language_model_gateway.gateway.image_generation.image_generator import (
+    ImageGenerator,
+)
+from language_model_gateway.gateway.image_generation.image_generator_factory import (
+    ImageGeneratorFactory,
 )
 from language_model_gateway.gateway.utilities.image_generation_helper import (
     ImageGenerationHelper,
@@ -29,6 +32,8 @@ class ImageGeneratorEmbeddedTool(BaseTool):
     return_direct: bool = True
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
+    image_generator_factory: ImageGeneratorFactory
+
     def _run(self, prompt: str) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -44,10 +49,13 @@ class ImageGeneratorEmbeddedTool(BaseTool):
         :return: The content of the webpage in Markdown format.
         """
         try:
-            aws_image_generator: AwsImageGenerator = AwsImageGenerator()
+            image_generator: ImageGenerator = (
+                self.image_generator_factory.get_image_generator(model_name="aws")
+            )
+
             # styles = ["natural", "cinematic", "digital-art", "pop-art"]
             style = "natural"
-            image_data: bytes = aws_image_generator.generate_image(
+            image_data: bytes = image_generator.generate_image(
                 prompt=prompt, style=style, image_size="1024x1024"
             )
             base64_image: str = base64.b64encode(image_data).decode("utf-8")
@@ -55,7 +63,7 @@ class ImageGeneratorEmbeddedTool(BaseTool):
             markdown_image = f"![Generated Image]({embedded_url})"
 
             image_file_path = ImageGenerationHelper.get_full_path()
-            aws_image_generator.save_image(image_data, image_file_path)
+            image_generator.save_image(image_data, image_file_path)
             url = ImageGenerationHelper.get_url_for_file_name(image_file_path)
             return f"{url}", markdown_image
         except Exception as e:

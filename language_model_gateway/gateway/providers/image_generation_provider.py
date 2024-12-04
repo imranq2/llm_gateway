@@ -1,20 +1,23 @@
 import base64
 import logging
 import time
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Union
 
 from openai import NotGiven
-from openai.types import ImagesResponse, Image
+from openai.types import ImagesResponse, Image, ImageModel
 from starlette.responses import StreamingResponse, JSONResponse
 
+from language_model_gateway.gateway.image_generation.image_generator import (
+    ImageGenerator,
+)
+from language_model_gateway.gateway.image_generation.image_generator_factory import (
+    ImageGeneratorFactory,
+)
 from language_model_gateway.gateway.providers.base_image_generation_provider import (
     BaseImageGenerationProvider,
 )
 from language_model_gateway.gateway.schema.openai.image_generation import (
     ImageGenerationRequest,
-)
-from language_model_gateway.gateway.utilities.aws_image_generator import (
-    AwsImageGenerator,
 )
 from language_model_gateway.gateway.utilities.image_generation_helper import (
     ImageGenerationHelper,
@@ -23,7 +26,12 @@ from language_model_gateway.gateway.utilities.image_generation_helper import (
 logger = logging.getLogger(__name__)
 
 
-class AwsImageGenerationProvider(BaseImageGenerationProvider):
+class ImageGenerationProvider(BaseImageGenerationProvider):
+    def __init__(self, *, image_generator_factory: ImageGeneratorFactory) -> None:
+        self.image_generator_factory: ImageGeneratorFactory = image_generator_factory
+        assert self.image_generator_factory is not None
+        assert isinstance(self.image_generator_factory, ImageGeneratorFactory)
+
     async def generate_image_async(
         self,
         *,
@@ -44,13 +52,21 @@ class AwsImageGenerationProvider(BaseImageGenerationProvider):
 
         logger.info(f"image_generation_request: {image_generation_request}")
 
-        aws_image_generator: AwsImageGenerator = AwsImageGenerator()
+        model: Union[str, ImageModel, None] | NotGiven = image_generation_request.get(
+            "model"
+        )
+
+        image_generator: ImageGenerator = (
+            self.image_generator_factory.get_image_generator(
+                model_name=str(model) if model else "aws"
+            )
+        )
 
         prompt = image_generation_request["prompt"]
         assert prompt is not None
         assert isinstance(prompt, str)
 
-        image_bytes: bytes = aws_image_generator.generate_image(prompt=prompt)
+        image_bytes: bytes = image_generator.generate_image(prompt=prompt)
 
         response_data: List[Image]
         if response_format == "b64_json":
@@ -61,7 +77,7 @@ class AwsImageGenerationProvider(BaseImageGenerationProvider):
             response_data = [Image(b64_json=image_b64_json)]
         else:
             image_full_path = ImageGenerationHelper.get_full_path()
-            aws_image_generator.save_image(image_bytes, image_full_path)
+            image_generator.save_image(image_bytes, image_full_path)
             url = ImageGenerationHelper.get_url_for_file_name(image_full_path)
             response_data = [Image(url=url)]
 
