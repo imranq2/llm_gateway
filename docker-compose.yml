@@ -15,7 +15,7 @@ services:
       DEFAULT_WEB_SEARCH_TOOL: "duckduckgo_search"
       RUN_TESTS_WITH_REAL_LLM: 0
       IMAGE_GENERATION_PATH: "/usr/src/language_model_gateway/image_generation"
-      IMAGE_GENERATION_URL: "http://dev:5000/image_generation"
+      IMAGE_GENERATION_URL: "http://localhost:5050/image_generation"
 #      DEFAULT_WEB_SEARCH_TOOL: "google_search"
     env_file: docker.env
     ports:
