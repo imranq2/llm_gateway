@@ -31,7 +31,7 @@ async def test_chat_anthropic_image_generator(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "His first name is Barack"
+                    fn_get_response=lambda messages: "http://dev:5000/image_generation/"
                 )
             ),
         )
@@ -64,7 +64,10 @@ async def test_chat_anthropic_image_generator(
 
     # print the top "choice"
     choices: List[Choice] = chat_completion.choices
-    content: Optional[str] = choices[1].message.content
+    print(choices)
+    content: Optional[str] = ",".join(
+        [choice.message.content or "" for choice in choices]
+    )
     assert content is not None
     print(content)
     assert "http://dev:5000/image_generation/" in content
@@ -76,16 +79,20 @@ async def test_chat_anthropic_image_generator_streaming(
 ) -> None:
     print("")
 
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container: SimpleContainer = await get_container_async()
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "Barack"
-    #             )
-    #         ),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container: SimpleContainer = await get_container_async()
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "http://dev:5000/image_generation/"
+                )
+            ),
+        )
+        test_container.register(
+            ImageGeneratorFactory,
+            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+        )
 
     # Test health endpoint
     # response = await async_client.get("/health")
