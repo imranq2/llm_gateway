@@ -16,7 +16,9 @@ from language_model_gateway.gateway.schema.openai.image_generation import (
 from language_model_gateway.gateway.utilities.aws_image_generator import (
     AwsImageGenerator,
 )
-
+from language_model_gateway.gateway.utilities.image_generation_helper import (
+    ImageGenerationHelper,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,9 @@ class AwsImageGenerationProvider(BaseImageGenerationProvider):
             # logger.info(f"image_b64_json: {image_b64_json}")
             response_data = [Image(b64_json=image_b64_json)]
         else:
-            url = aws_image_generator.get_url(image_bytes=image_bytes)
+            image_full_path = ImageGenerationHelper.get_full_path()
+            aws_image_generator.save_image(image_bytes, image_full_path)
+            url = ImageGenerationHelper.get_url_for_file_name(image_full_path)
             response_data = [Image(url=url)]
 
         response: ImagesResponse = ImagesResponse(

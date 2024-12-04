@@ -12,6 +12,9 @@ from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTo
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
+from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
+    GraphVizDiagramGeneratorTool,
+)
 from language_model_gateway.gateway.tools.image_generator_embedded_tool import (
     ImageGeneratorEmbeddedTool,
 )
@@ -45,6 +48,7 @@ class ToolProvider:
             "get_web_page": URLToMarkdownTool(),
             "arxiv_search": ArxivQueryRun(),
             "image_generator": ImageGeneratorEmbeddedTool(),
+            "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(

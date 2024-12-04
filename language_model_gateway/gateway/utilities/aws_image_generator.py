@@ -2,9 +2,7 @@ import base64
 import json
 import logging
 import os
-from os import makedirs
 from pathlib import Path
-from uuid import uuid4
 
 import boto3
 
@@ -83,14 +81,3 @@ class AwsImageGenerator:
             print(f"Image saved as {filename}")
         else:
             print("No image to save")
-
-    def get_url(self, *, image_bytes: bytes) -> str:
-        """Return the URL of the generated image"""
-        image_generation_path = Path(os.environ["IMAGE_GENERATION_PATH"])
-        makedirs(image_generation_path, exist_ok=True)
-        image_file_name = f"{uuid4()}.png"
-        self.save_image(image_bytes, image_generation_path.joinpath(image_file_name))
-        # url = f"data:image/png;base64,{base64_image}"
-        image_generation_url = os.environ["IMAGE_GENERATION_URL"]
-        url = f"{image_generation_url}/{image_file_name}"
-        return url

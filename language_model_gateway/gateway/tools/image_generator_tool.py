@@ -5,6 +5,9 @@ from langchain.tools import BaseTool
 from language_model_gateway.gateway.utilities.aws_image_generator import (
     AwsImageGenerator,
 )
+from language_model_gateway.gateway.utilities.image_generation_helper import (
+    ImageGenerationHelper,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +48,9 @@ class ImageGeneratorTool(BaseTool):
                 prompt=prompt, style=style, image_size="1024x1024"
             )
             # base64_image: str = base64.b64encode(image_data).decode("utf-8")
-
-            url = aws_image_generator.get_url(image_bytes=image_data)
+            image_file_path = ImageGenerationHelper.get_full_path()
+            aws_image_generator.save_image(image_data, image_file_path)
+            url = ImageGenerationHelper.get_url_for_file_name(image_file_path)
             return url
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
