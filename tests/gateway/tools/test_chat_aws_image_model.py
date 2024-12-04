@@ -6,6 +6,7 @@ from pathlib import Path
 from shutil import rmtree
 
 import boto3
+import pytest
 
 
 def create_bedrock_client() -> boto3.client:
@@ -74,6 +75,7 @@ def save_image(image_data: bytes, filename: str = "generated_image.png") -> None
         print("No image to save")
 
 
+@pytest.mark.skip(reason="This test requires AWS credentials")
 def test_chat_aws_image_model() -> None:
     data_dir: Path = Path(__file__).parent.joinpath("./")
     temp_folder = data_dir.joinpath("../temp")
