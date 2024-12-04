@@ -21,7 +21,8 @@ build: ## Builds the docker for dev
 up: ## starts docker containers
 	docker compose up --build -d && \
 	echo "waiting for language_model_gateway service to become healthy" && \
-	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "healthy" ]; do printf "." && sleep 2; done && \
+	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "healthy" ] && [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "unhealthy" ] && [ "`docker inspect --format {{.State.Status}} language_model_gateway`" != "restarting" ]; do printf "." && sleep 2; done && \
+	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "healthy" ]; then docker ps && docker logs language_model_gateway && printf "========== ERROR: language_model_gateway did not start. Run docker logs language_model_gateway =========\n" && exit 1; fi && \
 	echo ""
 	@echo language_model_gateway Service: http://localhost:5050/graphql
 
@@ -30,6 +31,8 @@ up-open-webui: ## starts docker containers
 	docker compose -f docker-compose-openwebui.yml up -d
 	echo "waiting for language_model_gateway service to become healthy" && \
 	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; do printf "." && sleep 2; done && \
+	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ] && [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "unhealthy" ] && [ "`docker inspect --format {{.State.Status}} language_model_gateway-open-webui-1`" != "restarting" ]; do printf "." && sleep 2; done && \
+	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; then docker ps && docker logs language_model_gateway-open-webui-1 && printf "========== ERROR: language_model_gateway-open-webui-1 did not start. Run docker logs language_model_gateway-open-webui-1 =========\n" && exit 1; fi && \
 	echo ""
 	@echo OpenWebUI: http://localhost:3050
 
