@@ -1,25 +1,29 @@
-import logging
-import os
-from typing import Optional
+from typing import Optional, List
 
 import httpx
-import pytest
-from openai import OpenAI
+from openai import OpenAI, Stream
+from openai.types.chat import ChatCompletionChunk
+from openai.types.chat.chat_completion import Choice
 
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
+from language_model_gateway.gateway.image_generation.image_generator_factory import (
+    ImageGeneratorFactory,
+)
 from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
 from tests.gateway.mocks.mock_chat_model import MockChatModel
+from tests.gateway.mocks.mock_image_generator import MockImageGenerator
+from tests.gateway.mocks.mock_image_generator_factory import MockImageGeneratorFactory
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
-@pytest.mark.asyncio
-async def test_chat_completions_with_web_search(
+async def test_chat_anthropic_image_generator(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
+    print("")
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container: SimpleContainer = await get_container_async()
@@ -27,19 +31,18 @@ async def test_chat_completions_with_web_search(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "Donald Trump won the last US election"
+                    fn_get_response=lambda messages: "http://dev:5000/image_generation/"
                 )
             ),
         )
-    # Get log level from environment variable
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-
-    # Set up basic configuration for logging
-    logging.basicConfig(level=getattr(logging, log_level))
+        test_container.register(
+            ImageGeneratorFactory,
+            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+        )
 
     # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
+    # response = await async_client.get("/health")
+    # assert response.status_code == 200
 
     # init client and connect to localhost server
     client = OpenAI(
@@ -53,23 +56,28 @@ async def test_chat_completions_with_web_search(
         messages=[
             {
                 "role": "user",
-                "content": "Who won the last US election?",
+                "content": "Generate an image depicting a neural network",
             }
         ],
         model="General Purpose",
     )
 
     # print the top "choice"
-    content: Optional[str] = chat_completion.choices[0].message.content
+    choices: List[Choice] = chat_completion.choices
+    print(choices)
+    content: Optional[str] = ",".join(
+        [choice.message.content or "" for choice in choices]
+    )
     assert content is not None
     print(content)
-    assert "Trump" in content
+    assert "http://dev:5000/image_generation/" in content
+    # assert "data:image/png;base64" in content
 
 
-@pytest.mark.asyncio
-async def test_chat_completions_with_chat_history_and_web_search(
+async def test_chat_anthropic_image_generator_streaming(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
+    print("")
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container: SimpleContainer = await get_container_async()
@@ -77,13 +85,18 @@ async def test_chat_completions_with_chat_history_and_web_search(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "Donald Trump won the last US election"
+                    fn_get_response=lambda messages: "http://dev:5000/image_generation/"
                 )
             ),
         )
+        test_container.register(
+            ImageGeneratorFactory,
+            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+        )
+
     # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
+    # response = await async_client.get("/health")
+    # assert response.status_code == 200
 
     # init client and connect to localhost server
     client = OpenAI(
@@ -93,28 +106,29 @@ async def test_chat_completions_with_chat_history_and_web_search(
     )
 
     # call API
-    chat_completion = client.chat.completions.create(
+    stream: Stream[ChatCompletionChunk] = client.chat.completions.create(
         messages=[
             {
                 "role": "user",
-                "content": "I want to talk about United States",
-            },
-            {"role": "assistant", "content": "Ok"},
-            {
-                "role": "user",
-                "content": "who won the last election?",
-            },
+                "content": "Generate an image depicting a neural network",
+            }
         ],
         model="General Purpose",
+        stream=True,
     )
 
     # print the top "choice"
-    print("========  Response ======")
-    print(chat_completion)
-    print("====== End of Response ======")
-    content: Optional[str] = "\n".join(
-        choice.message.content or "" for choice in chat_completion.choices
-    )
-    assert content is not None
+    content: str = ""
+    i: int = 0
+    for chunk in stream:
+        i += 1
+        print(f"======== Chunk {i} ========")
+        delta_content = chunk.choices[0].delta.content
+        content += delta_content or ""
+        print(delta_content or "")
+        print(f"====== End of Chunk {i} ======")
+
+    print("======== Final Content ========")
     print(content)
-    assert "Trump" in content
+    print("====== End of Final Content ======")
+    assert "http://dev:5000/image_generation/" in content

@@ -11,7 +11,7 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are an agent that writes unit tests for Python code using pytest.  Always include python types and target python 3.12."
+      "content": "You are an agent that writes unit tests for Python code using pytest.  Always include python types and target python 3.12.  Let’s think step by step and take your time to get the right answer."
     }
   ],
   "model_parameters": [

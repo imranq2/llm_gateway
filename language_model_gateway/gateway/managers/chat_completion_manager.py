@@ -21,6 +21,14 @@ logger = logging.getLogger(__name__)
 
 
 class ChatCompletionManager:
+    """
+    Implements the chat completion manager following the OpenAI API
+    https://platform.openai.com/docs/overview
+    https://github.com/openai/openai-python/blob/main/api.md
+
+
+    """
+
     def __init__(
         self,
         *,

@@ -1,10 +1,11 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
     HumanMessage,
     ToolMessage,
+    SystemMessage,
 )
 from langchain_core.messages import (
     ChatMessage as LangchainChatMessage,
@@ -19,15 +20,24 @@ def convert_message_content_to_string(content: str | list[str | Dict[str, Any]])
     for content_item in content:
         if isinstance(content_item, str):
             text.append(content_item)
-            continue
-        if content_item["type"] == "text":
-            text.append(content_item["text"])
+        elif isinstance(content_item, dict):
+            content_item_type: Optional[str] = content_item.get("type")
+            if content_item_type == "text":
+                text.append(content_item.get("text") or "")
+        else:
+            assert (
+                False
+            ), f"Unsupported content item type: {type(content_item)}: {content_item}"
     return "".join(text)
 
 
 def langchain_to_chat_message(message: BaseMessage) -> ChatCompletionMessage:
     """Create a ChatMessage from a LangChain message."""
     match message:
+        case SystemMessage():
+            assert (
+                False
+            ), "System messages should not be converted to ChatCompletionMessage"
         case HumanMessage():
             assert (
                 False
@@ -43,9 +53,13 @@ def langchain_to_chat_message(message: BaseMessage) -> ChatCompletionMessage:
             #     ai_message.response_metadata = message.response_metadata
             return ai_message
         case ToolMessage():
-            assert (
-                False
-            ), "Tool messages should not be converted to ChatCompletionMessage"
+            content: str = convert_message_content_to_string(message.content)
+            artifact: str = message.artifact
+            ai_message = ChatCompletionMessage(
+                role="assistant",
+                content=content,
+            )
+            return ai_message
         case LangchainChatMessage():
             assert (
                 False

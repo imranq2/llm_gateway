@@ -12,7 +12,7 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are a tool"
+      "content": "Use the patient id eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
     }
   ],
   "model_parameters": [

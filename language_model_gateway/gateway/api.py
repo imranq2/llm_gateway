@@ -1,29 +1,25 @@
 import logging
 import os
 from contextlib import asynccontextmanager
+from os import makedirs, environ
 from pathlib import Path
 from typing import AsyncGenerator
-from typing import TypedDict
 
 from fastapi import FastAPI, HTTPException
+from starlette.responses import FileResponse
 from starlette.staticfiles import StaticFiles
 
 from language_model_gateway.gateway.routers.chat_completion_router import (
     ChatCompletionsRouter,
 )
+from language_model_gateway.gateway.routers.image_generation_router import (
+    ImageGenerationRouter,
+)
 from language_model_gateway.gateway.routers.models_router import ModelsRouter
-from fastapi.responses import FileResponse
 
 # warnings.filterwarnings("ignore", category=LangChainBetaWarning)
 
 logger = logging.getLogger(__name__)
-
-
-class ErrorDetail(TypedDict):
-    message: str
-    timestamp: str
-    trace_id: str
-    call_stack: str
 
 
 @asynccontextmanager
@@ -60,6 +56,7 @@ def create_app() -> FastAPI:
     app1: FastAPI = FastAPI(title="OpenAI-compatible API", lifespan=lifespan)
     app1.include_router(ChatCompletionsRouter().get_router())
     app1.include_router(ModelsRouter().get_router())
+    app1.include_router(ImageGenerationRouter().get_router())
     return app1
 
 
@@ -74,7 +71,25 @@ async def health() -> str:
 
 # Mount the static directory
 app.mount(
-    "/static", StaticFiles(directory="language_model_gateway/static"), name="static"
+    "/static",
+    StaticFiles(
+        directory="/usr/src/language_model_gateway/language_model_gateway/static"
+    ),
+    name="static",
+)
+
+image_generation_path: str = environ["IMAGE_GENERATION_PATH"]
+
+assert (
+    image_generation_path is not None
+), "IMAGE_GENERATION_PATH environment variable must be set"
+
+makedirs(image_generation_path, exist_ok=True)
+
+app.mount(
+    "/image_generation",
+    StaticFiles(directory=image_generation_path),
+    name="static",
 )
 
 

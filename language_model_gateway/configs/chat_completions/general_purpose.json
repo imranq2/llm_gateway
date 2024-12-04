@@ -11,7 +11,7 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are a tool that answers questions and generates text."
+      "content": "You are a tool that answers questions and generates text.  Let’s think step by step and take your time to get the right answer."
     }
   ],
   "model_parameters": [
@@ -51,6 +51,12 @@
     },
     {
       "name": "web_search"
+    },
+    {
+      "name": "arxiv_search"
+    },
+    {
+      "name": "image_generator"
     }
   ]
 }

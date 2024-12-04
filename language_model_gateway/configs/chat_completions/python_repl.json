@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
-  "id": "javascript_unit_tests",
-  "name": "Javascript Unit Tests",
-  "description": "Javascript Unit Tests",
+  "id": "python_repl",
+  "name": "Python REPL",
+  "description": "Python REPL Model",
   "type": "langchain",
   "model": {
     "provider": "bedrock",
@@ -11,13 +11,17 @@
   "system_prompts": [
     {
       "role": "system",
-      "content": "You are an agent that writes unit tests for Javascript code.  Always include javascript types and target node.js 18 and higher. Let’s think step by step and take your time to get the right answer."
+      "content": "You are a tool that runs Python code to answer questions.  Let’s think step by step and take your time to get the right answer."
     }
   ],
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0
+      "value": 0.5
+    },
+    {
+      "key": "max_tokens",
+      "value": 1000
     }
   ],
   "few_shot_examples": [
@@ -41,6 +45,9 @@
           "value": "YYYY-MM-DD"
         }
       ]
+    },
+    {
+      "name": "python_repl"
     },
     {
       "name": "web_search"

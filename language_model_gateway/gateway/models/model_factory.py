@@ -38,6 +38,7 @@ class ModelFactory:
 
         logger.debug(f"Creating ChatModel with parameters: {model_parameters_dict}")
         model_parameters_dict["model"] = model_name
+        # model_parameters_dict["streaming"] = True
         llm: BaseChatModel = (
             ChatOpenAI(**model_parameters_dict)
             if model_vendor == "openai"

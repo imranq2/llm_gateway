@@ -97,6 +97,9 @@ COPY --from=python_packages ${PROJECT_DIR}/Pipfile.lock /tmp/Pipfile.lock
 RUN mkdir -p /usr/local/lib/python3.12/site-packages && ls -halt /usr/local/lib/python3.12/site-packages
 RUN mkdir -p /usr/local/bin && ls -halt /usr/local/bin
 
+# create the folder where we will store generated images
+RUN mkdir -p ${PROJECT_DIR}/image_generation
+
 # Install the dependencies using pipenv in the final runtime environment
 RUN pipenv sync --dev --system --extra-pip-args="--prefer-binary"
 
