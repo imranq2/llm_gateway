@@ -1,9 +1,8 @@
 import asyncio
 import logging
-from typing import Optional
+from typing import Optional, Dict
 
 import httpx
-from httpx._types import QueryParamTypes
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
@@ -19,7 +18,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
     name: str = "scraping_bee_web_scraper"
     description: str = """
         Useful for scraping web pages and extracting their content.
-        Input should be a URL.
+        Input should be a URL and optionally what you're searching for.
         Returns the content of the webpage.
         Use this when you need to get content from a website.
         """
@@ -36,24 +35,36 @@ class ScrapingBeeWebScraperTool(BaseTool):
     premium_proxy: bool = False
     """ Whether to use a premium proxy. https://www.scrapingbee.com/documentation/#proxies """
 
-    wait_browser: str = "networkidle0"
+    wait_browser: Optional[str] = None
     """Wait until there are no more than 0 network connections for at least 500 ms."""
+
+    wait: Optional[int] = None
+    """Wait in milliseconds for the page to render"""
 
     return_markdown: bool = False
     """Whether to return the content as markdown or plain text (default)"""
 
-    async def _async_scrape(self, url: str) -> Optional[str]:
+    async def _async_scrape(self, *, url: str, query: Optional[str]) -> Optional[str]:
         """Async method to scrape URL using ScrapingBee"""
 
         # https://www.scrapingbee.com/documentation/
-        params: QueryParamTypes = {
+        params: Dict[str, str] = {
             "api_key": self.api_key,
             "url": url,
-            "render_js": self.render_js,
-            "premium_proxy": self.premium_proxy,
-            "wait_browser": self.wait_browser,
-            # 'wait': 5000,  # wait in milliseconds (5 seconds) for the page to render
         }
+        if self.premium_proxy:
+            params["premium_proxy"] = "True" if self.premium_proxy else "False"
+        if self.render_js:
+            params["render_js"] = "True" if self.render_js else "False"
+
+        if self.wait_browser:
+            params["wait_browser"] = self.wait_browser or ""
+
+        if self.wait:
+            params["wait"] = str(self.wait)
+
+        if query:
+            params["ai_query"] = query
 
         try:
             async with httpx.AsyncClient() as client:
@@ -84,20 +95,20 @@ class ScrapingBeeWebScraperTool(BaseTool):
                 html_content=html_content
             )
 
-    def _run(self, url: str) -> str:
+    def _run(self, url: str, query: Optional[str] = None) -> str:
         """Synchronous run method required by LangChain"""
         # Create event loop and run async method
         loop = asyncio.get_event_loop()
-        content = loop.run_until_complete(self._async_scrape(url))
+        content = loop.run_until_complete(self._async_scrape(url=url, query=query))
 
         if content:
             return loop.run_until_complete(self._extract_text_content_async(content))
         return "Error: Failed to scrape the webpage."
 
-    async def _arun(self, url: str) -> str:
+    async def _arun(self, url: str, query: Optional[str] = None) -> str:
         """Async run method"""
 
-        content: Optional[str] = await self._async_scrape(url)
+        content: Optional[str] = await self._async_scrape(url=url, query=query)
         if content:
             return await self._extract_text_content_async(content)
         return "Error: Failed to scrape the webpage."
