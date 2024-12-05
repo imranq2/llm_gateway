@@ -27,6 +27,16 @@ jobs:
       - name: pre-commit
         run: make run-pre-commit && make clean-pre-commit
 
+      - name: Set correct permissions for tests
+        run: |
+          sudo chmod -R 777 ${{ github.workspace }}
+
+      - name: Create reports output folder
+        run: |
+          mkdir -p ${{ github.workspace }}/reports
+          chmod -R 777 ${{ github.workspace }}/reports
+
+
       # setup and install everything and run tests
       - name: up
         run: make up
