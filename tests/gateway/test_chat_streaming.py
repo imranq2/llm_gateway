@@ -93,4 +93,7 @@ async def test_chat_completions_streaming(
         stream=True,
     )
     async for chunk in stream:
-        print(chunk.choices[0].delta.content or "")
+        delta_content = "\n".join(
+            [choice.delta.content or "" for choice in chunk.choices]
+        )
+        print(delta_content)

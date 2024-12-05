@@ -29,7 +29,7 @@ async def test_chat_anthropic_image_generator(async_client: httpx.AsyncClient) -
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "http://dev:5000/image_generation/"
+                    fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
                 )
             ),
         )
@@ -68,7 +68,7 @@ async def test_chat_anthropic_image_generator(async_client: httpx.AsyncClient) -
     )
     assert content is not None
     print(content)
-    assert "http://dev:5000/image_generation/" in content
+    assert "http://localhost:5050/image_generation/" in content
     # assert "data:image/png;base64" in content
 
 
@@ -83,7 +83,7 @@ async def test_chat_anthropic_image_generator_streaming(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "http://dev:5000/image_generation/"
+                    fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
                 )
             ),
         )
@@ -121,7 +121,9 @@ async def test_chat_anthropic_image_generator_streaming(
     async for chunk in stream:
         i += 1
         print(f"======== Chunk {i} ========")
-        delta_content = chunk.choices[0].delta.content
+        delta_content = "\n".join(
+            [choice.delta.content or "" for choice in chunk.choices]
+        )
         content += delta_content or ""
         print(delta_content or "")
         print(f"====== End of Chunk {i} ======")
@@ -129,4 +131,4 @@ async def test_chat_anthropic_image_generator_streaming(
     print("======== Final Content ========")
     print(content)
     print("====== End of Final Content ======")
-    assert "http://dev:5000/image_generation/" in content
+    assert "http://localhost:5050/image_generation/" in content

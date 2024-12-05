@@ -7,7 +7,10 @@ from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
 )
 
 
-@pytest.mark.skip(reason="Requires ScrapingBee API key")
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="Requires ScrapingBee API key",
+)
 async def test_scraping_bee_tool_tool_async() -> None:
     print("")
     tool = ScrapingBeeWebScraperTool(api_key=os.environ["SCRAPING_BEE_API_KEY"])
@@ -16,7 +19,10 @@ async def test_scraping_bee_tool_tool_async() -> None:
     assert "This domain is for use in illustrative examples in documents." in result
 
 
-@pytest.mark.skip(reason="Requires ScrapingBee API key")
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="Requires ScrapingBee API key",
+)
 async def test_scraping_bee_tool_tool_complex_async() -> None:
     print("")
     tool = ScrapingBeeWebScraperTool(
@@ -31,7 +37,10 @@ async def test_scraping_bee_tool_tool_complex_async() -> None:
     assert "1812" in result
 
 
-@pytest.mark.skip(reason="Requires ScrapingBee API key")
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="Requires ScrapingBee API key",
+)
 async def test_scraping_bee_tool_tool_complex_answer_query_async() -> None:
     print("")
     tool = ScrapingBeeWebScraperTool(
@@ -47,7 +56,10 @@ async def test_scraping_bee_tool_tool_complex_answer_query_async() -> None:
     assert "1812" in result
 
 
-@pytest.mark.skip(reason="Requires ScrapingBee API key")
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="Requires ScrapingBee API key",
+)
 async def test_scraping_bee_tool_tool_printable_async() -> None:
     print("")
     tool = ScrapingBeeWebScraperTool(api_key=os.environ["SCRAPING_BEE_API_KEY"])

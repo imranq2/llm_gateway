@@ -56,7 +56,9 @@ async def test_chat_completions_streaming(async_client: httpx.AsyncClient) -> No
     async for chunk in stream:
         i += 1
         print(f"======== Chunk {i} ========")
-        delta_content = chunk.choices[0].delta.content
+        delta_content = "\n".join(
+            [choice.delta.content or "" for choice in chunk.choices]
+        )
         content += delta_content or ""
         print(delta_content or "")
         print(f"====== End of Chunk {i} ======")
@@ -117,7 +119,9 @@ async def test_chat_completions_with_chat_history_streaming(
     async for chunk in stream:
         i += 1
         print(f"======== Chunk {i} ========")
-        delta_content = chunk.choices[0].delta.content
+        delta_content = "\n".join(
+            [choice.delta.content or "" for choice in chunk.choices]
+        )
         content += delta_content or ""
         print(delta_content or "")
         print(f"====== End of Chunk {i} ======")
