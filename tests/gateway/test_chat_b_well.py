@@ -2,7 +2,7 @@ from typing import Optional
 
 import httpx
 from httpx import Response
-from openai import OpenAI
+from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 from pytest_httpx import HTTPXMock
 
@@ -12,7 +12,7 @@ from language_model_gateway.gateway.utilities.environment_reader import (
 
 
 async def test_chat_completions_b_well(
-    async_client: httpx.AsyncClient, sync_client: httpx.Client, httpx_mock: HTTPXMock
+    async_client: httpx.AsyncClient, httpx_mock: HTTPXMock
 ) -> None:
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
@@ -44,14 +44,14 @@ async def test_chat_completions_b_well(
     assert response.status_code == 200
 
     # init client and connect to localhost server
-    client = OpenAI(
+    client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="http://localhost:5000/api/v1",  # change the default port if needed
-        http_client=sync_client,
+        http_client=async_client,
     )
 
     # call API
-    chat_completion: ChatCompletion = client.chat.completions.create(
+    chat_completion: ChatCompletion = await client.chat.completions.create(
         messages=[
             {
                 "role": "user",

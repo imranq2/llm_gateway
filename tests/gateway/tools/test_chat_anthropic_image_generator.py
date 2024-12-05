@@ -1,8 +1,8 @@
 from typing import Optional, List
 
 import httpx
-from openai import OpenAI, Stream
-from openai.types.chat import ChatCompletionChunk
+from openai import AsyncOpenAI, AsyncStream
+from openai.types.chat import ChatCompletionChunk, ChatCompletion
 from openai.types.chat.chat_completion import Choice
 
 from language_model_gateway.container.simple_container import SimpleContainer
@@ -20,9 +20,7 @@ from tests.gateway.mocks.mock_image_generator_factory import MockImageGeneratorF
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
-async def test_chat_anthropic_image_generator(
-    async_client: httpx.AsyncClient, sync_client: httpx.Client
-) -> None:
+async def test_chat_anthropic_image_generator(async_client: httpx.AsyncClient) -> None:
     print("")
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
@@ -45,14 +43,14 @@ async def test_chat_anthropic_image_generator(
     # assert response.status_code == 200
 
     # init client and connect to localhost server
-    client = OpenAI(
+    client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="http://localhost:5000/api/v1",  # change the default port if needed
-        http_client=sync_client,
+        http_client=async_client,
     )
 
     # call API
-    chat_completion = client.chat.completions.create(
+    chat_completion: ChatCompletion = await client.chat.completions.create(
         messages=[
             {
                 "role": "user",
@@ -75,7 +73,7 @@ async def test_chat_anthropic_image_generator(
 
 
 async def test_chat_anthropic_image_generator_streaming(
-    async_client: httpx.AsyncClient, sync_client: httpx.Client
+    async_client: httpx.AsyncClient,
 ) -> None:
     print("")
 
@@ -99,14 +97,14 @@ async def test_chat_anthropic_image_generator_streaming(
     # assert response.status_code == 200
 
     # init client and connect to localhost server
-    client = OpenAI(
+    client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="http://localhost:5000/api/v1",  # change the default port if needed
-        http_client=sync_client,
+        http_client=async_client,
     )
 
     # call API
-    stream: Stream[ChatCompletionChunk] = client.chat.completions.create(
+    stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
         messages=[
             {
                 "role": "user",
@@ -120,7 +118,7 @@ async def test_chat_anthropic_image_generator_streaming(
     # print the top "choice"
     content: str = ""
     i: int = 0
-    for chunk in stream:
+    async for chunk in stream:
         i += 1
         print(f"======== Chunk {i} ========")
         delta_content = chunk.choices[0].delta.content
