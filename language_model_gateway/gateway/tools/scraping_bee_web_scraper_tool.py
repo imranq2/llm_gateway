@@ -23,7 +23,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
         Use this when you need to get content from a website.
         """
 
-    api_key: str
+    api_key: Optional[str]
     """API key for ScrapingBee"""
 
     base_url: str = "https://app.scrapingbee.com/api/v1/"
@@ -46,6 +46,8 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
     async def _async_scrape(self, *, url: str, query: Optional[str]) -> Optional[str]:
         """Async method to scrape URL using ScrapingBee"""
+
+        assert self.api_key, "ScrapingBee API key is required"
 
         # https://www.scrapingbee.com/documentation/
         params: Dict[str, str] = {

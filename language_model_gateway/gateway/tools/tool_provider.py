@@ -58,7 +58,7 @@ class ToolProvider:
             ),
             "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
-                api_key=environ["SCRAPING_BEE_API_KEY"]
+                api_key=environ.get("SCRAPING_BEE_API_KEY")
             ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
