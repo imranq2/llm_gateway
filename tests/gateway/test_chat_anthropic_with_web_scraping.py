@@ -3,21 +3,30 @@ from typing import Optional
 import httpx
 from openai import OpenAI
 
+from language_model_gateway.container.simple_container import SimpleContainer
+from language_model_gateway.gateway.api_container import get_container_async
+from language_model_gateway.gateway.models.model_factory import ModelFactory
+from language_model_gateway.gateway.utilities.environment_reader import (
+    EnvironmentReader,
+)
+from tests.gateway.mocks.mock_chat_model import MockChatModel
+from tests.gateway.mocks.mock_model_factory import MockModelFactory
+
 
 async def test_chat_anthropic_with_web_scraping(
     async_client: httpx.AsyncClient, sync_client: httpx.Client
 ) -> None:
 
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container: SimpleContainer = await get_container_async()
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "Donald Trump won the last US election"
-    #             )
-    #         ),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container: SimpleContainer = await get_container_async()
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "3800 Reservoir Road Northwest"
+                )
+            ),
+        )
 
     # init client and connect to localhost server
     client = OpenAI(
