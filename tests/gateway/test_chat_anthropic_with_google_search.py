@@ -53,7 +53,9 @@ async def test_chat_completions_with_web_search(
     )
 
     # print the top "choice"
-    content: Optional[str] = chat_completion.choices[0].message.content
+    content: Optional[str] = "\n".join(
+        choice.message.content or "" for choice in chat_completion.choices
+    )
     assert content is not None
     print(content)
     assert "Trump" in content

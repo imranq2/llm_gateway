@@ -1,3 +1,5 @@
+from typing import Optional
+
 import httpx
 from httpx import Response
 from openai import OpenAI
@@ -60,4 +62,7 @@ async def test_chat_completions_b_well(
     )
 
     # print the top "choice"
-    print(chat_completion.choices[0].message.content)
+    content: Optional[str] = "\n".join(
+        choice.message.content or "" for choice in chat_completion.choices
+    )
+    print(content)
