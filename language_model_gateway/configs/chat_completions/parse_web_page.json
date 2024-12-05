@@ -16,7 +16,7 @@
   ],
   "tools": [
     {
-      "name": "get_web_page"
+      "name": "scraping_bee_web_scraper"
     }
   ]
 }
