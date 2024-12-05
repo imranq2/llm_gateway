@@ -32,10 +32,10 @@ class ScrapingBeeWebScraperTool(BaseTool):
     render_js: bool = True
     """Whether to render JavaScript on the page"""
 
-    premium_proxy: bool = False
+    premium_proxy: bool = True
     """ Whether to use a premium proxy. https://www.scrapingbee.com/documentation/#proxies """
 
-    wait_browser: Optional[str] = None
+    wait_browser: Optional[str] = "networkidle0"
     """Wait until there are no more than 0 network connections for at least 500 ms."""
 
     wait: Optional[int] = None
