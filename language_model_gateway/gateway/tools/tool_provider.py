@@ -22,6 +22,9 @@ from language_model_gateway.gateway.tools.image_generator_embedded_tool import (
     ImageGeneratorEmbeddedTool,
 )
 from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
+from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
+    ScrapingBeeWebScraperTool,
+)
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
 
 
@@ -54,6 +57,9 @@ class ToolProvider:
                 image_generator_factory=image_generator_factory
             ),
             "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(),
+            "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
+                api_key=environ.get("SCRAPING_BEE_API_KEY")
+            ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(
