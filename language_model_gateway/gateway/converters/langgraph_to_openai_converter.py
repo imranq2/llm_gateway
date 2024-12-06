@@ -90,7 +90,7 @@ class LangGraphToOpenAIConverter:
 
             event_type: str = event["event"]
 
-            print(f"===== {event_type} =====\n{event}\n")
+            # print(f"===== {event_type} =====\n{event}\n")
 
             match event_type:
                 case "on_chain_start":
