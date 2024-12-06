@@ -4,7 +4,7 @@ from typing import Dict, List
 from openai.types.chat import ChatCompletionSystemMessageParam
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.configs.config_reader import ConfigReader
+from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.configs.config_schema import ChatModelConfig, PromptConfig
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
     BaseChatCompletionsProvider,

@@ -6,10 +6,10 @@ from typing import List
 from language_model_gateway.configs.config_schema import ChatModelConfig
 
 
-class ConfigReader:
+class FileConfigReader:
     # noinspection PyMethodMayBeStatic
-    def read_model_configs(self) -> List[ChatModelConfig]:
-        config_folder: Path = Path(__file__).parent.joinpath("chat_completions")
+    def read_model_configs(self, *, config_path: str) -> List[ChatModelConfig]:
+        config_folder: Path = Path(config_path)
         # read all the .json files recursively in the config folder
         # for each file, parse the json data into ModelConfig
         configs: List[ChatModelConfig] = []

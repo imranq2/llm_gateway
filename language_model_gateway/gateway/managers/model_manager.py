@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List
 
-from language_model_gateway.configs.config_reader import ConfigReader
+from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.configs.config_schema import ChatModelConfig
 
 

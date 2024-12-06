@@ -17,6 +17,7 @@ services:
       RUN_TESTS_WITH_REAL_LLM: 0
       IMAGE_GENERATION_PATH: "/usr/src/language_model_gateway/image_generation"
       IMAGE_GENERATION_URL: "http://localhost:5050/image_generation"
+      CONFIG_PATH: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
     env_file: docker.env
     ports:
       - '5050:5000'
