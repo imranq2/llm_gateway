@@ -5,38 +5,24 @@ from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk, ChatCompletion
 from openai.types.chat.chat_completion import Choice
 
-from language_model_gateway.container.simple_container import SimpleContainer
-from language_model_gateway.gateway.api_container import get_container_async
-from language_model_gateway.gateway.image_generation.image_generator_factory import (
-    ImageGeneratorFactory,
-)
-from language_model_gateway.gateway.models.model_factory import ModelFactory
-from language_model_gateway.gateway.utilities.environment_reader import (
-    EnvironmentReader,
-)
-from tests.gateway.mocks.mock_chat_model import MockChatModel
-from tests.gateway.mocks.mock_image_generator import MockImageGenerator
-from tests.gateway.mocks.mock_image_generator_factory import MockImageGeneratorFactory
-from tests.gateway.mocks.mock_model_factory import MockModelFactory
-
 
 async def test_chat_anthropic_image_generator(async_client: httpx.AsyncClient) -> None:
     print("")
 
-    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        test_container: SimpleContainer = await get_container_async()
-        test_container.register(
-            ModelFactory,
-            lambda c: MockModelFactory(
-                fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
-                )
-            ),
-        )
-        test_container.register(
-            ImageGeneratorFactory,
-            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
-        )
+    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+    #     test_container: SimpleContainer = await get_container_async()
+    #     test_container.register(
+    #         ModelFactory,
+    #         lambda c: MockModelFactory(
+    #             fn_get_model=lambda chat_model_config: MockChatModel(
+    #                 fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
+    #             )
+    #         ),
+    #     )
+    #     test_container.register(
+    #         ImageGeneratorFactory,
+    #         lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+    #     )
 
     # Test health endpoint
     # response = await async_client.get("/health")
@@ -77,20 +63,20 @@ async def test_chat_anthropic_image_generator_streaming(
 ) -> None:
     print("")
 
-    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        test_container: SimpleContainer = await get_container_async()
-        test_container.register(
-            ModelFactory,
-            lambda c: MockModelFactory(
-                fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
-                )
-            ),
-        )
-        test_container.register(
-            ImageGeneratorFactory,
-            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
-        )
+    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+    #     test_container: SimpleContainer = await get_container_async()
+    #     test_container.register(
+    #         ModelFactory,
+    #         lambda c: MockModelFactory(
+    #             fn_get_model=lambda chat_model_config: MockChatModel(
+    #                 fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
+    #             )
+    #         ),
+    #     )
+    #     test_container.register(
+    #         ImageGeneratorFactory,
+    #         lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+    #     )
 
     # Test health endpoint
     # response = await async_client.get("/health")

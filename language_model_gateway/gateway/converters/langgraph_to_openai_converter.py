@@ -90,7 +90,7 @@ class LangGraphToOpenAIConverter:
 
             event_type: str = event["event"]
 
-            # print(f"event: {event}")
+            print(f"===== {event_type} =====\n{event}\n")
 
             match event_type:
                 case "on_chain_start":
@@ -134,43 +134,33 @@ class LangGraphToOpenAIConverter:
                 case "on_chain_end":
                     # Handle the end of the chain event
                     pass
-                # case "on_tool_end":
-                #     # Handle the end of the tool event
-                #     tool_message: ToolMessage = event["data"]["output"]
-                #     tool_content: str | list[str | dict[str, Any]] = (
-                #         tool_message.content
-                #     )
-                #     # artifact: Optional[Any] = tool_message.artifact
-                #
-                #     # print(f"on_tool_end: {tool_message}")
-                #
-                #     tool_content_text: str = convert_message_content_to_string(
-                #         tool_content
-                #     )
-                #
-                #     assert isinstance(
-                #         tool_content_text, str
-                #     ), f"content_text: {tool_content_text} (type: {type(tool_content_text)})"
-                #
-                #     if tool_content_text:
-                #         chat_stream_response = ChatCompletionChunk(
-                #             id=request_id,
-                #             created=int(time.time()),
-                #             model=request["model"],
-                #             choices=[
-                #                 ChunkChoice(
-                #                     index=0,
-                #                     delta=ChoiceDelta(
-                #                         role="assistant", content=tool_content_text
-                #                     ),
-                #                 )
-                #             ],
-                #             usage=CompletionUsage(
-                #                 prompt_tokens=0, completion_tokens=0, total_tokens=0
-                #             ),
-                #             object="chat.completion.chunk",
-                #         )
-                #         yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+                case "on_tool_end":
+                    # Handle the end of the tool event
+                    tool_message: ToolMessage = event["data"]["output"]
+
+                    artifact: Optional[Any] = tool_message.artifact
+
+                    # print(f"on_tool_end: {tool_message}")
+
+                    if artifact:
+                        chat_stream_response = ChatCompletionChunk(
+                            id=request_id,
+                            created=int(time.time()),
+                            model=request["model"],
+                            choices=[
+                                ChunkChoice(
+                                    index=0,
+                                    delta=ChoiceDelta(
+                                        role="assistant", content=artifact
+                                    ),
+                                )
+                            ],
+                            usage=CompletionUsage(
+                                prompt_tokens=0, completion_tokens=0, total_tokens=0
+                            ),
+                            object="chat.completion.chunk",
+                        )
+                        yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
                 case _:
                     # Handle other event types
                     pass
