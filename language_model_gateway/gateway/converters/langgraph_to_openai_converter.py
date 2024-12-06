@@ -218,10 +218,13 @@ class LangGraphToOpenAIConverter:
                     )
                 )
 
-                output_messages: List[ChatCompletionMessage] = [
+                output_messages_raw: List[ChatCompletionMessage | None] = [
                     langchain_to_chat_message(m)
                     for m in responses
                     if isinstance(m, AIMessage) or isinstance(m, ToolMessage)
+                ]
+                output_messages: List[ChatCompletionMessage] = [
+                    m for m in output_messages_raw if m is not None
                 ]
 
                 choices: List[Choice] = [
