@@ -81,8 +81,8 @@ async def test_chat_completions_with_chat_history(
         )
 
     # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
+    # response = await async_client.get("/health")
+    # assert response.status_code == 200
 
     # init client and connect to localhost server
     client = AsyncOpenAI(

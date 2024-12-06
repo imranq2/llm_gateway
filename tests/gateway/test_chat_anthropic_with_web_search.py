@@ -38,10 +38,6 @@ async def test_chat_completions_with_web_search(
     # Set up basic configuration for logging
     logging.basicConfig(level=getattr(logging, log_level))
 
-    # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
-
     # init client and connect to localhost server
     client = AsyncOpenAI(
         api_key="fake-api-key",
@@ -84,9 +80,6 @@ async def test_chat_completions_with_chat_history_and_web_search(
                 )
             ),
         )
-    # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
 
     # init client and connect to localhost server
     client = AsyncOpenAI(

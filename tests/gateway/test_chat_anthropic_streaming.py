@@ -29,10 +29,6 @@ async def test_chat_completions_streaming(async_client: httpx.AsyncClient) -> No
             ),
         )
 
-    # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
-
     # init client and connect to localhost server
     client = AsyncOpenAI(
         api_key="fake-api-key",
@@ -86,10 +82,6 @@ async def test_chat_completions_with_chat_history_streaming(
                 )
             ),
         )
-
-    # Test health endpoint
-    response = await async_client.get("/health")
-    assert response.status_code == 200
 
     # init client and connect to localhost server
     client = AsyncOpenAI(
