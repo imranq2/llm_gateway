@@ -1,8 +1,16 @@
+from typing import Type
+
 import httpx
 from langchain.tools import BaseTool
+from pydantic import BaseModel, Field
+
 from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
     HtmlToMarkdownConverter,
 )
+
+
+class URLToMarkdownToolInput(BaseModel):
+    url: str = Field(description="Prompt to use for generating the image")
 
 
 class URLToMarkdownTool(BaseTool):
@@ -15,6 +23,7 @@ class URLToMarkdownTool(BaseTool):
         "Fetches the content of a webpage from a given URL and converts it to Markdown format. "
         "Provide the URL as input. The tool will return the main content of the page formatted as Markdown."
     )
+    args_schema: Type[BaseModel] = URLToMarkdownToolInput
 
     def _run(self, url: str) -> str:
         """

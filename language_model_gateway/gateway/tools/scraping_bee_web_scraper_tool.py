@@ -1,14 +1,20 @@
 import logging
-from typing import Optional, Dict
+from typing import Optional, Dict, Type
 
 import httpx
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
     HtmlToMarkdownConverter,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class ScrapingBeeWebScraperToolInput(BaseModel):
+    url: str = Field(description="Prompt to use for generating the image")
+    query: Optional[str] = Field(description="Query to search for on the webpage")
 
 
 class ScrapingBeeWebScraperTool(BaseTool):
@@ -21,6 +27,8 @@ class ScrapingBeeWebScraperTool(BaseTool):
         Returns the content of the webpage.
         Use this when you need to get content from a website.
         """
+
+    args_schema: Type[BaseModel] = ScrapingBeeWebScraperToolInput
 
     api_key: Optional[str]
     """API key for ScrapingBee"""

@@ -1,7 +1,8 @@
 import logging
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Type
 
 from langchain.tools import BaseTool
+from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
@@ -16,6 +17,10 @@ from language_model_gateway.gateway.utilities.image_generation_helper import (
 logger = logging.getLogger(__name__)
 
 
+class ImageGeneratorToolInput(BaseModel):
+    prompt: str = Field(description="Prompt to use for generating the image")
+
+
 class ImageGeneratorTool(BaseTool):
     """
     LangChain-compatible tool for generating an image from a given text.
@@ -28,6 +33,7 @@ class ImageGeneratorTool(BaseTool):
         # "The tool will return the image as a base64 encoded string in PNG format: `data:image/png;base64,{base64_image}`."
         "The tool will return a url to the generated image."
     )
+    args_schema: Type[BaseModel] = ImageGeneratorToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
     image_generator_factory: ImageGeneratorFactory
 
