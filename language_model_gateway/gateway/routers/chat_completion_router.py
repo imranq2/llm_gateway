@@ -94,7 +94,7 @@ class ChatCompletionsRouter:
                 "trace_id": "",
                 "call_stack": call_stack,
             }
-            logger.error(f"Connection error: {e}\n{call_stack}")
+            logger.exception(e, stack_info=True)
             raise HTTPException(status_code=503, detail=error_detail)
 
         except* ValueError as e:
@@ -105,7 +105,7 @@ class ChatCompletionsRouter:
                 "trace_id": "",
                 "call_stack": call_stack,
             }
-            logger.error(f"Validation error: {e}\n{call_stack}")
+            logger.exception(e, stack_info=True)
             raise HTTPException(status_code=400, detail=error_detail)
 
         except* Exception as e:
@@ -116,7 +116,7 @@ class ChatCompletionsRouter:
                 "trace_id": "",
                 "call_stack": call_stack,
             }
-            logger.error(f"Unexpected error: {e}\n{call_stack}")
+            logger.exception(e, stack_info=True)
             raise HTTPException(status_code=500, detail=error_detail)
 
     def get_router(self) -> APIRouter:

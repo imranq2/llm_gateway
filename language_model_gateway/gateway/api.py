@@ -39,7 +39,7 @@ async def lifespan(app1: FastAPI) -> AsyncGenerator[None, None]:
         yield
 
     except Exception as e:
-        logger.error(f"Error during startup: {e}")
+        logger.exception(e, stack_info=True)
         raise
 
     finally:
@@ -48,7 +48,7 @@ async def lifespan(app1: FastAPI) -> AsyncGenerator[None, None]:
             # await container.cleanup()
             logger.info("Application shutdown completed")
         except Exception as e:
-            logger.error(f"Error during shutdown: {e}")
+            logger.exception(e, stack_info=True)
             raise
 
 

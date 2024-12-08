@@ -67,4 +67,5 @@ class ImageGeneratorEmbeddedTool(BaseTool):
             return f"{url}", markdown_image
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
+            logger.exception(e, stack_info=True)
             raise ValueError(f"Failed to generate image: {str(e)}")

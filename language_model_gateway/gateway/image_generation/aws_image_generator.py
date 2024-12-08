@@ -74,6 +74,7 @@ class AwsImageGenerator(ImageGenerator):
 
         except Exception as e:
             logger.error(f"Error generating image for prompt {prompt}: {str(e)}")
+            logger.exception(e, stack_info=True)
             raise Exception(f"Error generating image: {str(e)}")
 
     # noinspection PyMethodMayBeStatic

@@ -85,6 +85,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
         except Exception as e:
             logger.error(f"Error scraping {url}: {str(e)}")
+            logger.exception(e, stack_info=True)
             return None
 
     async def _extract_text_content_async(self, html_content: str) -> str:

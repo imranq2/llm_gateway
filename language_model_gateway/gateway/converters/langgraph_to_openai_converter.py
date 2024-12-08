@@ -241,7 +241,7 @@ class LangGraphToOpenAIConverter:
                 )
                 return JSONResponse(content=chat_response.model_dump())
             except Exception as e:
-                logger.error(f"An exception occurred: {e}")
+                logger.exception(e, stack_info=True)
                 raise HTTPException(status_code=500, detail="Unexpected error")
 
     # noinspection PyMethodMayBeStatic

@@ -22,6 +22,7 @@ class PythonReplTool(BaseTool):
             return result
         except Exception as e:
             logger.error(f"Error running Python Repl: {e}")
+            logger.exception(e, stack_info=True)
             return f"Error running Python Repl: {e}"
 
     def _run(self, query: str) -> str:
@@ -33,4 +34,5 @@ class PythonReplTool(BaseTool):
             return result
         except Exception as e:
             logger.error(f"Error running Python Repl: {e}")
+            logger.exception(e, stack_info=True)
             return f"Error running Python Repl: {e}"
