@@ -45,14 +45,19 @@ class GoogleSearchTool(BaseTool):
     async def _arun(self, query: str) -> str:
         """Async implementation of the tool (in this case, just calls _run)"""
         snippets: List[str] = []
-        results: List[Dict[str, Any]] = await self._search_async(q=query)
-        if len(results) == 0:
-            return "No good Google Search Result was found"
-        for result in results:
-            if "snippet" in result:
-                snippets.append(result["snippet"] + " (" + result.get("link") + ")")
+        try:
+            # Result follows https://developers.google.com/custom-search/v1/reference/rest/v1/Search
+            results: List[Dict[str, Any]] = await self._search_async(q=query)
+            if len(results) == 0:
+                return "No good Google Search Result was found"
+            for result in results:
+                if "snippet" in result:
+                    snippets.append(result["snippet"] + " (" + result.get("link") + ")")
 
-        return " ".join(snippets)
+            return " ".join(snippets)
+        except Exception as e:
+            logger.exception(e, stack_info=True)
+            return "Ran into an error while running Google Search"
 
     # noinspection PyPep8Naming,PyShadowingBuiltins
     @staticmethod
