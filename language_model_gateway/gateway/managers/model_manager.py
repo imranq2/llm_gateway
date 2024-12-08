@@ -12,7 +12,7 @@ class ModelManager:
     ) -> Dict[str, List[Dict[str, str]]]:
         logger = logging.getLogger(__name__)
         logger.info("Received request for models")
-        configs: List[ChatModelConfig] = ConfigReader().read_model_configs()
+        configs: List[ChatModelConfig] = await ConfigReader().read_model_configs_async()
         models = [
             {"id": config.name, "description": config.description} for config in configs
         ]
