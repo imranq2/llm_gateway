@@ -1,11 +1,16 @@
 import logging
 from os import environ
-from typing import Optional, Dict, Any, List, cast
+from typing import Optional, Dict, Any, List, cast, Type
 
 import httpx
 from langchain_core.tools import BaseTool
+from pydantic import PrivateAttr, Field, BaseModel
 
 logger = logging.getLogger(__file__)
+
+
+class GoogleSearchToolInput(BaseModel):
+    query: str = Field(description="The search query to send to Google Search")
 
 
 class GoogleSearchTool(BaseTool):
@@ -38,21 +43,43 @@ class GoogleSearchTool(BaseTool):
     name: str = "google_search"
     description: str = "Search Google for recent results."
 
+    args_schema: Type[BaseModel] = GoogleSearchToolInput
+
+    # Private attributes
+    _client: httpx.AsyncClient = PrivateAttr()
+    _api_key: str = PrivateAttr()
+    _cse_id: str = PrivateAttr()
+
+    def __init__(self, **data: Any) -> None:
+        super().__init__(**data)
+        self._client = httpx.AsyncClient()
+        api_key: Optional[str] = environ.get("GOOGLE_API_KEY")
+        assert api_key, "GOOGLE_API_KEY environment variable is required"
+        cse_id: Optional[str] = environ.get("GOOGLE_CSE_ID")
+        assert cse_id, "GOOGLE_CSE_ID environment variable is required"
+        self._api_key = api_key
+        self._cse_id = cse_id
+
+    async def aclose(self) -> None:
+        """Close the HTTP client."""
+        await self._client.aclose()
+
     def _run(self, query: str) -> str:
-        """Returns the current time in Y-m-d H:M:S format with timezone."""
+        """Use async version of this tool."""
         raise NotImplementedError("Use async version of this tool")
 
     async def _arun(self, query: str) -> str:
-        """Async implementation of the tool (in this case, just calls _run)"""
+        """Async implementation of the Google search tool."""
         snippets: List[str] = []
         try:
             # Result follows https://developers.google.com/custom-search/v1/reference/rest/v1/Search
             results: List[Dict[str, Any]] = await self._search_async(q=query)
             if len(results) == 0:
                 return "No good Google Search Result was found"
+
             for result in results:
                 if "snippet" in result:
-                    snippets.append(result["snippet"] + " (" + result.get("link") + ")")
+                    snippets.append(f"{result['snippet']} ({result.get('link')})")
 
             return " ".join(snippets)
         except Exception as e:
@@ -60,8 +87,8 @@ class GoogleSearchTool(BaseTool):
             return "Ran into an error while running Google Search"
 
     # noinspection PyPep8Naming,PyShadowingBuiltins
-    @staticmethod
     async def _search_async(
+        self,
         q: str,
         c2coff: Optional[str] = None,
         cr: Optional[str] = None,
@@ -92,18 +119,10 @@ class GoogleSearchTool(BaseTool):
         sort: Optional[str] = None,
         start: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-
+        """Execute the Google search query."""
         logger.info(f"Running Google search with query: {q}")
-        google_api_key = environ["GOOGLE_API_KEY"]
-        assert (
-            google_api_key is not None
-        ), "You need to specify a GOOGLE_API_KEY in docker.env to run the Google Search tool"
-        google_cse_id = environ["GOOGLE_CSE_ID"]
-        assert (
-            google_cse_id is not None
-        ), "You need to specify a GOOGLE_CSE_ID in docker.env to run the Google Search tool"
 
-        params = {"key": google_api_key, "cx": google_cse_id, "q": q}
+        params = {"key": self._api_key, "cx": self._cse_id, "q": q}
 
         # Add optional parameters if they are provided
         optional_params = locals()
@@ -111,11 +130,19 @@ class GoogleSearchTool(BaseTool):
             if param not in ["self", "q"] and value is not None:
                 params[param] = value
 
-        client = httpx.AsyncClient()
-        # parameters follow https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list
         url: str = "https://customsearch.googleapis.com/customsearch/v1"
-        response = await client.get(url, params=params)
+        # parameters follow https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list
+        response = await self._client.get(url, params=params)
         response.raise_for_status()
         # Result follows https://developers.google.com/custom-search/v1/reference/rest/v1/Search
         result = response.json()
         return cast(List[Dict[str, Any]], result.get("items", []))
+
+    def __del__(self) -> None:
+        """Ensure the client is closed when the object is deleted."""
+        import asyncio
+
+        try:
+            asyncio.get_event_loop().run_until_complete(self.aclose())
+        except Exception:
+            pass
