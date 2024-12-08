@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlparse
 
 import boto3
@@ -7,6 +8,8 @@ from botocore.exceptions import ClientError
 from cachetools.func import ttl_cache
 
 from language_model_gateway.configs.config_schema import ChatModelConfig
+
+logger = logging.getLogger(__name__)
 
 
 class S3ConfigReader:
@@ -23,7 +26,15 @@ class S3ConfigReader:
 
     def read_model_configs(self, *, s3_url: str) -> List[ChatModelConfig]:
         bucket_name, prefix = self.parse_s3_uri(s3_url)
-        return self._read_model_configs(bucket_name=bucket_name, prefix=prefix)
+        try:
+            models: List[ChatModelConfig] = self._read_model_configs(
+                bucket_name=bucket_name, prefix=prefix
+            )
+            return models
+        except Exception as e:
+            logger.error(f"Error reading model configurations from S3: {str(e)}")
+            logger.exception(e, stack_info=True)
+            return []
 
     # noinspection PyMethodMayBeStatic
     @ttl_cache(ttl=60 * 60)

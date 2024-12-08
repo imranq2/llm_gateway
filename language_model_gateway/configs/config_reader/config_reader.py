@@ -17,11 +17,16 @@ class ConfigReader:
         config_path: str = os.environ["CONFIG_PATH"]
         assert config_path is not None, "CONFIG_PATH environment variable is not set"
 
+        models: List[ChatModelConfig] = []
         if config_path.startswith("s3"):
-            return S3ConfigReader().read_model_configs(s3_url=config_path)
+            models = S3ConfigReader().read_model_configs(s3_url=config_path)
         elif "github.com" in config_path:
-            return await GitHubConfigReader(
+            models = await GitHubConfigReader(
                 os.environ.get("GITHUB_TOKEN")
             ).read_model_configs(github_url=config_path)
-        else:
-            return FileConfigReader().read_model_configs(config_path=config_path)
+
+        # if we can't load models another way then try to load them from the file system
+        if not models or len(models) == 0:
+            models = FileConfigReader().read_model_configs(config_path=config_path)
+
+        return models

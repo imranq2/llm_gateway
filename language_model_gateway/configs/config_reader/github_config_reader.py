@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import httpx
 import json
@@ -6,6 +7,8 @@ from typing import List, Tuple, Optional, Any, Dict
 from cachetools.func import ttl_cache
 from language_model_gateway.configs.config_schema import ChatModelConfig
 from urllib.parse import urlparse, unquote
+
+logger = logging.getLogger(__name__)
 
 
 class GitHubConfigReader:
@@ -59,9 +62,15 @@ class GitHubConfigReader:
         """
         # Parse the GitHub URL
         repo_url, path, branch = self.parse_github_url(github_url)
-        return await self._read_model_configs(
-            repo_url=repo_url, path=path, branch=branch
-        )
+        try:
+            models = await self._read_model_configs(
+                repo_url=repo_url, path=path, branch=branch
+            )
+            return models
+        except Exception as e:
+            logger.error(f"Error reading model configurations from Github: {str(e)}")
+            logger.exception(e, stack_info=True)
+            return []
 
     @ttl_cache(ttl=60 * 60)
     async def _read_model_configs(
