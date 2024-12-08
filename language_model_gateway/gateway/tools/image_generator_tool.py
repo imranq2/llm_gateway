@@ -62,4 +62,4 @@ class ImageGeneratorTool(BaseTool):
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             logger.exception(e, stack_info=True)
-            raise ValueError(f"Failed to generate image: {str(e)}")
+            return f"Failed to generate image: {e}", ""

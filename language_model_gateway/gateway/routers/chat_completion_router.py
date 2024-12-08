@@ -3,6 +3,8 @@ import logging
 import traceback
 from enum import Enum
 from typing import Annotated, Dict, Any, TypedDict, cast, Sequence
+
+from botocore.exceptions import TokenRetrievalError
 from fastapi import APIRouter, Depends, HTTPException
 from starlette.requests import Request
 from starlette.responses import StreamingResponse, JSONResponse
@@ -84,6 +86,13 @@ class ChatCompletionsRouter:
             return await chat_manager.chat_completions(
                 headers={k: v for k, v in request.headers.items()},
                 chat_request=cast(ChatRequest, chat_request),
+            )
+        except* TokenRetrievalError as e:
+            logger.exception(e, stack_info=True)
+            # return JSONResponse(content=f"Error retrieving AWS token: {e}", status_code=500)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error retrieving AWS token: {e}.  If running on developer machines, run `aws sso login --profile [profile_name]` to get the token.",
             )
 
         except* ConnectionError as e:

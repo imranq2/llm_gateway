@@ -41,4 +41,4 @@ class URLToMarkdownTool(BaseTool):
                 html_content=html_content
             )
         except Exception as e:
-            raise ValueError(f"Failed to fetch or process the URL: {str(e)}")
+            return f"Failed to fetch or process the URL: {str(e)}"
