@@ -37,9 +37,10 @@ class S3ConfigReader:
             return []
 
     # noinspection PyMethodMayBeStatic
+    @classmethod
     @ttl_cache(ttl=60 * 60)
     def _read_model_configs(
-        self, *, bucket_name: str, prefix: str
+        cls, *, bucket_name: str, prefix: str
     ) -> List[ChatModelConfig]:
         """
         Read model configurations from JSON files stored in an S3 bucket
@@ -48,6 +49,12 @@ class S3ConfigReader:
             bucket_name: The name of the S3 bucket
             prefix: The prefix (folder path) where the config files are stored
         """
+
+        assert bucket_name
+        assert prefix
+
+        logger.info(f"Reading model configurations from S3: {bucket_name}/{prefix}")
+
         configs: List[ChatModelConfig] = []
 
         # Initialize S3 client
@@ -76,16 +83,20 @@ class S3ConfigReader:
                                 configs.append(ChatModelConfig(**data))
 
                             except ClientError as e:
-                                print(f"Error reading file {obj['Key']}: {str(e)}")
+                                logger.error(
+                                    f"Error reading file {obj['Key']}: {str(e)}"
+                                )
                             except json.JSONDecodeError as e:
-                                print(f"Error parsing JSON from {obj['Key']}: {str(e)}")
+                                logger.error(
+                                    f"Error parsing JSON from {obj['Key']}: {str(e)}"
+                                )
                             except Exception as e:
-                                print(
+                                logger.error(
                                     f"Unexpected error processing {obj['Key']}: {str(e)}"
                                 )
 
         except ClientError as e:
-            print(f"Error accessing S3 bucket: {str(e)}")
+            logger.error(f"Error accessing S3 bucket: {str(e)}")
             raise
 
         # Sort configs by name

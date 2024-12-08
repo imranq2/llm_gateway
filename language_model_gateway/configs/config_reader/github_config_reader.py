@@ -64,7 +64,10 @@ class GitHubConfigReader:
         repo_url, path, branch = self.parse_github_url(github_url)
         try:
             models = await self._read_model_configs(
-                repo_url=repo_url, path=path, branch=branch
+                repo_url=repo_url,
+                path=path,
+                branch=branch,
+                github_token=self.github_token,
             )
             return models
         except Exception as e:
@@ -72,9 +75,10 @@ class GitHubConfigReader:
             logger.exception(e, stack_info=True)
             return []
 
+    @classmethod
     @ttl_cache(ttl=60 * 60)
     async def _read_model_configs(
-        self, *, repo_url: str, path: str, branch: str
+        cls, *, repo_url: str, path: str, branch: str, github_token: Optional[str]
     ) -> List[ChatModelConfig]:
         """
         Read model configurations from JSON files stored in a GitHub repository
@@ -83,6 +87,11 @@ class GitHubConfigReader:
             repo_url: The GitHub repository URL (format: 'owner/repo')
             path: The path within the repository where config files are stored
         """
+        assert repo_url
+        assert path
+        assert branch
+
+        logger.info(f"Reading model configurations from GitHub: {repo_url}/{path}")
         configs: List[ChatModelConfig] = []
 
         async with httpx.AsyncClient() as client:
@@ -91,9 +100,7 @@ class GitHubConfigReader:
                 api_url = f"https://api.github.com/repos/{repo_url}/contents/{path}?ref={branch}"
 
                 headers = (
-                    {"Authorization": f"token {self.github_token}"}
-                    if self.github_token
-                    else {}
+                    {"Authorization": f"token {github_token}"} if github_token else {}
                 )
                 # Get the list of files in the specified path
                 response = await client.get(api_url, headers=headers)
@@ -138,6 +145,8 @@ class GitHubConfigReader:
             except Exception as e:
                 print(f"Unexpected error: {str(e)}")
 
+        # Sort configs by name
+        configs.sort(key=lambda x: x.name)
         return configs
 
     async def close(self) -> None:
