@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Optional, Dict
 
@@ -100,13 +99,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
     def _run(self, url: str, query: Optional[str] = None) -> str:
         """Synchronous run method required by LangChain"""
-        # Create event loop and run async method
-        loop = asyncio.get_event_loop()
-        content = loop.run_until_complete(self._async_scrape(url=url, query=query))
-
-        if content:
-            return loop.run_until_complete(self._extract_text_content_async(content))
-        return "Error: Failed to scrape the webpage."
+        raise NotImplementedError("Use async version of this tool")
 
     async def _arun(self, url: str, query: Optional[str] = None) -> str:
         """Async run method"""

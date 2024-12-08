@@ -1,6 +1,5 @@
-import aiohttp
+import httpx
 from langchain.tools import BaseTool
-
 from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
     HtmlToMarkdownConverter,
 )
@@ -32,10 +31,10 @@ class URLToMarkdownTool(BaseTool):
         :return: The content of the webpage in Markdown format.
         """
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    response.raise_for_status()
-                    html_content = await response.text()
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                html_content = response.text
 
             return await HtmlToMarkdownConverter.get_markdown_from_html_async(
                 html_content=html_content
