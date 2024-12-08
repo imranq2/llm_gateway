@@ -84,6 +84,8 @@ graphviz = ">=0.20.3"
 markdownify= ">=0.14.1"
 # cachetools is a Python library for caching
 cachetools = ">=5.5.0"
+# aiofiles is a Python library for working with files asynchronously
+#aiofiles = ">=24.1.0"
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks
