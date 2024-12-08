@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import override
 
 import boto3
 
@@ -27,7 +28,8 @@ class AwsImageGenerator(ImageGenerator):
         )
         return bedrock_client
 
-    def generate_image(
+    @override
+    async def generate_image_async(
         self, prompt: str, style: str = "natural", image_size: str = "1024x1024"
     ) -> bytes:
         """Generate an image using Titan Image Generator"""
@@ -35,7 +37,7 @@ class AwsImageGenerator(ImageGenerator):
         logger.info(f"Generating image for prompt: {prompt}")
 
         # Create Bedrock client
-        client = self._create_bedrock_client()
+        client: boto3.client = self._create_bedrock_client()
 
         # Prepare the request parameters
         request_body = {
@@ -53,7 +55,7 @@ class AwsImageGenerator(ImageGenerator):
 
         try:
             # Invoke the model
-            response = client.invoke_model(
+            response = await client.invoke_model_async(
                 modelId="amazon.titan-image-generator-v2:0",
                 body=json.dumps(request_body),
             )
@@ -77,8 +79,13 @@ class AwsImageGenerator(ImageGenerator):
             logger.exception(e, stack_info=True)
             raise Exception(f"Error generating image: {str(e)}")
 
+        finally:
+            # Close the client
+            client.close()
+
     # noinspection PyMethodMayBeStatic
-    def save_image(self, image_data: bytes, filename: Path) -> None:
+    @override
+    async def save_image_async(self, image_data: bytes, filename: Path) -> None:
         """Save the generated image to a file"""
         if image_data:
             with open(filename, "wb") as f:

@@ -54,7 +54,7 @@ class ImageGeneratorEmbeddedTool(BaseTool):
 
             # styles = ["natural", "cinematic", "digital-art", "pop-art"]
             style = "natural"
-            image_data: bytes = image_generator.generate_image(
+            image_data: bytes = await image_generator.generate_image_async(
                 prompt=prompt, style=style, image_size="1024x1024"
             )
             base64_image: str = base64.b64encode(image_data).decode("utf-8")
@@ -62,7 +62,7 @@ class ImageGeneratorEmbeddedTool(BaseTool):
             markdown_image = f"![Generated Image]({embedded_url})"
 
             image_file_path = ImageGenerationHelper.get_full_path()
-            image_generator.save_image(image_data, image_file_path)
+            await image_generator.save_image_async(image_data, image_file_path)
             url = ImageGenerationHelper.get_url_for_file_name(image_file_path)
             return f"{url}", markdown_image
         except Exception as e:
