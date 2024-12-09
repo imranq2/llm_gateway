@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.container.container_factory import ContainerFactory
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.managers.chat_completion_manager import (
@@ -45,3 +46,11 @@ def get_image_generation_manager(
     """helper function to get the model manager"""
     assert isinstance(container, SimpleContainer), type(container)
     return container.resolve(ImageGenerationManager)
+
+
+def get_config_reader(
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
+) -> ConfigReader:
+    """helper function to get the chat manager"""
+    assert isinstance(container, SimpleContainer), type(container)
+    return container.resolve(ConfigReader)

@@ -1,3 +1,6 @@
+import os
+
+from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
@@ -25,6 +28,7 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
     OpenAiChatCompletionsProvider,
 )
 from language_model_gateway.gateway.tools.tool_provider import ToolProvider
+from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
 
 
 class ContainerFactory:
@@ -63,10 +67,25 @@ class ContainerFactory:
             ),
         )
         container.register(
+            ExpiringCache,
+            lambda c: ExpiringCache(
+                ttl_seconds=(
+                    int(os.environ["CONFIG_CACHE_TIMEOUT_SECONDS"])
+                    if os.environ.get("CONFIG_CACHE_TIMEOUT_SECONDS")
+                    else 60 * 60
+                )  # 60 minutes in seconds
+            ),
+        )
+
+        container.register(
+            ConfigReader, lambda c: ConfigReader(cache=c.resolve(ExpiringCache))
+        )
+        container.register(
             ChatCompletionManager,
             lambda c: ChatCompletionManager(
                 open_ai_provider=c.resolve(OpenAiChatCompletionsProvider),
                 langchain_provider=c.resolve(LangChainCompletionsProvider),
+                config_reader=c.resolve(ConfigReader),
             ),
         )
 
@@ -83,5 +102,7 @@ class ContainerFactory:
             ),
         )
 
-        container.register(ModelManager, lambda c: ModelManager())
+        container.register(
+            ModelManager, lambda c: ModelManager(config_reader=c.resolve(ConfigReader))
+        )
         return container

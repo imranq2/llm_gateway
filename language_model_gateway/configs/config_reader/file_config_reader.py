@@ -4,7 +4,6 @@ from pathlib import Path
 
 from typing import List
 
-from cachetools.func import ttl_cache
 
 from language_model_gateway.configs.config_schema import ChatModelConfig
 
@@ -16,9 +15,8 @@ class FileConfigReader:
     def read_model_configs(self, *, config_path: str) -> List[ChatModelConfig]:
         return self._read_model_configs(config_path)
 
-    @classmethod
-    @ttl_cache(ttl=60 * 60)
-    def _read_model_configs(cls, config_path: str) -> List[ChatModelConfig]:
+    # noinspection PyMethodMayBeStatic
+    def _read_model_configs(self, config_path: str) -> List[ChatModelConfig]:
         logger.info(f"Reading model configurations from {config_path}")
         config_folder: Path = Path(config_path)
         # read all the .json files recursively in the config folder

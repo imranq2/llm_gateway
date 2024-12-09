@@ -2,7 +2,7 @@ from datetime import datetime
 import logging
 import traceback
 from enum import Enum
-from typing import Annotated, Dict, Any, TypedDict, cast, Sequence, List
+from typing import Annotated, Dict, Any, TypedDict, cast, Sequence
 
 from botocore.exceptions import TokenRetrievalError
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,13 +10,11 @@ from starlette.requests import Request
 from starlette.responses import StreamingResponse, JSONResponse
 from fastapi import params
 
-from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.api_container import get_chat_manager
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
-from language_model_gateway.gateway.utilities.state_manager import StateManager
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +34,10 @@ class ChatCompletionsRouter:
     def __init__(
         self,
         *,
-        state_manager: StateManager,
         prefix: str = "/api/v1",
         tags: list[str | Enum] | None = None,
         dependencies: Sequence[params.Depends] | None = None,
     ) -> None:
-        self.state_manager = state_manager
         self.prefix = prefix
         self.tags = tags or ["models"]
         self.dependencies = dependencies or []
@@ -88,9 +84,7 @@ class ChatCompletionsRouter:
         assert chat_manager
 
         try:
-            configs: List[ChatModelConfig] = self.state_manager.get("models")
             return await chat_manager.chat_completions(
-                configs=configs,
                 headers={k: v for k, v in request.headers.items()},
                 chat_request=cast(ChatRequest, chat_request),
             )
