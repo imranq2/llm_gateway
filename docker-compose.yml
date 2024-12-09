@@ -23,6 +23,7 @@ services:
       CONFIG_CACHE_TIMEOUT_SECONDS: 120
       # Number of worker process to run
       NUM_WORKERS: 1
+      AWS_REGION: 'us-east-1'
     env_file: docker.env
     ports:
       - '5050:5000'

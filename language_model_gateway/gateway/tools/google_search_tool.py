@@ -2,7 +2,7 @@ import asyncio
 import logging
 import random
 from os import environ
-from typing import Optional, Dict, Any, List, cast, Type
+from typing import Optional, Dict, Any, List, cast, Type, Literal, Tuple
 
 import httpx
 from langchain_core.tools import BaseTool
@@ -46,6 +46,7 @@ class GoogleSearchTool(BaseTool):
     description: str = "Search Google for recent results."
 
     args_schema: Type[BaseModel] = GoogleSearchToolInput
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
     # Private attributes
     _client: httpx.AsyncClient = PrivateAttr()
@@ -113,11 +114,11 @@ class GoogleSearchTool(BaseTool):
         """Close the HTTP client."""
         await self._client.aclose()
 
-    def _run(self, query: str) -> str:
+    def _run(self, query: str) -> Tuple[str, str]:
         """Use async version of this tool."""
         raise NotImplementedError("Use async version of this tool")
 
-    async def _arun(self, query: str) -> str:
+    async def _arun(self, query: str) -> Tuple[str, str]:
         """Async implementation of the Google search tool."""
 
         assert self._api_key, "GOOGLE_API_KEY environment variable is required"
@@ -132,7 +133,10 @@ class GoogleSearchTool(BaseTool):
                 num=10,
             )
             if len(results) == 0:
-                return "No good Google Search Result was found"
+                return (
+                    "No good Google Search Result was found",
+                    f'GoogleSearchTool: Searched Google for "{query}"',
+                )
 
             for result in results:
                 if "snippet" in result:
@@ -140,10 +144,13 @@ class GoogleSearchTool(BaseTool):
 
             response: str = "\n".join(snippets)
             logger.info(f"Google Search results: {response}")
-            return response
+            return response, f'GoogleSearchTool: Searched Google for "{query}"'
         except Exception as e:
             logger.exception(e, stack_info=True)
-            return "Ran into an error while running Google Search"
+            return (
+                "Ran into an error while running Google Search",
+                f'GoogleSearchTool: Searched Google for "{query}"',
+            )
 
     # noinspection PyPep8Naming,PyShadowingBuiltins
     async def _search_async(

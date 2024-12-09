@@ -21,7 +21,7 @@ class ExpiringCache[T]:
             return False
         current_time: float = time.time()
         cache_is_valid: bool = current_time - self._cache_timestamp < self._ttl
-        logger.info(
+        logger.debug(
             f"ExpiringCache with id: {self._identifier} cache is valid: {cache_is_valid}. "
             f"current time({current_time}) - cache_timestamp({self._cache_timestamp}) < ttl ({self._ttl})"
         )

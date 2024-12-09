@@ -50,7 +50,7 @@ async def test_chat_completions_with_web_search(
                 type="langchain",
                 model=ModelConfig(
                     provider="bedrock",
-                    model="anthropic.claude-3-5-sonnet-20240620-v1:0",
+                    model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
                     ToolConfig(name="google_search"),

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Dict, Type
+from typing import Optional, Dict, Type, Tuple, Literal
 
 import httpx
 from langchain_core.tools import BaseTool
@@ -29,6 +29,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
         """
 
     args_schema: Type[BaseModel] = ScrapingBeeWebScraperToolInput
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
     api_key: Optional[str]
     """API key for ScrapingBee"""
@@ -106,14 +107,20 @@ class ScrapingBeeWebScraperTool(BaseTool):
                 html_content=html_content
             )
 
-    def _run(self, url: str, query: Optional[str] = None) -> str:
+    def _run(self, url: str, query: Optional[str] = None) -> Tuple[str, str]:
         """Synchronous run method required by LangChain"""
         raise NotImplementedError("Use async version of this tool")
 
-    async def _arun(self, url: str, query: Optional[str] = None) -> str:
+    async def _arun(self, url: str, query: Optional[str] = None) -> Tuple[str, str]:
         """Async run method"""
 
         content: Optional[str] = await self._async_scrape(url=url, query=query)
         if content:
-            return await self._extract_text_content_async(content)
-        return "Error: Failed to scrape the webpage."
+            return (
+                await self._extract_text_content_async(content),
+                f"ScrapingBeeWebScraperTool: Scraped content using ScrapingBee from <{url}> ",
+            )
+        return (
+            "Error: Failed to scrape the webpage.",
+            f"ScrapingBeeWebScraperTool: Failed to scrape <{url}> ",
+        )

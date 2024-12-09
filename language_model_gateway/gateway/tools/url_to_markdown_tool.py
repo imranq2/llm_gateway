@@ -1,5 +1,5 @@
 import logging
-from typing import Type
+from typing import Type, Literal, Tuple
 
 import httpx
 from langchain.tools import BaseTool
@@ -28,8 +28,9 @@ class URLToMarkdownTool(BaseTool):
         "Provide the URL as input. The tool will return the main content of the page formatted as Markdown."
     )
     args_schema: Type[BaseModel] = URLToMarkdownToolInput
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    def _run(self, url: str) -> str:
+    def _run(self, url: str) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
         :param url: The URL of the webpage to fetch.
@@ -37,7 +38,7 @@ class URLToMarkdownTool(BaseTool):
         """
         raise NotImplementedError("Use async version of this tool")
 
-    async def _arun(self, url: str) -> str:
+    async def _arun(self, url: str) -> Tuple[str, str]:
         """
         Asynchronous version of the tool.
         :param url: The URL of the webpage to fetch.
@@ -56,6 +57,9 @@ class URLToMarkdownTool(BaseTool):
             logger.info(
                 f"====== Scraped {url} ======\n{content}\n====== End of Scraped Markdown ======"
             )
-            return content
+            return content, f"URLToMarkdownTool: Scraped content from <{url}> "
         except Exception as e:
-            return f"Failed to fetch or process the URL: {str(e)}"
+            return (
+                f"Failed to fetch or process the URL {url}: {str(e)}",
+                f"URLToMarkdownTool: Failed to fetch or process the URL: <{url}> ",
+            )

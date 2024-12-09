@@ -64,8 +64,14 @@ class ImageGeneratorTool(BaseTool):
             image_file_path = ImageGenerationHelper.get_full_path()
             await image_generator.save_image_async(image_data, image_file_path)
             url = ImageGenerationHelper.get_url_for_file_name(image_file_path)
-            return url, url
+            return (
+                url,
+                f"ImageGeneratorTool: Generated image from prompt: {prompt}: <{url}> ",
+            )
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             logger.exception(e, stack_info=True)
-            return f"Failed to generate image: {e}", ""
+            return (
+                f"Failed to generate image: {e}",
+                f"ImageGeneratorTool: Failed to generate image from prompt: {prompt}",
+            )

@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Type
+from typing import Type, Literal, Tuple
 
 from graphviz import Digraph
 from langchain.tools import BaseTool
@@ -43,8 +43,9 @@ class GraphVizDiagramGeneratorTool(BaseTool):
         "This will generate a directed graph with three nodes: A, B, and C."
     )
     args_schema: Type[BaseModel] = GraphVizDiagramGeneratorToolInput
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    def _run(self, dot_input: str) -> str:
+    def _run(self, dot_input: str) -> Tuple[str, str]:
         """
         Run the tool to generate a diagram from DOT input.
         :param dot_input: The DOT description of the graph.
@@ -72,11 +73,15 @@ class GraphVizDiagramGeneratorTool(BaseTool):
 
             # Render the diagram
             dot.render(output_file, cleanup=True)
-            return ImageGenerationHelper.get_url_for_file_name(output_file)
+            url: str = ImageGenerationHelper.get_url_for_file_name(output_file)
+            return (
+                url,
+                f"GraphVizDiagramGeneratorTool: Generated diagram from DOT input: <{url}> ",
+            )
         except Exception as e:
             raise ValueError(f"Failed to generate diagram: {str(e)}")
 
-    async def _arun(self, dot_input: str) -> str:
+    async def _arun(self, dot_input: str) -> Tuple[str, str]:
         """
         Asynchronous version of the tool.
         :param dot_input: The DOT description of the graph.
