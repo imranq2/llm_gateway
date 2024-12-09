@@ -138,7 +138,7 @@ class LangGraphToOpenAIConverter:
                             )
                             yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
                 case "on_chain_end":
-                    print(f"===== {event_type} =====\n{event}\n")
+                    # print(f"===== {event_type} =====\n{event}\n")
                     output: Dict[str, Any] | str | None = event.get("data", {}).get(
                         "output"
                     )
