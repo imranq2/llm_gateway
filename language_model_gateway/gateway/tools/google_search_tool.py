@@ -49,8 +49,8 @@ class GoogleSearchTool(BaseTool):
 
     # Private attributes
     _client: httpx.AsyncClient = PrivateAttr()
-    _api_key: str = PrivateAttr()
-    _cse_id: str = PrivateAttr()
+    _api_key: Optional[str] = PrivateAttr()
+    _cse_id: Optional[str] = PrivateAttr()
     _max_retries: int = PrivateAttr(default=3)
     _base_delay: float = PrivateAttr(default=1.0)
     _max_delay: float = PrivateAttr(default=60.0)
@@ -59,9 +59,7 @@ class GoogleSearchTool(BaseTool):
         super().__init__(**data)
         self._client = httpx.AsyncClient()
         api_key: Optional[str] = environ.get("GOOGLE_API_KEY")
-        assert api_key, "GOOGLE_API_KEY environment variable is required"
         cse_id: Optional[str] = environ.get("GOOGLE_CSE_ID")
-        assert cse_id, "GOOGLE_CSE_ID environment variable is required"
         self._api_key = api_key
         self._cse_id = cse_id
 
@@ -121,6 +119,10 @@ class GoogleSearchTool(BaseTool):
 
     async def _arun(self, query: str) -> str:
         """Async implementation of the Google search tool."""
+
+        assert self._api_key, "GOOGLE_API_KEY environment variable is required"
+        assert self._cse_id, "GOOGLE_CSE_ID environment variable is required"
+
         snippets: List[str] = []
         try:
             # Result follows https://developers.google.com/custom-search/v1/reference/rest/v1/Search
