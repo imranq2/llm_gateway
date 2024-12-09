@@ -44,15 +44,30 @@ class S3Middleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     async def handle_s3_request(self, request: Request) -> Response:
-        bucket_name, prefix = UrlParser.parse_s3_uri(request.url.path)
 
-        # Check file extension
-        if not self.check_extension(prefix):
-            return Response(status_code=403, content="File type not allowed")
+        if self.image_generation_path.startswith("s3"):
+            bucket_name, prefix = UrlParser.parse_s3_uri(request.url.path)
 
-        bucket_name, prefix = UrlParser.parse_s3_uri(self.image_generation_path)
+            # Check file extension
+            if not self.check_extension(prefix):
+                return Response(status_code=403, content="File type not allowed")
 
-        return await AwsS3FileManager().handle_s3_request(
-            bucket_name=bucket_name,
-            s3_key=prefix,
-        )
+            bucket_name, prefix = UrlParser.parse_s3_uri(self.image_generation_path)
+
+            return await AwsS3FileManager().handle_s3_request(
+                bucket_name=bucket_name,
+                s3_key=prefix,
+            )
+        else:
+            # read and return file
+            full_path: str = self.image_generation_path + request.url.path
+            return await self.read_file_async(full_path)
+
+    async def read_file_async(self, full_path: str) -> Response:
+        # read and return file
+        try:
+            with open(full_path, "rb") as f:
+                content = f.read()
+        except FileNotFoundError:
+            return Response(status_code=404, content="File not found")
+        return Response(content=content)
