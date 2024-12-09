@@ -19,7 +19,7 @@ class ConfigReader:
 
         models: List[ChatModelConfig]
         if config_path.startswith("s3"):
-            models = S3ConfigReader().read_model_configs(s3_url=config_path)
+            models = await S3ConfigReader().read_model_configs(s3_url=config_path)
         elif "github.com" in config_path:
             models = await GitHubConfigReader(
                 os.environ.get("GITHUB_TOKEN")

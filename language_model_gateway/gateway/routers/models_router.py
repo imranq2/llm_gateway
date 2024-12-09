@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends
 from starlette.requests import Request
 from fastapi import params
 
+from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.api_container import get_model_manager
 from language_model_gateway.gateway.managers.model_manager import ModelManager
+from language_model_gateway.gateway.utilities.state_manager import StateManager
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +20,13 @@ class ModelsRouter:
 
     def __init__(
         self,
+        *,
+        state_manager: StateManager,
         prefix: str = "/api/v1",
         tags: list[str | Enum] | None = None,
         dependencies: Sequence[params.Depends] | None = None,
     ) -> None:
+        self.state_manager = state_manager
         self.prefix = prefix
         self.tags = tags or ["models"]
         self.dependencies = dependencies or []
@@ -59,7 +64,9 @@ class ModelsRouter:
         Returns:
             Dictionary containing list of available models
         """
+        configs: List[ChatModelConfig] = self.state_manager.get("models")
         return await model_manager.get_models(
+            configs=configs,
             headers={k: v for k, v in request.headers.items()},
         )
 

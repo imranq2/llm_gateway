@@ -4,7 +4,6 @@ from typing import Dict, List
 from openai.types.chat import ChatCompletionSystemMessageParam
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.configs.config_schema import ChatModelConfig, PromptConfig
 from language_model_gateway.gateway.providers.base_chat_completions_provider import (
     BaseChatCompletionsProvider,
@@ -54,14 +53,13 @@ class ChatCompletionManager:
     async def chat_completions(
         self,
         *,
+        configs: List[ChatModelConfig],
         headers: Dict[str, str],
         chat_request: ChatRequest,
     ) -> StreamingResponse | JSONResponse:
         # Use the model to choose the provider
         model: str = chat_request["model"]
         assert model is not None
-
-        configs: List[ChatModelConfig] = await ConfigReader().read_model_configs_async()
 
         # Find the model config
         model_config: ChatModelConfig | None = next(

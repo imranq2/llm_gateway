@@ -1,10 +1,12 @@
 import asyncio
 import logging
+import os
+import time
+from uuid import uuid4, UUID
 
 import httpx
 import json
 from typing import List, Tuple, Optional, Any, Dict
-from cachetools.func import ttl_cache
 from language_model_gateway.configs.config_schema import ChatModelConfig
 from urllib.parse import urlparse, unquote
 
@@ -12,6 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 class GitHubConfigReader:
+    # Class-level cache and lock
+    _config_cache: Optional[List[ChatModelConfig]] = None
+    _cache_timestamp: Optional[float] = None
+    _lock: asyncio.Lock = asyncio.Lock()
+    _CACHE_TTL: float = (
+        float(os.environ["CONFIG_CACHE_TIMEOUT_SECONDS"])
+        if os.environ.get("CONFIG_CACHE_TIMEOUT_SECONDS")
+        else 60 * 60
+    )  # 60 minutes in seconds
+    _identifier: UUID = uuid4()
+
     def __init__(self, github_token: Optional[str]) -> None:
         """
         Initialize the async GitHub config reader
@@ -20,6 +33,17 @@ class GitHubConfigReader:
             github_token: Optional GitHub personal access token for private repositories
         """
         self.github_token: Optional[str] = github_token
+
+    @classmethod
+    def _is_cache_valid(cls) -> bool:
+        """Check if the cache is still valid"""
+        if cls._config_cache is None or cls._cache_timestamp is None:
+            return False
+        current_time: float = time.time()
+        logger.info(
+            f"Identifier: {cls._identifier} Time: {current_time}, Cache Timestamp: {cls._cache_timestamp}, TTL: {cls._CACHE_TTL}"
+        )
+        return current_time - cls._cache_timestamp < cls._CACHE_TTL
 
     @staticmethod
     def parse_github_url(github_url: str) -> Tuple[str, str, str]:
@@ -60,23 +84,56 @@ class GitHubConfigReader:
         """
         Read model configurations from JSON files stored in a GitHub repository
         """
-        # Parse the GitHub URL
-        repo_url, path, branch = self.parse_github_url(github_url)
-        try:
-            models = await self._read_model_configs(
-                repo_url=repo_url,
-                path=path,
-                branch=branch,
-                github_token=self.github_token,
-            )
-            return models
-        except Exception as e:
-            logger.error(f"Error reading model configurations from Github: {str(e)}")
-            logger.exception(e, stack_info=True)
-            return []
+        # If configs are cached and not expired, return them
+        logger.info(
+            f"Identifier: {self.__class__._identifier} Reading model configurations from GitHub: {github_url}"
+        )
+
+        logger.info(
+            f"Identifier: {self.__class__._identifier} Cache is set: {self._config_cache is not None}"
+        )
+        logger.info(
+            f"Identifier: {self.__class__._identifier} Cache Timestamp: {self._cache_timestamp}"
+        )
+
+        if self._is_cache_valid():
+            assert self._config_cache is not None
+            return self._config_cache
+
+        # Use lock to prevent multiple simultaneous loads
+        async with self._lock:
+            # Check again in case another request loaded the configs while we were waiting
+            if self._is_cache_valid():
+                assert self._config_cache is not None
+                return self._config_cache
+
+            # Parse the GitHub URL
+            repo_url, path, branch = self.parse_github_url(github_url)
+            try:
+                models = await self._read_model_configs(
+                    repo_url=repo_url,
+                    path=path,
+                    branch=branch,
+                    github_token=self.github_token,
+                )
+                # Store in cache with timestamp
+                self.__class__._config_cache = models
+                self.__class__._cache_timestamp = time.time()
+                logger.info(
+                    f"Identifier: {self.__class__._identifier} Set Cache: {self._config_cache is not None}"
+                )
+                logger.info(
+                    f"Identifier: {self.__class__._identifier} Set Cache Timestamp: {self._cache_timestamp}"
+                )
+                return models
+            except Exception as e:
+                logger.error(
+                    f"Error reading model configurations from Github: {str(e)}"
+                )
+                logger.exception(e, stack_info=True)
+                return []
 
     @classmethod
-    @ttl_cache(ttl=60 * 60)
     async def _read_model_configs(
         cls, *, repo_url: str, path: str, branch: str, github_token: Optional[str]
     ) -> List[ChatModelConfig]:
@@ -114,7 +171,6 @@ class GitHubConfigReader:
                     if item["type"] == "file" and item["name"].endswith(".json")
                 ]
 
-                # Create tasks for all JSON files
                 async def fetch_and_parse_config(
                     item: Dict[str, Any]
                 ) -> Optional[ChatModelConfig]:
@@ -137,20 +193,17 @@ class GitHubConfigReader:
                 tasks = [fetch_and_parse_config(item) for item in json_files]
                 results = await asyncio.gather(*tasks)
 
-                # Filter out None results (failed requests)
-                configs = [config for config in results if config is not None]
+                # Filter out None results and add valid configs to the list
+                configs.extend([config for config in results if config is not None])
 
-            except httpx.RequestError as e:
-                print(f"Error accessing GitHub repository: {str(e)}")
+                return configs
+
             except Exception as e:
-                print(f"Unexpected error: {str(e)}")
+                logger.error(f"Error reading configs from GitHub: {str(e)}")
+                raise
 
-        # Sort configs by name
-        configs.sort(key=lambda x: x.name)
-        return configs
-
-    async def close(self) -> None:
-        """
-        Clean up resources
-        """
-        pass  # Added for consistency with other async clients
+    @classmethod
+    async def clear_cache(cls) -> None:
+        async with cls._lock:
+            cls._config_cache = None
+            cls._cache_timestamp = None

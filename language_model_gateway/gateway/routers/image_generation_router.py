@@ -15,6 +15,7 @@ from language_model_gateway.gateway.managers.image_generation_manager import (
 from language_model_gateway.gateway.schema.openai.image_generation import (
     ImageGenerationRequest,
 )
+from language_model_gateway.gateway.utilities.state_manager import StateManager
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +27,13 @@ class ImageGenerationRouter:
 
     def __init__(
         self,
+        *,
+        state_manager: StateManager,
         prefix: str = "/api/v1",
         tags: list[str | Enum] | None = None,
         dependencies: Sequence[params.Depends] | None = None,
     ) -> None:
+        self.state_manager = state_manager
         self.prefix = prefix
         self.tags = tags or ["models"]
         self.dependencies = dependencies or []
