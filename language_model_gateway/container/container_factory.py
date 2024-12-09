@@ -6,6 +6,7 @@ from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
 )
+from language_model_gateway.gateway.file_managers.file_saver import FileSaver
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
@@ -54,6 +55,10 @@ class ContainerFactory:
         container.register(ModelFactory, lambda c: ModelFactory())
 
         container.register(ImageGeneratorFactory, lambda c: ImageGeneratorFactory())
+        container.register(
+            FileSaver,
+            lambda c: FileSaver(),
+        )
 
         container.register(
             LangGraphToOpenAIConverter, lambda c: LangGraphToOpenAIConverter()
@@ -61,7 +66,8 @@ class ContainerFactory:
         container.register(
             ToolProvider,
             lambda c: ToolProvider(
-                image_generator_factory=c.resolve(ImageGeneratorFactory)
+                image_generator_factory=c.resolve(ImageGeneratorFactory),
+                file_saver=c.resolve(FileSaver),
             ),
         )
         container.register(
@@ -99,7 +105,8 @@ class ContainerFactory:
         container.register(
             ImageGenerationProvider,
             lambda c: ImageGenerationProvider(
-                image_generator_factory=c.resolve(ImageGeneratorFactory)
+                image_generator_factory=c.resolve(ImageGeneratorFactory),
+                file_saver=c.resolve(FileSaver),
             ),
         )
         container.register(

@@ -8,6 +8,7 @@ from langchain_community.tools import (
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolConfig
+from language_model_gateway.gateway.file_managers.file_saver import FileSaver
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
@@ -27,7 +28,9 @@ from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkd
 
 
 class ToolProvider:
-    def __init__(self, *, image_generator_factory: ImageGeneratorFactory) -> None:
+    def __init__(
+        self, *, image_generator_factory: ImageGeneratorFactory, file_saver: FileSaver
+    ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
             "DEFAULT_WEB_SEARCH_TOOL", "duckduckgo"
@@ -52,7 +55,8 @@ class ToolProvider:
             "get_web_page": URLToMarkdownTool(),
             "arxiv_search": ArxivQueryRun(),
             "image_generator": ImageGeneratorTool(
-                image_generator_factory=image_generator_factory
+                image_generator_factory=image_generator_factory,
+                file_saver=file_saver,
             ),
             "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(

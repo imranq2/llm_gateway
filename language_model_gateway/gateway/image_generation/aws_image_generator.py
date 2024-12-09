@@ -4,7 +4,6 @@ import json
 import logging
 import os
 from concurrent.futures.thread import ThreadPoolExecutor
-from pathlib import Path
 from typing import override, Dict, Any
 
 import boto3
@@ -84,31 +83,3 @@ class AwsImageGenerator(ImageGenerator):
             logger.error(f"Error generating image for prompt {prompt}: {str(e)}")
             logger.exception(e, stack_info=True)
             raise
-
-    # noinspection PyMethodMayBeStatic
-    @override
-    async def save_image_async(self, image_data: bytes, filename: Path) -> None:
-        """Save the generated image to a file"""
-        if image_data:
-            with open(filename, "wb") as f:
-                f.write(image_data)
-            logger.info(f"Image saved as {filename}")
-        else:
-            logger.error("No image to save")
-
-    # @override
-    # async def save_image_async(self, image_data: bytes, filename: Path) -> None:
-    #     """Save the generated image to a file asynchronously"""
-    #     if not image_data:
-    #         logger.warning("No image data to save")
-    #         return
-    #
-    #     try:
-    #         # Use aiofiles for async file operations
-    #         async with aiofiles.open(filename, mode='wb') as f:
-    #             await f.write(image_data)
-    #         logger.info(f"Image saved as {filename}")
-    #
-    #     except Exception as e:
-    #         logger.error(f"Error saving image to {filename}: {str(e)}")
-    #         raise
