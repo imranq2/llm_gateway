@@ -22,6 +22,7 @@ from language_model_gateway.gateway.providers.base_image_generation_provider imp
 from language_model_gateway.gateway.schema.openai.image_generation import (
     ImageGenerationRequest,
 )
+from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
@@ -86,11 +87,12 @@ class ImageGenerationProvider(BaseImageGenerationProvider):
                 image_generation_path_
             ), "IMAGE_GENERATION_PATH environment variable is not set"
             image_file_name: str = f"{uuid4()}.png"
-            url: Optional[str] = await self.file_saver.save_file_async(
+            file_path: Optional[str] = await self.file_saver.save_file_async(
                 image_data=image_bytes,
                 folder=image_generation_path_,
                 filename=image_file_name,
             )
+            url = UrlParser.get_url_for_file_name(file_path) if file_path else None
             response_data = [Image(url=url)] if url else []
 
         response: ImagesResponse = ImagesResponse(
