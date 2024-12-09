@@ -1,26 +1,20 @@
 import logging
-import os
 from typing import Optional, Generator
 
-import boto3
 from botocore.exceptions import ClientError
 from starlette.responses import Response, StreamingResponse
 
+from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
 
 class AwsS3FileManager:
-    # noinspection PyMethodMayBeStatic
-    def _create_s3_client(self) -> boto3.client:
-        """Create and return a Bedrock client"""
-        session1 = boto3.Session(profile_name=os.environ.get("AWS_CREDENTIALS_PROFILE"))
-        bedrock_client = session1.client(
-            service_name="s3",
-            region_name="us-east-1",
-        )
-        return bedrock_client
+    def __init__(self, *, aws_client_factory: AwsClientFactory) -> None:
+        self.aws_client_factory = aws_client_factory
+        assert self.aws_client_factory is not None
+        assert isinstance(self.aws_client_factory, AwsClientFactory)
 
     async def save_file_async(
         self, *, image_data: bytes, folder: str, filename: str
@@ -38,7 +32,7 @@ class AwsS3FileManager:
 
         s3_full_path: str = self.get_full_path(bucket_name=bucket_name, s3_key=s3_key)
 
-        s3_client = self._create_s3_client()
+        s3_client = self.aws_client_factory.create_client(service_name="s3")
         if not image_data:
             logger.error("No image to save")
             return None
@@ -78,7 +72,7 @@ class AwsS3FileManager:
         return bucket_name
 
     async def handle_s3_request(self, *, bucket_name: str, s3_key: str) -> Response:
-        s3_client = self._create_s3_client()
+        s3_client = self.aws_client_factory.create_client(service_name="s3")
 
         try:
             response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)

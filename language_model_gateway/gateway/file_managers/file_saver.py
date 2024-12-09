@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
 from language_model_gateway.gateway.file_managers.aws_s3_file_manager import (
     AwsS3FileManager,
 )
@@ -10,14 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 class FileSaver:
+    def __init__(self, *, aws_client_factory: AwsClientFactory) -> None:
+        self.aws_client_factory = aws_client_factory
+        assert self.aws_client_factory is not None
+        assert isinstance(self.aws_client_factory, AwsClientFactory)
+
     # noinspection PyMethodMayBeStatic
     async def save_file_async(
         self, *, image_data: bytes, folder: str, filename: str
     ) -> Optional[str]:
         if folder.startswith("s3"):
-            return await AwsS3FileManager().save_file_async(
-                image_data=image_data, folder=folder, filename=filename
-            )
+            return await AwsS3FileManager(
+                aws_client_factory=self.aws_client_factory
+            ).save_file_async(image_data=image_data, folder=folder, filename=filename)
         else:
             return await LocalFileSaver().save_file_async(
                 image_data=image_data, folder=folder, filename=filename
@@ -26,6 +32,8 @@ class FileSaver:
     # noinspection PyMethodMayBeStatic
     def get_full_path(self, *, filename: str, folder: str) -> str:
         if folder.startswith("s3"):
-            return AwsS3FileManager().get_full_path(bucket_name=folder, s3_key=filename)
+            return AwsS3FileManager(
+                aws_client_factory=self.aws_client_factory
+            ).get_full_path(bucket_name=folder, s3_key=filename)
         else:
             return LocalFileSaver().get_full_path(filename=filename, folder=folder)

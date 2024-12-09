@@ -2,12 +2,12 @@ import asyncio
 import base64
 import json
 import logging
-import os
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import override, Dict, Any
 
 import boto3
 
+from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
 )
@@ -16,22 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 class AwsImageGenerator(ImageGenerator):
-    def __init__(self) -> None:
+    def __init__(self, *, aws_client_factory: AwsClientFactory) -> None:
         self.executor: ThreadPoolExecutor = ThreadPoolExecutor()
-
-    def _create_bedrock_client(self) -> boto3.client:
-        """Create and return a Bedrock client"""
-        session1 = boto3.Session(profile_name=os.environ.get("AWS_CREDENTIALS_PROFILE"))
-        bedrock_client = session1.client(
-            service_name="bedrock-runtime",
-            region_name="us-east-1",
-        )
-        return bedrock_client
+        self.aws_client_factory: AwsClientFactory = aws_client_factory
+        assert self.aws_client_factory is not None
+        assert isinstance(self.aws_client_factory, AwsClientFactory)
 
     def _invoke_model(self, request_body: Dict[str, Any]) -> Dict[str, Any]:
         """Synchronous model invocation"""
 
-        client: boto3.client = self._create_bedrock_client()
+        client: boto3.client = self.aws_client_factory.create_client(
+            service_name="bedrock-runtime"
+        )
         response: Dict[str, Any] = client.invoke_model(
             modelId="amazon.titan-image-generator-v2:0",
             body=json.dumps(request_body),

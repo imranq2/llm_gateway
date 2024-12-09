@@ -9,6 +9,7 @@ from unittest.mock import patch, MagicMock
 from starlette.responses import Response
 
 from language_model_gateway.gateway.middleware.s3_middleware import S3Middleware
+from tests.gateway.mocks.mock_aws_client_factory import MockAwsClientFactory
 
 
 @pytest.fixture
@@ -26,6 +27,7 @@ def mock_s3() -> boto3.client:
 def s3_middleware(fastapi_app: FastAPI, mock_s3: boto3.client) -> S3Middleware:
     return S3Middleware(
         app=fastapi_app,
+        aws_client_factory=MockAwsClientFactory(aws_client=mock_s3),
         image_generation_path="s3://test-bucket/images/",
         target_path="/image_generation/",
         allowed_extensions=["jpg", "png"],
@@ -59,6 +61,7 @@ async def test_s3_middleware_handle_s3_request_with_moto(
     # Create middleware
     middleware = S3Middleware(
         app=fastapi_app,
+        aws_client_factory=MockAwsClientFactory(aws_client=mock_s3),
         image_generation_path=f"s3://{bucket_name}/images",
         target_path="/image_generation/",
         allowed_extensions=["jpg", "png"],
@@ -77,7 +80,7 @@ async def test_s3_middleware_handle_s3_request_with_moto(
 
 
 async def test_s3_middleware_local_file_handling(
-    fastapi_app: FastAPI, tmp_path: Path
+    fastapi_app: FastAPI, mock_s3: boto3.client, tmp_path: Path
 ) -> None:
     # Create a temporary file
     test_file_path = tmp_path / "test.jpg"
@@ -87,6 +90,7 @@ async def test_s3_middleware_local_file_handling(
     # Create middleware with local path
     middleware = S3Middleware(
         app=fastapi_app,
+        aws_client_factory=MockAwsClientFactory(aws_client=mock_s3),
         image_generation_path=str(tmp_path) + "/",
         target_path="/image_generation/",
         allowed_extensions=["jpg", "png"],
@@ -104,10 +108,13 @@ async def test_s3_middleware_local_file_handling(
     assert response.body == test_content
 
 
-async def test_s3_middleware_extension_filtering(fastapi_app: FastAPI) -> None:
+async def test_s3_middleware_extension_filtering(
+    fastapi_app: FastAPI, mock_s3: boto3.client
+) -> None:
     # Create middleware with specific allowed extensions
     middleware = S3Middleware(
         app=fastapi_app,
+        aws_client_factory=MockAwsClientFactory(aws_client=mock_s3),
         image_generation_path="s3://test-bucket/images/",
         target_path="/image_generation/",
         allowed_extensions=["jpg", "png"],
@@ -125,10 +132,13 @@ async def test_s3_middleware_extension_filtering(fastapi_app: FastAPI) -> None:
     assert response.body == b"File type not allowed"
 
 
-async def test_s3_middleware_file_not_found(fastapi_app: FastAPI) -> None:
+async def test_s3_middleware_file_not_found(
+    fastapi_app: FastAPI, mock_s3: boto3.client
+) -> None:
     # Create middleware
     middleware = S3Middleware(
         app=fastapi_app,
+        aws_client_factory=MockAwsClientFactory(aws_client=mock_s3),
         image_generation_path="s3://test-bucket/images/",
         target_path="/image_generation/",
     )

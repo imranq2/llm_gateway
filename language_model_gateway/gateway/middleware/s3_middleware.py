@@ -1,8 +1,11 @@
-from typing import List, Callable, Awaitable
+from typing import List, Callable, Awaitable, Annotated
 
 from fastapi import FastAPI, Request, Response
+from fastapi.params import Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from language_model_gateway.gateway.api_container import get_aws_client_factory
+from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
 from language_model_gateway.gateway.file_managers.aws_s3_file_manager import (
     AwsS3FileManager,
 )
@@ -13,6 +16,10 @@ class S3Middleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: FastAPI,
+        aws_client_factory: Annotated[
+            AwsClientFactory, Depends(get_aws_client_factory)
+        ],
+        *,
         image_generation_path: str,
         target_path: str = "/image_generation/",
         allowed_extensions: List[str] | None = None,
@@ -23,6 +30,7 @@ class S3Middleware(BaseHTTPMiddleware):
         self.target_path = target_path
         self.allowed_extensions = allowed_extensions
         self.cache_max_age = cache_max_age
+        self.aws_client_factory = aws_client_factory
 
     def check_extension(self, filename: str) -> bool:
         if not self.allowed_extensions:
@@ -53,7 +61,9 @@ class S3Middleware(BaseHTTPMiddleware):
 
             s3_key = str(prefix) + str(request.url.path)
 
-            return await AwsS3FileManager().handle_s3_request(
+            return await AwsS3FileManager(
+                aws_client_factory=self.aws_client_factory
+            ).handle_s3_request(
                 bucket_name=bucket_name,
                 s3_key=s3_key,
             )
@@ -62,6 +72,7 @@ class S3Middleware(BaseHTTPMiddleware):
             full_path: str = self.image_generation_path + request.url.path
             return await self.read_file_async(full_path)
 
+    # noinspection PyMethodMayBeStatic
     async def read_file_async(self, full_path: str) -> Response:
         # read and return file
         try:
