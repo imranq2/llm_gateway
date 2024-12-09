@@ -92,9 +92,9 @@ class AwsImageGenerator(ImageGenerator):
         if image_data:
             with open(filename, "wb") as f:
                 f.write(image_data)
-            print(f"Image saved as {filename}")
+            logger.info(f"Image saved as {filename}")
         else:
-            print("No image to save")
+            logger.error("No image to save")
 
     # @override
     # async def save_image_async(self, image_data: bytes, filename: Path) -> None:

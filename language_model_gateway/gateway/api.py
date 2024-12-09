@@ -56,11 +56,11 @@ async def lifespan(app1: FastAPI) -> AsyncGenerator[None, None]:
             level=getattr(logging, log_level),
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
-        print(f"Starting application initialization for worker {worker_id}...")
+        logger.info(f"Starting application initialization for worker {worker_id}...")
 
         # perform any startup tasks here
 
-        print(f"Application initialization completed for worker {worker_id}")
+        logger.info(f"Application initialization completed for worker {worker_id}")
         yield
 
     except Exception as e:
@@ -69,11 +69,10 @@ async def lifespan(app1: FastAPI) -> AsyncGenerator[None, None]:
 
     finally:
         try:
-            print(f"Starting application shutdown for worker {worker_id}...")
+            logger.info(f"Starting application shutdown for worker {worker_id}...")
             # await container.cleanup()
             # Clean up on shutdown
-            print("Data cleaned up")
-            print("Application shutdown completed")
+            logger.info("Application shutdown completed")
         except Exception as e:
             logger.exception(e, stack_info=True)
             raise

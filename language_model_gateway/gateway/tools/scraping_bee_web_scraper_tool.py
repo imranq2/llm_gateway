@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class ScrapingBeeWebScraperToolInput(BaseModel):
-    url: str = Field(description="Prompt to use for generating the image")
+    url: str = Field(description="url of the webpage to scrape")
     query: Optional[str] = Field(description="Query to search for on the webpage")
 
 
@@ -77,6 +77,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
         try:
             async with httpx.AsyncClient() as client:
+                logger.info(f"Scraping {url} with ScrapingBee with params: {params}")
                 response = await client.get(self.base_url, params=params, timeout=30.0)
 
                 if response.status_code == 200:

@@ -1,3 +1,4 @@
+import logging
 import os
 
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
@@ -31,9 +32,14 @@ from language_model_gateway.gateway.tools.tool_provider import ToolProvider
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
 
 
+logger = logging.getLogger(__name__)
+
+
 class ContainerFactory:
     # noinspection PyMethodMayBeStatic
     async def create_container_async(self) -> SimpleContainer:
+        logger.info("Initializing DI container")
+
         container = SimpleContainer()
 
         # register services here
@@ -106,4 +112,5 @@ class ContainerFactory:
         container.register(
             ModelManager, lambda c: ModelManager(config_reader=c.resolve(ConfigReader))
         )
+        logger.info("DI container initialized")
         return container

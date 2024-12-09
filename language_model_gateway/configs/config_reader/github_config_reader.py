@@ -197,11 +197,15 @@ class GitHubConfigReader:
                         data = file_response.json()
                         return ChatModelConfig(**data)
                     except httpx.RequestError as e:
-                        print(f"Error reading file {item['name']}: {str(e)}")
+                        logger.error(f"Error reading file {item['name']}: {str(e)}")
                     except json.JSONDecodeError as e:
-                        print(f"Error parsing JSON from {item['name']}: {str(e)}")
+                        logger.error(
+                            f"Error parsing JSON from {item['name']}: {str(e)}"
+                        )
                     except Exception as e:
-                        print(f"Unexpected error processing {item['name']}: {str(e)}")
+                        logger.error(
+                            f"Unexpected error processing {item['name']}: {str(e)}"
+                        )
                     return None
 
                 # Process all files concurrently

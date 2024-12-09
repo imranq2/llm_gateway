@@ -1,3 +1,4 @@
+import logging
 from typing import Type
 
 import httpx
@@ -9,8 +10,11 @@ from language_model_gateway.gateway.utilities.html_to_markdown_converter import 
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 class URLToMarkdownToolInput(BaseModel):
-    url: str = Field(description="Prompt to use for generating the image")
+    url: str = Field(description="url of the webpage to scrape")
 
 
 class URLToMarkdownTool(BaseTool):
@@ -39,14 +43,19 @@ class URLToMarkdownTool(BaseTool):
         :param url: The URL of the webpage to fetch.
         :return: The content of the webpage in Markdown format.
         """
+        logger.info(f"Fetching and converting URL to Markdown: {url}")
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(url)
                 response.raise_for_status()
                 html_content = response.text
 
-            return await HtmlToMarkdownConverter.get_markdown_from_html_async(
+            content: str = await HtmlToMarkdownConverter.get_markdown_from_html_async(
                 html_content=html_content
             )
+            logger.info(
+                f"====== Scraped {url} ======\n{content}\n====== End of Scraped Markdown ======"
+            )
+            return content
         except Exception as e:
             return f"Failed to fetch or process the URL: {str(e)}"
