@@ -57,8 +57,8 @@ class LocalFileManager(FileManager):
     async def read_file_async(
         self, *, folder: str, file_path: str
     ) -> StreamingResponse:
+        full_path: str = os.path.join(folder.rstrip("/"), file_path.lstrip("/"))
         try:
-            full_path: str = os.path.join(folder.rstrip("/"), file_path.lstrip("/"))
             # Determine file size and MIME type
             file_size = os.path.getsize(full_path)
             mime_type, _ = mimetypes.guess_type(full_path)
@@ -79,6 +79,10 @@ class LocalFileManager(FileManager):
                 },
             )
         except FileNotFoundError:
-            raise HTTPException(status_code=404, detail="File not found")
+            logger.error(f"File not found: {full_path}")
+            raise HTTPException(status_code=404, detail=f"File not found: {full_path}")
         except PermissionError:
-            raise HTTPException(status_code=403, detail="Access forbidden")
+            logger.error(f"Access forbidden: {full_path}")
+            raise HTTPException(
+                status_code=403, detail=f"Access forbidden: {full_path}"
+            )

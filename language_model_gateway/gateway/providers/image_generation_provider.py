@@ -101,7 +101,9 @@ class ImageGenerationProvider(BaseImageGenerationProvider):
                 folder=image_generation_path_,
                 filename=image_file_name,
             )
-            url = UrlParser.get_url_for_file_name(file_path) if file_path else None
+            url = (
+                UrlParser.get_url_for_file_name(image_file_name) if file_path else None
+            )
             response_data = [Image(url=url)] if url else []
 
         response: ImagesResponse = ImagesResponse(

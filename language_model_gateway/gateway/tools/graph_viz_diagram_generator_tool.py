@@ -87,7 +87,7 @@ class GraphVizDiagramGeneratorTool(BaseTool):
                 folder=image_generation_path_, filename=image_file_name
             )
             dot.render(output_file, cleanup=True)
-            url: str = UrlParser.get_url_for_file_name(output_file)
+            url: str = UrlParser.get_url_for_file_name(image_file_name)
             return (
                 url,
                 f"GraphVizDiagramGeneratorTool: Generated diagram from DOT input: <{url}> ",
