@@ -82,7 +82,7 @@ class ImagesRouter:
             Dictionary containing list of available models
         """
         request_url_path = file_path
-        logger.info(f"get_images: request.url.path: {file_path}")
+        logger.info(f"get_images: file_path: {file_path}")
         folder: str
         file_path1: str
         if self.image_generation_path.startswith("s3"):
@@ -97,7 +97,7 @@ class ImagesRouter:
 
             # combine the prefix and file path and include / if needed
             s3_key = UrlParser.combine_path(prefix=prefix, filename=file_path)
-            folder = bucket_name
+            folder = self.image_generation_path
             file_path1 = s3_key
         else:
             # read and return file
