@@ -8,6 +8,9 @@ from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -44,7 +47,7 @@ class GraphVizDiagramGeneratorTool(BaseTool):
     )
     args_schema: Type[BaseModel] = GraphVizDiagramGeneratorToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
-    file_saver: FileManager
+    file_manager_factory: FileManagerFactory
 
     def _run(self, dot_input: str) -> Tuple[str, str]:
         """
@@ -77,7 +80,10 @@ class GraphVizDiagramGeneratorTool(BaseTool):
                 image_generation_path_
             ), "IMAGE_GENERATION_PATH environment variable is not set"
             image_file_name: str = f"{uuid4()}.png"
-            output_file: str = self.file_saver.get_full_path(
+            file_manager: FileManager = self.file_manager_factory.get_file_manager(
+                folder=image_generation_path_
+            )
+            output_file: str = file_manager.get_full_path(
                 folder=image_generation_path_, filename=image_file_name
             )
             dot.render(output_file, cleanup=True)

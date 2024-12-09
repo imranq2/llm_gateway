@@ -1,21 +1,23 @@
 import logging
-from typing import Optional, Generator
+from typing import Optional, Generator, override
 
 from botocore.exceptions import ClientError
 from starlette.responses import Response, StreamingResponse
 
 from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
 
-class AwsS3FileManager:
+class AwsS3FileManager(FileManager):
     def __init__(self, *, aws_client_factory: AwsClientFactory) -> None:
         self.aws_client_factory = aws_client_factory
         assert self.aws_client_factory is not None
         assert isinstance(self.aws_client_factory, AwsClientFactory)
 
+    @override
     async def save_file_async(
         self, *, image_data: bytes, folder: str, filename: str
     ) -> Optional[str]:
@@ -30,7 +32,7 @@ class AwsS3FileManager:
         bucket_name: str = self.get_bucket(filename=filename, folder=folder)
         s3_key = str(filename)
 
-        s3_full_path: str = self.get_full_path(bucket_name=bucket_name, s3_key=s3_key)
+        s3_full_path: str = self.get_full_path(folder=bucket_name, filename=s3_key)
 
         s3_client = self.aws_client_factory.create_client(service_name="s3")
         if not image_data:
@@ -53,12 +55,12 @@ class AwsS3FileManager:
             logger.error(f"Error saving image to S3: {e}")
             raise
 
-    # noinspection PyMethodMayBeStatic
-    def get_full_path(self, *, bucket_name: str, s3_key: str) -> str:
+    @override
+    def get_full_path(self, *, filename: str, folder: str) -> str:
         # Convert Path to string for S3 key
-        assert bucket_name
-        assert s3_key
-        s3_full_path = f"s3://{bucket_name}/{s3_key}"
+        assert folder
+        assert filename
+        s3_full_path = f"s3://{folder}/{filename}"
         return s3_full_path
 
     # noinspection PyMethodMayBeStatic
@@ -71,13 +73,14 @@ class AwsS3FileManager:
         assert prefix
         return bucket_name
 
-    async def handle_s3_request(
-        self, *, bucket_name: str, s3_key: str
-    ) -> Response | StreamingResponse:
+    @override
+    async def read_file_async(
+        self, *, folder: str, file_path: str
+    ) -> StreamingResponse | Response:
         s3_client = self.aws_client_factory.create_client(service_name="s3")
 
         try:
-            response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+            response = s3_client.get_object(Bucket=folder, Key=file_path)
 
             content_type = response.get("ContentType", "application/octet-stream")
 

@@ -7,6 +7,9 @@ from language_model_gateway.configs.config_reader.config_reader import ConfigRea
 from language_model_gateway.container.container_factory import ContainerFactory
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
@@ -63,3 +66,11 @@ def get_aws_client_factory(
     """helper function to get the chat manager"""
     assert isinstance(container, SimpleContainer), type(container)
     return container.resolve(AwsClientFactory)
+
+
+def get_file_manager_factory(
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
+) -> FileManagerFactory:
+    """helper function to get the chat manager"""
+    assert isinstance(container, SimpleContainer), type(container)
+    return container.resolve(FileManagerFactory)

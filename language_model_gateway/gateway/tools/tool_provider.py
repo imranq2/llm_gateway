@@ -8,7 +8,9 @@ from langchain_community.tools import (
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolConfig
-from language_model_gateway.gateway.file_managers.file_manager import FileManager
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
@@ -32,7 +34,7 @@ class ToolProvider:
         self,
         *,
         image_generator_factory: ImageGeneratorFactory,
-        file_manager: FileManager,
+        file_manager_factory: FileManagerFactory,
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -59,10 +61,10 @@ class ToolProvider:
             "arxiv_search": ArxivQueryRun(),
             "image_generator": ImageGeneratorTool(
                 image_generator_factory=image_generator_factory,
-                file_saver=file_manager,
+                file_manager_factory=file_manager_factory,
             ),
             "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(
-                file_saver=file_manager
+                file_manager_factory=file_manager_factory
             ),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
                 api_key=environ.get("SCRAPING_BEE_API_KEY")

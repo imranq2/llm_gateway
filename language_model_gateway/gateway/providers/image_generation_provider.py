@@ -10,6 +10,9 @@ from openai.types import ImagesResponse, Image, ImageModel
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
 )
@@ -32,14 +35,14 @@ class ImageGenerationProvider(BaseImageGenerationProvider):
         self,
         *,
         image_generator_factory: ImageGeneratorFactory,
-        file_manager: FileManager,
+        file_manager_factory: FileManagerFactory,
     ) -> None:
         self.image_generator_factory: ImageGeneratorFactory = image_generator_factory
         assert self.image_generator_factory is not None
         assert isinstance(self.image_generator_factory, ImageGeneratorFactory)
-        self.file_saver: FileManager = file_manager
-        assert self.file_saver is not None
-        assert isinstance(self.file_saver, FileManager)
+        self.file_manager_factory: FileManagerFactory = file_manager_factory
+        assert self.file_manager_factory is not None
+        assert isinstance(self.file_manager_factory, FileManagerFactory)
 
     async def generate_image_async(
         self,
@@ -90,7 +93,10 @@ class ImageGenerationProvider(BaseImageGenerationProvider):
                 image_generation_path_
             ), "IMAGE_GENERATION_PATH environment variable is not set"
             image_file_name: str = f"{uuid4()}.png"
-            file_path: Optional[str] = await self.file_saver.save_file_async(
+            file_manager: FileManager = self.file_manager_factory.get_file_manager(
+                folder=image_generation_path_
+            )
+            file_path: Optional[str] = await file_manager.save_file_async(
                 image_data=image_bytes,
                 folder=image_generation_path_,
                 filename=image_file_name,

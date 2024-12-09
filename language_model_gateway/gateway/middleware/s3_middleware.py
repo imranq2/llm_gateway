@@ -6,13 +6,12 @@ from fastapi.params import Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import StreamingResponse
 
-from language_model_gateway.gateway.api_container import get_aws_client_factory
-from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
-from language_model_gateway.gateway.file_managers.aws_s3_file_manager import (
-    AwsS3FileManager,
+from language_model_gateway.gateway.api_container import (
+    get_file_manager_factory,
 )
-from language_model_gateway.gateway.file_managers.local_file_manager import (
-    LocalFileManager,
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
 )
 
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
@@ -22,8 +21,8 @@ class S3Middleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: FastAPI,
-        aws_client_factory: Annotated[
-            AwsClientFactory, Depends(get_aws_client_factory)
+        file_manager_factory: Annotated[
+            FileManagerFactory, Depends(get_file_manager_factory)
         ],
         *,
         image_generation_path: str,
@@ -36,7 +35,7 @@ class S3Middleware(BaseHTTPMiddleware):
         self.target_path = target_path
         self.allowed_extensions = allowed_extensions
         self.cache_max_age = cache_max_age
-        self.aws_client_factory = aws_client_factory
+        self.file_manager_factory = file_manager_factory
 
     def check_extension(self, filename: str) -> bool:
         if not self.allowed_extensions:
@@ -60,6 +59,8 @@ class S3Middleware(BaseHTTPMiddleware):
     async def handle_request(self, request: Request) -> Response | StreamingResponse:
 
         request_url_path = request.url.path
+        folder: str
+        file_path: str
         if self.image_generation_path.startswith("s3"):
             bucket_name, prefix = UrlParser.parse_s3_uri(self.image_generation_path)
             # Check file extension
@@ -74,17 +75,19 @@ class S3Middleware(BaseHTTPMiddleware):
             s3_key = os.path.join(prefix.rstrip("/"), file_path.lstrip("/")).replace(
                 "\\", "/"
             )
-
-            return await AwsS3FileManager(
-                aws_client_factory=self.aws_client_factory
-            ).handle_s3_request(
-                bucket_name=bucket_name,
-                s3_key=s3_key,
-            )
+            folder = bucket_name
+            file_path = s3_key
         else:
             # read and return file
             request_url_path = request_url_path[len(self.target_path) :]
-            full_path: str = os.path.join(
-                self.image_generation_path.rstrip("/"), request_url_path.lstrip("/")
-            )
-            return await LocalFileManager().read_file_async(full_path)
+            folder = self.image_generation_path
+            file_path = request_url_path
+
+        # now stream the file
+        file_manager: FileManager = self.file_manager_factory.get_file_manager(
+            folder=self.image_generation_path
+        )
+        return await file_manager.read_file_async(
+            folder=folder,
+            file_path=file_path,
+        )

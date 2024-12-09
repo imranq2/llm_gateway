@@ -3,15 +3,17 @@ import mimetypes
 import os
 from os import makedirs
 from pathlib import Path
-from typing import Optional, AsyncGenerator
+from typing import Optional, AsyncGenerator, override
 
 from fastapi import HTTPException
 from starlette.responses import StreamingResponse
 
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
+
 logger = logging.getLogger(__name__)
 
 
-class LocalFileManager:
+class LocalFileManager(FileManager):
     # noinspection PyMethodMayBeStatic
     async def save_file_async(
         self, *, image_data: bytes, folder: str, filename: str
@@ -51,9 +53,12 @@ class LocalFileManager:
     #         logger.error(f"Error saving image to {filename}: {str(e)}")
     #         raise
 
-    # noinspection PyMethodMayBeStatic
-    async def read_file_async(self, full_path: str) -> StreamingResponse:
+    @override
+    async def read_file_async(
+        self, *, folder: str, file_path: str
+    ) -> StreamingResponse:
         try:
+            full_path: str = os.path.join(folder.rstrip("/"), file_path.lstrip("/"))
             # Determine file size and MIME type
             file_size = os.path.getsize(full_path)
             mime_type, _ = mimetypes.guess_type(full_path)
