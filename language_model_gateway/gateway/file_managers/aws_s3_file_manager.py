@@ -28,6 +28,9 @@ class AwsS3FileManager(FileManager):
         :param filename: Filename to use in S3
         :param folder: Folder to save the image in
         """
+        assert "s3://" in folder, "folder should contain s3://"
+        assert "s3://" not in filename, "filename should not contain s3://"
+
         # Parse S3 URL
         bucket_name: str
         prefix: str
@@ -80,15 +83,23 @@ class AwsS3FileManager(FileManager):
     ) -> StreamingResponse | Response:
         s3_client = self.aws_client_factory.create_client(service_name="s3")
 
+        assert (
+            "s3://" not in folder
+        ), "folder should not contain s3://.  It should be the bucket name"
+        bucket_name: str = folder
+        assert (
+            "s3://" not in file_path
+        ), "file_path should not contain s3://.  It should be the file path"
+        prefix: str = file_path
         try:
-            bucket_name: str
-            prefix: str
-            bucket_name, prefix = self.get_bucket(filename=file_path, folder=folder)
-
             s3_full_path: str = self.get_full_path(folder=bucket_name, filename=prefix)
-            logger.info(f"Reading file from S3: {s3_full_path}")
 
-            response = s3_client.get_object(Bucket=folder, Key=prefix)
+            if not prefix.startswith("/"):
+                prefix = "/" + prefix
+            logger.info(
+                f"Reading file from S3: {s3_full_path}, bucket: {bucket_name}, key: {prefix}"
+            )
+            response = s3_client.get_object(Bucket=bucket_name, Key=prefix)
 
             content_type = response.get("ContentType", "application/octet-stream")
 
@@ -113,16 +124,18 @@ class AwsS3FileManager(FileManager):
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
             if error_code == "NoSuchKey":
-                logger.error(f"File not found: {file_path} in bucket {folder}")
+                logger.error(f"File not found: {prefix} in bucket {bucket_name}")
                 logger.exception(e)
                 return Response(
                     status_code=404,
-                    content=f"File not found: {file_path} in bucket {folder}",
+                    content=f"File not found: {prefix} in bucket {bucket_name}",
                 )
             elif error_code == "NoSuchBucket":
-                logger.error(f"Bucket not found: {folder}")
+                logger.error(f"Bucket not found: {bucket_name}")
                 logger.exception(e)
-                return Response(status_code=404, content=f"Bucket not found: {folder}")
+                return Response(
+                    status_code=404, content=f"Bucket not found: {bucket_name}"
+                )
             else:
                 logger.exception(e)
                 return Response(

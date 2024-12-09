@@ -97,7 +97,7 @@ class ImagesRouter:
 
             # combine the prefix and file path and include / if needed
             s3_key = UrlParser.combine_path(prefix=prefix, filename=file_path)
-            folder = self.image_generation_path
+            folder = bucket_name
             file_path1 = s3_key
         else:
             # read and return file
