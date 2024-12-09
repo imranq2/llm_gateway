@@ -186,4 +186,4 @@ async def test_s3_middleware_file_not_found(
 
     # Assertions
     assert response.status_code == 404
-    assert response.body == b"File not found"
+    assert response.body == b"Bucket not found"

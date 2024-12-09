@@ -107,6 +107,6 @@ class AwsS3FileManager(FileManager):
             if error_code == "NoSuchKey":
                 return Response(status_code=404, content="File not found")
             elif error_code == "NoSuchBucket":
-                return Response(status_code=500, content="Bucket not found")
+                return Response(status_code=404, content="Bucket not found")
             else:
                 return Response(status_code=500, content="Internal server error")
