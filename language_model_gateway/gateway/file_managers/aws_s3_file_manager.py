@@ -1,9 +1,10 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, Generator
 
 import boto3
 from botocore.exceptions import ClientError
+from starlette.responses import Response, StreamingResponse
 
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
@@ -75,3 +76,38 @@ class AwsS3FileManager:
         assert bucket_name
         assert prefix
         return bucket_name
+
+    async def handle_s3_request(self, *, bucket_name: str, s3_key: str) -> Response:
+        s3_client = self._create_s3_client()
+
+        try:
+            response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+
+            content_type = response.get("ContentType", "application/octet-stream")
+
+            def iterate_bytes() -> Generator[bytes, None, None]:
+                for chunk in response["Body"].iter_chunks():
+                    yield chunk
+
+            return StreamingResponse(
+                iterate_bytes(),
+                media_type=content_type,
+                headers={
+                    "Content-Length": str(response["ContentLength"]),
+                    "Last-Modified": response["LastModified"].strftime(
+                        "%a, %d %b %Y %H:%M:%S GMT"
+                    ),
+                    "ETag": response["ETag"],
+                    # 'Cache-Control': f'public, max-age={self.cache_max_age}',
+                    "Accept-Ranges": "bytes",
+                },
+            )
+
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "NoSuchKey":
+                return Response(status_code=404, content="File not found")
+            elif error_code == "NoSuchBucket":
+                return Response(status_code=500, content="Bucket not found")
+            else:
+                return Response(status_code=500, content="Internal server error")

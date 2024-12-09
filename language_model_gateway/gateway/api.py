@@ -14,6 +14,7 @@ from starlette.staticfiles import StaticFiles
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.api_container import get_config_reader
+from language_model_gateway.gateway.middleware.s3_middleware import S3Middleware
 from language_model_gateway.gateway.routers.chat_completion_router import (
     ChatCompletionsRouter,
 )
@@ -88,10 +89,12 @@ def create_app() -> FastAPI:
 
     makedirs(image_generation_path, exist_ok=True)
 
-    app1.mount(
-        "/image_generation",
-        StaticFiles(directory=image_generation_path),
-        name="static",
+    app1.add_middleware(
+        S3Middleware,
+        image_generation_path=image_generation_path,
+        target_path="/image_generation",
+        allowed_extensions=[".pdf", ".jpg", ".png", ".doc", ".docx"],
+        cache_max_age=3600,
     )
     return app1
 
