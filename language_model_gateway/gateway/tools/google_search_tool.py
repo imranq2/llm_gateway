@@ -79,9 +79,11 @@ class GoogleSearchTool(BaseTool):
 
             for result in results:
                 if "snippet" in result:
-                    snippets.append(f"{result['snippet']} ({result.get('link')})")
+                    snippets.append(f"- {result['snippet']} ({result.get('link')})")
 
-            return " ".join(snippets)
+            response: str = "\n".join(snippets)
+            logger.info(f"Google Search results: {response}")
+            return response
         except Exception as e:
             logger.exception(e, stack_info=True)
             return "Ran into an error while running Google Search"
