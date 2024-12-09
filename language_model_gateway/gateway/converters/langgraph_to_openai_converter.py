@@ -151,7 +151,7 @@ class LangGraphToOpenAIConverter:
                                 ChunkChoice(
                                     index=0,
                                     delta=ChoiceDelta(
-                                        role="assistant", content=artifact
+                                        role="assistant", content=f"\n[{artifact}]\n"
                                     ),
                                 )
                             ],

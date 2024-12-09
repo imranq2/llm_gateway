@@ -58,7 +58,7 @@ def langchain_to_chat_message(message: BaseMessage) -> Optional[ChatCompletionMe
             if artifact:
                 ai_message = ChatCompletionMessage(
                     role="assistant",
-                    content=artifact,
+                    content=f"\n[{artifact}]\n",
                 )
                 return ai_message
         case LangchainChatMessage():
