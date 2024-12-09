@@ -71,7 +71,9 @@ class AwsS3FileManager:
         assert prefix
         return bucket_name
 
-    async def handle_s3_request(self, *, bucket_name: str, s3_key: str) -> Response:
+    async def handle_s3_request(
+        self, *, bucket_name: str, s3_key: str
+    ) -> Response | StreamingResponse:
         s3_client = self.aws_client_factory.create_client(service_name="s3")
 
         try:

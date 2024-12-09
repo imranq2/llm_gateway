@@ -3,6 +3,7 @@ from typing import List, Callable, Awaitable, Annotated
 from fastapi import FastAPI, Request, Response
 from fastapi.params import Depends
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import StreamingResponse
 
 from language_model_gateway.gateway.api_container import get_aws_client_factory
 from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
@@ -51,15 +52,25 @@ class S3Middleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
-    async def handle_s3_request(self, request: Request) -> Response:
+    async def handle_s3_request(self, request: Request) -> Response | StreamingResponse:
 
         if self.image_generation_path.startswith("s3"):
             bucket_name, prefix = UrlParser.parse_s3_uri(self.image_generation_path)
             # Check file extension
-            if not self.check_extension(str(request.url.path)):
+            file_path = str(request.url.path)
+            # remove the target path
+            file_path = file_path[len(self.target_path) :]
+
+            if not self.check_extension(file_path):
                 return Response(status_code=403, content="File type not allowed")
 
-            s3_key = str(prefix) + str(request.url.path)
+            # combine the prefix and file path and include / if needed
+            if prefix and not prefix.endswith("/"):
+                prefix += "/"
+            # remove / from file path if it exists
+            if file_path.startswith("/"):
+                file_path = file_path[1:]
+            s3_key = str(prefix) + file_path
 
             return await AwsS3FileManager(
                 aws_client_factory=self.aws_client_factory

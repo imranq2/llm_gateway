@@ -4,9 +4,9 @@ import pytest
 import boto3
 from moto import mock_aws
 from fastapi import FastAPI, Request
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
-from starlette.responses import Response
+from starlette.responses import Response, StreamingResponse
 
 from language_model_gateway.gateway.middleware.s3_middleware import S3Middleware
 from tests.gateway.mocks.mock_aws_client_factory import MockAwsClientFactory
@@ -62,7 +62,7 @@ async def test_s3_middleware_handle_s3_request_with_moto(
     middleware = S3Middleware(
         app=fastapi_app,
         aws_client_factory=MockAwsClientFactory(aws_client=mock_s3),
-        image_generation_path=f"s3://{bucket_name}/images",
+        image_generation_path=f"s3://{bucket_name}/images/",
         target_path="/image_generation/",
         allowed_extensions=["jpg", "png"],
     )
@@ -72,11 +72,19 @@ async def test_s3_middleware_handle_s3_request_with_moto(
     mock_request.url.path = "/image_generation/test.jpg"
 
     # Call handle_s3_request
-    response = await middleware.handle_s3_request(mock_request)
+    response: Response | StreamingResponse = await middleware.handle_s3_request(
+        mock_request
+    )
 
     # Assertions
     assert response.status_code == 200
-    assert response.body == test_image_content
+    assert isinstance(response, StreamingResponse)
+    # read from the streaming response
+    content: str = ""
+    async for chunk in response.body_iterator:
+        assert isinstance(chunk, bytes)
+        content += chunk.decode()
+    assert content == "test image content"
 
 
 async def test_s3_middleware_local_file_handling(
@@ -101,11 +109,19 @@ async def test_s3_middleware_local_file_handling(
     mock_request.url.path = "/image_generation/test.jpg"
 
     # Call handle_s3_request
-    response: Response = await middleware.handle_s3_request(mock_request)
+    response: Response | StreamingResponse = await middleware.handle_s3_request(
+        mock_request
+    )
 
     # Assertions
     assert response.status_code == 200
-    assert response.body == test_content
+    assert isinstance(response, StreamingResponse)
+    # read from the streaming response
+    content: str = ""
+    async for chunk in response.body_iterator:
+        assert isinstance(chunk, bytes)
+        content += chunk.decode()
+    assert content == "test image content"
 
 
 async def test_s3_middleware_extension_filtering(
@@ -125,7 +141,9 @@ async def test_s3_middleware_extension_filtering(
     mock_request.url.path = "/image_generation/images/test.gif"
 
     # Call handle_s3_request
-    response = await middleware.handle_s3_request(mock_request)
+    response: Response | StreamingResponse = await middleware.handle_s3_request(
+        mock_request
+    )
 
     # Assert forbidden for non-allowed extension
     assert response.status_code == 403
@@ -147,16 +165,11 @@ async def test_s3_middleware_file_not_found(
     mock_request = MagicMock(spec=Request)
     mock_request.url.path = "/image_generation/nonexistent.jpg"
 
-    # Patch UrlParser and mock S3 file not found
-    with patch(
-        "your_module.UrlParser.parse_s3_uri",
-        return_value=("test-bucket", "images/nonexistent.jpg"),
-    ), patch(
-        "your_module.AwsS3FileManager.handle_s3_request", side_effect=FileNotFoundError
-    ):
-        # Call handle_s3_request
-        response = await middleware.handle_s3_request(mock_request)
+    # Call handle_s3_request
+    response: Response | StreamingResponse = await middleware.handle_s3_request(
+        mock_request
+    )
 
-        # Assertions
-        assert response.status_code == 404
-        assert response.body == b"File not found"
+    # Assertions
+    assert response.status_code == 404
+    assert response.body == b"File not found"
