@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from typing import List
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ConfigReader:
     _identifier: UUID = uuid4()
+    _lock: asyncio.Lock = asyncio.Lock()
 
     def __init__(self, *, cache: ExpiringCache[List[ChatModelConfig]]) -> None:
         """
@@ -45,7 +47,7 @@ class ConfigReader:
             return cached_configs
 
         # Use lock to prevent multiple simultaneous loads
-        async with self._cache.lock:
+        async with self._lock:
             # Check again in case another request loaded the configs while we were waiting
             cached_configs = await self._cache.get()
             if cached_configs is not None:
@@ -91,6 +93,5 @@ class ConfigReader:
             return models
 
     async def clear_cache(self) -> None:
-        async with self._cache.lock:
-            await self._cache.clear()
+        await self._cache.clear()
         logger.info(f"Cleared cache for identifier: {self._identifier}")

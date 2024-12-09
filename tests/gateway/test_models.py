@@ -6,7 +6,6 @@ from openai.types import Model
 
 async def test_models(async_client: httpx.AsyncClient) -> None:
     # init client and connect to localhost server
-    # init client and connect to localhost server
     client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="http://localhost:5000/api/v1",  # change the default port if needed
