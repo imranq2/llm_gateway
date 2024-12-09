@@ -9,6 +9,7 @@ from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFacto
 from language_model_gateway.gateway.file_managers.aws_s3_file_manager import (
     AwsS3FileManager,
 )
+from language_model_gateway.gateway.utilities.s3_url import S3Url
 from tests.gateway.mocks.mock_aws_client_factory import MockAwsClientFactory
 
 
@@ -77,18 +78,18 @@ def test_get_bucket(aws_s3_file_manager: AwsS3FileManager) -> None:
     - Error handling
     """
     # Test standard S3 path
-    bucket, prefix = aws_s3_file_manager.get_bucket(
+    s3_url = aws_s3_file_manager.get_bucket(
         filename="test.png", folder="s3://my-bucket/images"
     )
-    assert bucket == "my-bucket"
-    assert prefix == "images/test.png"
+    assert s3_url.bucket == "my-bucket"
+    assert s3_url.key == "images/test.png"
 
     # Test root-level file
-    bucket, prefix = aws_s3_file_manager.get_bucket(
+    s3_url = aws_s3_file_manager.get_bucket(
         filename="test.png", folder="s3://my-bucket"
     )
-    assert bucket == "my-bucket"
-    assert prefix == "test.png"
+    assert s3_url.bucket == "my-bucket"
+    assert s3_url.key == "test.png"
 
 
 @pytest.mark.asyncio
@@ -126,22 +127,25 @@ async def test_save_file_async_success(
 
     for case in test_cases:
         # Save file
+        filename_ = case["filename"]
         result = await aws_s3_file_manager.save_file_async(
             image_data=case["image_data"],
             folder=case["folder"],
-            filename=case["filename"],
+            filename=filename_,
         )
 
         # Assertions
         expected_path = (
-            f"s3://{bucket_name}/{case['filename']}"
+            f"s3://{bucket_name}/{filename_}"
             if case["folder"] == f"s3://{bucket_name}"
             else result
         )
         assert result == expected_path
+        assert expected_path
+        s3_url: S3Url = S3Url(expected_path)
 
         # Verify file was saved correctly
-        response = mock_s3.get_object(Bucket=bucket_name, Key=case["filename"])
+        response = mock_s3.get_object(Bucket=s3_url.bucket, Key=s3_url.key)
         saved_content = response["Body"].read()
         assert saved_content == case["image_data"]
 
