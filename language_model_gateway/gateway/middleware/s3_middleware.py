@@ -1,6 +1,8 @@
-from typing import List, Callable, Awaitable, Annotated
+import mimetypes
+import os
+from typing import List, Callable, Awaitable, Annotated, AsyncGenerator
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.params import Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import StreamingResponse
@@ -48,16 +50,17 @@ class S3Middleware(BaseHTTPMiddleware):
             # if not await self.is_authenticated(request):
             #     return Response(status_code=401, content='Unauthorized')
 
-            return await self.handle_s3_request(request)
+            return await self.handle_request(request)
 
         return await call_next(request)
 
-    async def handle_s3_request(self, request: Request) -> Response | StreamingResponse:
+    async def handle_request(self, request: Request) -> Response | StreamingResponse:
 
+        request_url_path = request.url.path
         if self.image_generation_path.startswith("s3"):
             bucket_name, prefix = UrlParser.parse_s3_uri(self.image_generation_path)
             # Check file extension
-            file_path = str(request.url.path)
+            file_path = str(request_url_path)
             # remove the target path
             file_path = file_path[len(self.target_path) :]
 
@@ -65,12 +68,9 @@ class S3Middleware(BaseHTTPMiddleware):
                 return Response(status_code=403, content="File type not allowed")
 
             # combine the prefix and file path and include / if needed
-            if prefix and not prefix.endswith("/"):
-                prefix += "/"
-            # remove / from file path if it exists
-            if file_path.startswith("/"):
-                file_path = file_path[1:]
-            s3_key = str(prefix) + file_path
+            s3_key = os.path.join(prefix.rstrip("/"), file_path.lstrip("/")).replace(
+                "\\", "/"
+            )
 
             return await AwsS3FileManager(
                 aws_client_factory=self.aws_client_factory
@@ -80,15 +80,35 @@ class S3Middleware(BaseHTTPMiddleware):
             )
         else:
             # read and return file
-            full_path: str = self.image_generation_path + request.url.path
+            request_url_path = request_url_path[len(self.target_path) :]
+            full_path: str = os.path.join(
+                self.image_generation_path.rstrip("/"), request_url_path.lstrip("/")
+            )
             return await self.read_file_async(full_path)
 
     # noinspection PyMethodMayBeStatic
-    async def read_file_async(self, full_path: str) -> Response:
-        # read and return file
+    async def read_file_async(self, full_path: str) -> StreamingResponse:
         try:
-            with open(full_path, "rb") as f:
-                content = f.read()
+            # Determine file size and MIME type
+            file_size = os.path.getsize(full_path)
+            mime_type, _ = mimetypes.guess_type(full_path)
+            mime_type = mime_type or "application/octet-stream"
+
+            # Open file as a generator to stream content
+            async def file_iterator() -> AsyncGenerator[bytes, None]:
+                with open(full_path, "rb") as file:
+                    while chunk := file.read(4096):  # Read in 4KB chunks
+                        yield chunk
+
+            return StreamingResponse(
+                file_iterator(),
+                media_type=mime_type,
+                headers={
+                    "Content-Length": str(file_size),
+                    "Content-Disposition": f'inline; filename="{os.path.basename(full_path)}"',
+                },
+            )
         except FileNotFoundError:
-            return Response(status_code=404, content="File not found")
-        return Response(content=content)
+            raise HTTPException(status_code=404, detail="File not found")
+        except PermissionError:
+            raise HTTPException(status_code=403, detail="Access forbidden")

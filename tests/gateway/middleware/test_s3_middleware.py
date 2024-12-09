@@ -72,7 +72,7 @@ async def test_s3_middleware_handle_s3_request_with_moto(
     mock_request.url.path = "/image_generation/test.jpg"
 
     # Call handle_s3_request
-    response: Response | StreamingResponse = await middleware.handle_s3_request(
+    response: Response | StreamingResponse = await middleware.handle_request(
         mock_request
     )
 
@@ -91,6 +91,7 @@ async def test_s3_middleware_local_file_handling(
     fastapi_app: FastAPI, mock_s3: boto3.client, tmp_path: Path
 ) -> None:
     # Create a temporary file
+    # '/tmp/pytest-of-appuser/pytest-0/test_s3_middleware_local_file_0/image_generation/test.jpg'
     test_file_path = tmp_path / "test.jpg"
     test_content = b"local file content"
     test_file_path.write_bytes(test_content)
@@ -109,7 +110,7 @@ async def test_s3_middleware_local_file_handling(
     mock_request.url.path = "/image_generation/test.jpg"
 
     # Call handle_s3_request
-    response: Response | StreamingResponse = await middleware.handle_s3_request(
+    response: Response | StreamingResponse = await middleware.handle_request(
         mock_request
     )
 
@@ -121,7 +122,7 @@ async def test_s3_middleware_local_file_handling(
     async for chunk in response.body_iterator:
         assert isinstance(chunk, bytes)
         content += chunk.decode()
-    assert content == "test image content"
+    assert content == "local file content"
 
 
 async def test_s3_middleware_extension_filtering(
@@ -141,7 +142,7 @@ async def test_s3_middleware_extension_filtering(
     mock_request.url.path = "/image_generation/images/test.gif"
 
     # Call handle_s3_request
-    response: Response | StreamingResponse = await middleware.handle_s3_request(
+    response: Response | StreamingResponse = await middleware.handle_request(
         mock_request
     )
 
@@ -166,7 +167,7 @@ async def test_s3_middleware_file_not_found(
     mock_request.url.path = "/image_generation/nonexistent.jpg"
 
     # Call handle_s3_request
-    response: Response | StreamingResponse = await middleware.handle_s3_request(
+    response: Response | StreamingResponse = await middleware.handle_request(
         mock_request
     )
 
