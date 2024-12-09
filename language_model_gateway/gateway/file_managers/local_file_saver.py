@@ -12,9 +12,7 @@ class LocalFileSaver:
         self, *, image_data: bytes, folder: str, filename: str
     ) -> Optional[str]:
         """Save the generated image to a file"""
-        image_generation_path = Path(folder)
-        makedirs(image_generation_path, exist_ok=True)
-        file_path: Path = image_generation_path / filename
+        file_path: str = self.get_full_path(filename=filename, folder=folder)
         if image_data:
             with open(file_path, "wb") as f:
                 f.write(image_data)
@@ -23,6 +21,13 @@ class LocalFileSaver:
         else:
             logger.error("No image to save")
             return None
+
+    # noinspection PyMethodMayBeStatic
+    def get_full_path(self, *, filename: str, folder: str) -> str:
+        image_generation_path = Path(folder)
+        makedirs(image_generation_path, exist_ok=True)
+        file_path: Path = image_generation_path / filename
+        return str(file_path)
 
     # @override
     # async def save_image_async(self, image_data: bytes, filename: Path) -> None:

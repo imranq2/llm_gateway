@@ -58,7 +58,9 @@ class ToolProvider:
                 image_generator_factory=image_generator_factory,
                 file_saver=file_saver,
             ),
-            "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(),
+            "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(
+                file_saver=file_saver
+            ),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
                 api_key=environ.get("SCRAPING_BEE_API_KEY")
             ),

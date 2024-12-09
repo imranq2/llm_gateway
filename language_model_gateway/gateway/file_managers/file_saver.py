@@ -22,3 +22,10 @@ class FileSaver:
             return await LocalFileSaver().save_file_async(
                 image_data=image_data, folder=folder, filename=filename
             )
+
+    # noinspection PyMethodMayBeStatic
+    def get_full_path(self, *, filename: str, folder: str) -> str:
+        if folder.startswith("s3"):
+            return AwsS3FileManager().get_full_path(bucket_name=folder, s3_key=filename)
+        else:
+            return LocalFileSaver().get_full_path(filename=filename, folder=folder)

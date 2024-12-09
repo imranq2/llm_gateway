@@ -32,13 +32,10 @@ class AwsS3FileManager:
         :param folder: Folder to save the image in
         """
         # Parse S3 URL
-        bucket_name: str
-        prefix: str
-        full_path = folder + "/" + filename
-        bucket_name, prefix = UrlParser.parse_s3_uri(full_path)
+        bucket_name: str = self.get_bucket(filename=filename, folder=folder)
+        s3_key = str(filename)
 
-        assert bucket_name
-        assert prefix
+        s3_full_path: str = self.get_full_path(bucket_name=bucket_name, s3_key=s3_key)
 
         s3_client = self._create_s3_client()
         if not image_data:
@@ -46,9 +43,6 @@ class AwsS3FileManager:
             return None
 
         try:
-            # Convert Path to string for S3 key
-            s3_key = str(filename)
-
             # Upload the image to S3
             s3_client.put_object(
                 Bucket=bucket_name,
@@ -57,9 +51,27 @@ class AwsS3FileManager:
                 ContentType="image/png",  # Adjust content type as needed
             )
 
-            logger.info(f"Image saved to S3: s3://{bucket_name}/{s3_key}")
-            return f"s3://{bucket_name}/{s3_key}"
+            logger.info(f"Image saved to S3: {s3_full_path}")
+            return s3_full_path
 
         except ClientError as e:
             logger.error(f"Error saving image to S3: {e}")
             raise
+
+    # noinspection PyMethodMayBeStatic
+    def get_full_path(self, *, bucket_name: str, s3_key: str) -> str:
+        # Convert Path to string for S3 key
+        assert bucket_name
+        assert s3_key
+        s3_full_path = f"s3://{bucket_name}/{s3_key}"
+        return s3_full_path
+
+    # noinspection PyMethodMayBeStatic
+    def get_bucket(self, *, filename: str, folder: str) -> str:
+        bucket_name: str
+        prefix: str
+        full_path = folder + "/" + filename
+        bucket_name, prefix = UrlParser.parse_s3_uri(full_path)
+        assert bucket_name
+        assert prefix
+        return bucket_name
