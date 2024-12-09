@@ -15,7 +15,8 @@ services:
 #      DEFAULT_WEB_SEARCH_TOOL: "duckduckgo_search"
       DEFAULT_WEB_SEARCH_TOOL: "google_search"
       RUN_TESTS_WITH_REAL_LLM: 0
-      IMAGE_GENERATION_PATH: "/usr/src/language_model_gateway/image_generation"
+#      IMAGE_GENERATION_PATH: "/usr/src/language_model_gateway/image_generation"
+      IMAGE_GENERATION_PATH: "s3://bwell-dev-data-science-ue1/openwebui/image_generation/"
       IMAGE_GENERATION_URL: "http://localhost:5050/image_generation"
 #      CONFIG_PATH: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
       CONFIG_PATH: "https://github.com/icanbwell/language-model-gateway-configuration/tree/main/configs/chat_completions"

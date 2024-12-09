@@ -35,3 +35,20 @@ class UrlParser:
         image_generation_url = os.environ["IMAGE_GENERATION_URL"]
         url = f"{image_generation_url}/{file_name}"
         return url
+
+    @staticmethod
+    def combine_path(prefix: str, filename: str) -> str:
+        """
+        Cleanly join S3 path components
+
+        Args:
+            prefix: Base path
+            filename: File to append
+
+        Returns:
+            Cleaned S3 path
+        """
+        # Remove trailing and leading slashes, then rejoin
+        clean_prefix = prefix.strip("/")
+        clean_filename = filename.strip("/")
+        return f"{clean_prefix}/{clean_filename}"

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Generator, override
+from typing import Optional, Generator, override, Tuple
 
 from botocore.exceptions import ClientError
 from starlette.responses import Response, StreamingResponse
@@ -29,8 +29,11 @@ class AwsS3FileManager(FileManager):
         :param folder: Folder to save the image in
         """
         # Parse S3 URL
-        bucket_name: str = self.get_bucket(filename=filename, folder=folder)
-        s3_key = str(filename)
+        bucket_name: str
+        prefix: str
+        bucket_name, prefix = self.get_bucket(filename=filename, folder=folder)
+
+        s3_key = UrlParser.combine_path(prefix, filename)
 
         s3_full_path: str = self.get_full_path(folder=bucket_name, filename=s3_key)
 
@@ -60,18 +63,18 @@ class AwsS3FileManager(FileManager):
         # Convert Path to string for S3 key
         assert folder
         assert filename
-        s3_full_path = f"s3://{folder}/{filename}"
+        s3_full_path = f"s3://" + UrlParser.combine_path(folder, filename)
         return s3_full_path
 
     # noinspection PyMethodMayBeStatic
-    def get_bucket(self, *, filename: str, folder: str) -> str:
+    def get_bucket(self, *, filename: str, folder: str) -> Tuple[str, str]:
         bucket_name: str
         prefix: str
-        full_path = folder + "/" + filename
+        full_path = UrlParser.combine_path(folder, filename=filename)
         bucket_name, prefix = UrlParser.parse_s3_uri(full_path)
         assert bucket_name
         assert prefix
-        return bucket_name
+        return bucket_name, prefix
 
     @override
     async def read_file_async(

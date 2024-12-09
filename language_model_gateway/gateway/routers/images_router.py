@@ -1,5 +1,4 @@
 import logging
-import os
 from enum import Enum
 from typing import Annotated, List, Sequence
 
@@ -97,9 +96,7 @@ class ImagesRouter:
                 return Response(status_code=403, content="File type not allowed")
 
             # combine the prefix and file path and include / if needed
-            s3_key = os.path.join(prefix.rstrip("/"), file_path1.lstrip("/")).replace(
-                "\\", "/"
-            )
+            s3_key = UrlParser.combine_path(prefix=prefix, filename=file_path)
             folder = bucket_name
             file_path1 = s3_key
         else:
