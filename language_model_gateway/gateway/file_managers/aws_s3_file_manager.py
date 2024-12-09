@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Generator, override, Tuple
 
+import boto3
 from botocore.exceptions import ClientError
 from starlette.responses import Response, StreamingResponse
 
@@ -81,7 +82,9 @@ class AwsS3FileManager(FileManager):
     async def read_file_async(
         self, *, folder: str, file_path: str
     ) -> StreamingResponse | Response:
-        s3_client = self.aws_client_factory.create_client(service_name="s3")
+        s3_client: boto3.client = self.aws_client_factory.create_client(
+            service_name="s3"
+        )
 
         assert (
             "s3://" not in folder
@@ -94,8 +97,8 @@ class AwsS3FileManager(FileManager):
         try:
             s3_full_path: str = self.get_full_path(folder=bucket_name, filename=prefix)
 
-            if not prefix.startswith("/"):
-                prefix = "/" + prefix
+            if prefix.startswith("/"):
+                prefix = prefix.lstrip("/")
             logger.info(
                 f"Reading file from S3: {s3_full_path}, bucket: {bucket_name}, key: {prefix}"
             )
@@ -126,6 +129,17 @@ class AwsS3FileManager(FileManager):
             if error_code == "NoSuchKey":
                 logger.error(f"File not found: {prefix} in bucket {bucket_name}")
                 logger.exception(e)
+                # Verify the exact path
+                # List objects to debug
+                try:
+                    objects = s3_client.list_objects_v2(
+                        Bucket=bucket_name,
+                        Prefix="/".join(prefix.split("/")[:-1]) + "/",
+                    )
+                    existing_keys = [obj["Key"] for obj in objects.get("Contents", [])]
+                    logger.error(f"Existing keys in similar path: {existing_keys}")
+                except Exception as list_error:
+                    logger.error(f"Error listing objects: {list_error}")
                 return Response(
                     status_code=404,
                     content=f"File not found: {prefix} in bucket {bucket_name}",
