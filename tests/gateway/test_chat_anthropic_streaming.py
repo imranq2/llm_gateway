@@ -57,6 +57,7 @@ async def test_chat_completions_streaming(async_client: httpx.AsyncClient) -> No
         )
         content += delta_content or ""
         print(delta_content or "")
+        print(f"\n{chunk}\n")
         print(f"====== End of Chunk {i} ======")
 
     print("======== Final Content ========")

@@ -79,10 +79,6 @@ class LangGraphToOpenAIConverter:
             The streaming response as a string.
         """
 
-        total_completion_usage_metadata: CompletionUsage = CompletionUsage(
-            prompt_tokens=0, completion_tokens=0, total_tokens=0
-        )
-
         # Process streamed events from the graph and yield messages over the SSE stream.
         event: StandardStreamEvent | CustomStreamEvent
         async for event in self.astream_events(
@@ -113,11 +109,6 @@ class LangGraphToOpenAIConverter:
                         usages=[usage_metadata] if usage_metadata else []
                     )
 
-                    total_completion_usage_metadata = self.add_completion_usage(
-                        original=total_completion_usage_metadata,
-                        new_one=completion_usage_metadata,
-                    )
-
                     content_text: str = convert_message_content_to_string(content)
 
                     assert isinstance(
@@ -142,16 +133,27 @@ class LangGraphToOpenAIConverter:
                         )
                         yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
                 case "on_chain_end":
-                    # Handle the end of the chain event
-                    chat_end_stream_response: ChatCompletionChunk = ChatCompletionChunk(
-                        id=request_id,
-                        created=int(time.time()),
-                        model=request["model"],
-                        choices=[],
-                        usage=total_completion_usage_metadata,
-                        object="chat.completion.chunk",
-                    )
-                    yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
+                    print(f"===== {event_type} =====\n{event}\n")
+                    output: Dict[str, Any] | str = event["data"]["output"]
+                    if isinstance(output, dict) and output.get("usage_metadata"):
+                        completion_usage_metadata = (
+                            self.convert_usage_meta_data_to_openai(
+                                usages=[output["usage_metadata"]]
+                            )
+                        )
+
+                        # Handle the end of the chain event
+                        chat_end_stream_response: ChatCompletionChunk = (
+                            ChatCompletionChunk(
+                                id=request_id,
+                                created=int(time.time()),
+                                model=request["model"],
+                                choices=[],
+                                usage=completion_usage_metadata,
+                                object="chat.completion.chunk",
+                            )
+                        )
+                        yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
                 case "on_tool_end":
                     # Handle the end of the tool event
                     tool_message: ToolMessage = event["data"]["output"]
