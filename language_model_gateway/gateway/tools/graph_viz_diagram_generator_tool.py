@@ -76,7 +76,7 @@ class GraphVizDiagramGeneratorTool(BaseTool):
             url: str = ImageGenerationHelper.get_url_for_file_name(output_file)
             return (
                 url,
-                f"GraphVizDiagramGeneratorTool: Generated diagram from DOT input: {url}",
+                f"GraphVizDiagramGeneratorTool: Generated diagram from DOT input: <{url}> ",
             )
         except Exception as e:
             raise ValueError(f"Failed to generate diagram: {str(e)}")
