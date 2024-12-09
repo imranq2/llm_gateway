@@ -1,8 +1,7 @@
-import mimetypes
 import os
-from typing import List, Callable, Awaitable, Annotated, AsyncGenerator
+from typing import List, Callable, Awaitable, Annotated
 
-from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi import FastAPI, Request, Response
 from fastapi.params import Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import StreamingResponse
@@ -12,6 +11,10 @@ from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFacto
 from language_model_gateway.gateway.file_managers.aws_s3_file_manager import (
     AwsS3FileManager,
 )
+from language_model_gateway.gateway.file_managers.local_file_manager import (
+    LocalFileManager,
+)
+
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 
@@ -84,31 +87,4 @@ class S3Middleware(BaseHTTPMiddleware):
             full_path: str = os.path.join(
                 self.image_generation_path.rstrip("/"), request_url_path.lstrip("/")
             )
-            return await self.read_file_async(full_path)
-
-    # noinspection PyMethodMayBeStatic
-    async def read_file_async(self, full_path: str) -> StreamingResponse:
-        try:
-            # Determine file size and MIME type
-            file_size = os.path.getsize(full_path)
-            mime_type, _ = mimetypes.guess_type(full_path)
-            mime_type = mime_type or "application/octet-stream"
-
-            # Open file as a generator to stream content
-            async def file_iterator() -> AsyncGenerator[bytes, None]:
-                with open(full_path, "rb") as file:
-                    while chunk := file.read(4096):  # Read in 4KB chunks
-                        yield chunk
-
-            return StreamingResponse(
-                file_iterator(),
-                media_type=mime_type,
-                headers={
-                    "Content-Length": str(file_size),
-                    "Content-Disposition": f'inline; filename="{os.path.basename(full_path)}"',
-                },
-            )
-        except FileNotFoundError:
-            raise HTTPException(status_code=404, detail="File not found")
-        except PermissionError:
-            raise HTTPException(status_code=403, detail="Access forbidden")
+            return await LocalFileManager().read_file_async(full_path)

@@ -7,7 +7,7 @@ from graphviz import Digraph
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from language_model_gateway.gateway.file_managers.file_saver import FileSaver
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class GraphVizDiagramGeneratorTool(BaseTool):
     )
     args_schema: Type[BaseModel] = GraphVizDiagramGeneratorToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
-    file_saver: FileSaver
+    file_saver: FileManager
 
     def _run(self, dot_input: str) -> Tuple[str, str]:
         """

@@ -9,7 +9,7 @@ from openai import NotGiven
 from openai.types import ImagesResponse, Image, ImageModel
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.gateway.file_managers.file_saver import FileSaver
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
 )
@@ -29,14 +29,17 @@ logger = logging.getLogger(__name__)
 
 class ImageGenerationProvider(BaseImageGenerationProvider):
     def __init__(
-        self, *, image_generator_factory: ImageGeneratorFactory, file_saver: FileSaver
+        self,
+        *,
+        image_generator_factory: ImageGeneratorFactory,
+        file_manager: FileManager,
     ) -> None:
         self.image_generator_factory: ImageGeneratorFactory = image_generator_factory
         assert self.image_generator_factory is not None
         assert isinstance(self.image_generator_factory, ImageGeneratorFactory)
-        self.file_saver: FileSaver = file_saver
+        self.file_saver: FileManager = file_manager
         assert self.file_saver is not None
-        assert isinstance(self.file_saver, FileSaver)
+        assert isinstance(self.file_saver, FileManager)
 
     async def generate_image_async(
         self,

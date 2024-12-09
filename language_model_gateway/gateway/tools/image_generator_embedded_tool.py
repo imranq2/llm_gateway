@@ -7,7 +7,7 @@ from uuid import uuid4
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from language_model_gateway.gateway.file_managers.file_saver import FileSaver
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
 )
@@ -37,7 +37,7 @@ class ImageGeneratorEmbeddedTool(BaseTool):
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
     image_generator_factory: ImageGeneratorFactory
-    file_saver: FileSaver
+    file_saver: FileManager
 
     def _run(self, prompt: str) -> Tuple[str, str]:
         """

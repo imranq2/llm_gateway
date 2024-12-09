@@ -1,12 +1,17 @@
 import logging
+import mimetypes
+import os
 from os import makedirs
 from pathlib import Path
-from typing import Optional
+from typing import Optional, AsyncGenerator
+
+from fastapi import HTTPException
+from starlette.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 
 
-class LocalFileSaver:
+class LocalFileManager:
     # noinspection PyMethodMayBeStatic
     async def save_file_async(
         self, *, image_data: bytes, folder: str, filename: str
@@ -45,3 +50,30 @@ class LocalFileSaver:
     #     except Exception as e:
     #         logger.error(f"Error saving image to {filename}: {str(e)}")
     #         raise
+
+    # noinspection PyMethodMayBeStatic
+    async def read_file_async(self, full_path: str) -> StreamingResponse:
+        try:
+            # Determine file size and MIME type
+            file_size = os.path.getsize(full_path)
+            mime_type, _ = mimetypes.guess_type(full_path)
+            mime_type = mime_type or "application/octet-stream"
+
+            # Open file as a generator to stream content
+            async def file_iterator() -> AsyncGenerator[bytes, None]:
+                with open(full_path, "rb") as file:
+                    while chunk := file.read(4096):  # Read in 4KB chunks
+                        yield chunk
+
+            return StreamingResponse(
+                file_iterator(),
+                media_type=mime_type,
+                headers={
+                    "Content-Length": str(file_size),
+                    "Content-Disposition": f'inline; filename="{os.path.basename(full_path)}"',
+                },
+            )
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="File not found")
+        except PermissionError:
+            raise HTTPException(status_code=403, detail="Access forbidden")

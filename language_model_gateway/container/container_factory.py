@@ -7,7 +7,7 @@ from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFacto
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
 )
-from language_model_gateway.gateway.file_managers.file_saver import FileSaver
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
@@ -66,8 +66,8 @@ class ContainerFactory:
             ),
         )
         container.register(
-            FileSaver,
-            lambda c: FileSaver(
+            FileManager,
+            lambda c: FileManager(
                 aws_client_factory=c.resolve(AwsClientFactory),
             ),
         )
@@ -79,7 +79,7 @@ class ContainerFactory:
             ToolProvider,
             lambda c: ToolProvider(
                 image_generator_factory=c.resolve(ImageGeneratorFactory),
-                file_saver=c.resolve(FileSaver),
+                file_manager=c.resolve(FileManager),
             ),
         )
         container.register(
@@ -118,7 +118,7 @@ class ContainerFactory:
             ImageGenerationProvider,
             lambda c: ImageGenerationProvider(
                 image_generator_factory=c.resolve(ImageGeneratorFactory),
-                file_saver=c.resolve(FileSaver),
+                file_manager=c.resolve(FileManager),
             ),
         )
         container.register(
