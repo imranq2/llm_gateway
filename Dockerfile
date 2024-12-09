@@ -118,27 +118,25 @@ RUN chown -R appuser:appgroup ${PROJECT_DIR} /usr/local/lib/python3.12/site-pack
 # Switch to the restricted user to enhance security
 USER appuser
 
-# Set the command to run the application using pipenv and uvicorn
-# Follows the typical uvicorn guidelines for running the application (https://docs.gunicorn.org/en/stable/design.html#how-many-workers)
 # The number of workers can be controlled using the NUM_WORKERS environment variable
 # Otherwise the number of workers for uvicorn (using the multiprocessing worker) is  chosen based on these guidelines:
-  #
-  #Common formula: (2 x NUMBER_OF_CORES) + 1
-  #This is a general rule of thumb for CPU-bound applications
-  #For example, on a 4-core machine: (2 x 4) + 1 = 9 workers
-  #Factors to consider:
-  #CPU-bound vs IO-bound workloads
-  #CPU-bound: stick to (2 x cores) + 1
-  #IO-bound: you might want more workers (3-4 x cores)
-  #Available memory (each worker uses memory)
-  #System resources and constraints
-  #Expected concurrent requests
-  #Specific recommendations:
-  #For small to medium applications: 4-8 workers
-  #For larger applications on dedicated servers: follow the (2 x cores) + 1 formula
-  #Cloud environments: consider the instance/container resources
-
-CMD ["sh", "-c", "CORE_COUNT=$(nproc) && WORKER_COUNT=$((2 * CORE_COUNT + 1)) && FINAL_WORKERS=${NUM_WORKERS:-$WORKER_COUNT} && echo \"Starting with $FINAL_WORKERS workers\" && ddtrace-run uvicorn language_model_gateway.gateway.api:app --host 0.0.0.0 --port 5000 --workers $FINAL_WORKERS --log-level $(echo ${LOG_LEVEL:-info} | tr '[:upper:]' '[:lower:]')"]
-
-# Set the command to run the application using pipenv and Python without uvicorn and ddtrace-run
-#CMD ["pipenv", "run", "python", "-m", "complaintparser.api"]
+# (https://sentry.io/answers/number-of-uvicorn-workers-needed-in-production/)
+CMD ["sh", "-c", "\
+    # Get CPU info \
+    CORE_COUNT=$(nproc) && \
+    THREAD_COUNT=$(nproc --all) && \
+    \
+    # Calculate workers using formula: (cores * threads + 1) \
+    WORKER_COUNT=$((CORE_COUNT * THREAD_COUNT + 1)) && \
+    FINAL_WORKERS=${WORKERS:-$WORKER_COUNT} && \
+    \
+    # Log the configuration \
+    echo \"Starting with $FINAL_WORKERS workers (cores: $CORE_COUNT, threads: $THREAD_COUNT)\" && \
+    \
+    # Start the application \
+    ddtrace-run uvicorn language_model_gateway.gateway.api:app \
+        --host 0.0.0.0 \
+        --port 5000 \
+        --workers $FINAL_WORKERS \
+        --log-level $(echo ${LOG_LEVEL:-info} | tr '[:upper:]' '[:lower:]') \
+    "]

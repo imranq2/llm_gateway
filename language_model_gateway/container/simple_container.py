@@ -6,6 +6,7 @@ from typing import (
     TypeVar,
     TypeAlias,
     runtime_checkable,
+    cast,
 )
 
 T = TypeVar("T")
@@ -32,8 +33,9 @@ class SimpleContainer:
     """Generic IoC Container"""
 
     def __init__(self) -> None:
-        self._services: Dict[type[Any], Any] = {}
+        self._singletons: Dict[type[Any], Any] = {}
         self._factories: Dict[type[Any], ServiceFactory[Any]] = {}
+        self._singleton_types: set[type[Any]] = set()
 
     def register(
         self, service_type: type[T], factory: ServiceFactory[T]
@@ -61,19 +63,26 @@ class SimpleContainer:
         Returns:
             An instance of the requested service
         """
-        # if service_type not in self._services:
+        # Check if it's a singleton and already instantiated
+        if service_type in self._singletons:
+            return cast(T, self._singletons[service_type])
+
         if service_type not in self._factories:
             raise ServiceNotFoundError(f"No factory registered for {service_type}")
 
         factory = self._factories[service_type]
         service: T = factory(self)
-        # self._services[service_type] = service
+
+        # If it's a singleton type, cache the instance
+        if service_type in self._singleton_types:
+            self._singletons[service_type] = service
 
         return service
 
     def singleton(self, service_type: type[T], instance: T) -> "SimpleContainer":
         """Register a singleton instance"""
-        self._services[service_type] = instance
+        self._singletons[service_type] = instance
+        self._singleton_types.add(service_type)
         return self
 
     def transient(

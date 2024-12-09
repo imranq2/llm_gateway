@@ -69,7 +69,7 @@ class ContainerFactory:
         # we want only one instance of the cache so we use singleton
         container.singleton(
             ExpiringCache,
-            lambda c: ExpiringCache(
+            ExpiringCache(
                 ttl_seconds=(
                     int(os.environ["CONFIG_CACHE_TIMEOUT_SECONDS"])
                     if os.environ.get("CONFIG_CACHE_TIMEOUT_SECONDS")
