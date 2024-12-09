@@ -21,10 +21,10 @@ class S3Middleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: FastAPI,
+        *,
         file_manager_factory: Annotated[
             FileManagerFactory, Depends(get_file_manager_factory)
-        ],
-        *,
+        ],  # Add a default
         image_generation_path: str,
         target_path: str = "/image_generation/",
         allowed_extensions: List[str] | None = None,

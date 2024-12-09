@@ -16,6 +16,7 @@ from language_model_gateway.gateway.image_generation.image_generator import (
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
+from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +74,18 @@ class ImageGeneratorTool(BaseTool):
             file_manager: FileManager = self.file_manager_factory.get_file_manager(
                 folder=image_generation_path_
             )
-            url: Optional[str] = await file_manager.save_file_async(
+            file_path: Optional[str] = await file_manager.save_file_async(
                 image_data=image_data,
                 folder=image_generation_path_,
                 filename=image_file_name,
             )
+            if file_path is None:
+                return (
+                    f"Failed to save image to disk",
+                    f"ImageGeneratorTool: Failed to save image to disk from prompt: {prompt}",
+                )
+
+            url: Optional[str] = UrlParser.get_url_for_file_name(file_path)
             if url is None:
                 return (
                     f"Failed to save image to disk",

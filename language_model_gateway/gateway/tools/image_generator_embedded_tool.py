@@ -8,12 +8,16 @@ from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
 )
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
+from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +41,7 @@ class ImageGeneratorEmbeddedTool(BaseTool):
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
     image_generator_factory: ImageGeneratorFactory
-    file_saver: FileManager
+    file_manager_factory: FileManagerFactory
 
     def _run(self, prompt: str) -> Tuple[str, str]:
         """
@@ -72,11 +76,20 @@ class ImageGeneratorEmbeddedTool(BaseTool):
                 image_generation_path_
             ), "IMAGE_GENERATION_PATH environment variable is not set"
             image_file_name: str = f"{uuid4()}.png"
-            url: Optional[str] = await self.file_saver.save_file_async(
+            file_manager: FileManager = self.file_manager_factory.get_file_manager(
+                folder=image_generation_path_
+            )
+            file_path: Optional[str] = await file_manager.save_file_async(
                 image_data=image_data,
                 folder=image_generation_path_,
                 filename=image_file_name,
             )
+            if file_path is None:
+                return (
+                    f"Failed to save image to disk",
+                    f"ImageGeneratorEmbeddedTool: Failed to save image to disk from prompt: {prompt}",
+                )
+            url: Optional[str] = UrlParser.get_url_for_file_name(file_path)
             if url is None:
                 return "Failed to generate image", ""
             return f"{url}", markdown_image
