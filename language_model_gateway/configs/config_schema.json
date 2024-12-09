@@ -25,6 +25,9 @@
       "type": "string",
       "format": "uri"
     },
+    "disabled": {
+      "type": "boolean"
+    },
     "model": {
       "type": "object",
       "required": [

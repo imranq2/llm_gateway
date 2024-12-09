@@ -91,6 +91,8 @@ class ConfigReader:
                     f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from backup config store"
                 )
 
+            # remove any models that are marked disabled
+            models = [model for model in models if not model.disabled]
             await self._cache.set(models)
             return models
 
