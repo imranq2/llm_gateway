@@ -1,15 +1,20 @@
-import asyncio
 import logging
-from typing import Optional, Dict
+from typing import Optional, Dict, Type
 
 import httpx
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
     HtmlToMarkdownConverter,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class ScrapingBeeWebScraperToolInput(BaseModel):
+    url: str = Field(description="url of the webpage to scrape")
+    query: Optional[str] = Field(description="Query to search for on the webpage")
 
 
 class ScrapingBeeWebScraperTool(BaseTool):
@@ -22,6 +27,8 @@ class ScrapingBeeWebScraperTool(BaseTool):
         Returns the content of the webpage.
         Use this when you need to get content from a website.
         """
+
+    args_schema: Type[BaseModel] = ScrapingBeeWebScraperToolInput
 
     api_key: Optional[str]
     """API key for ScrapingBee"""
@@ -70,6 +77,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
         try:
             async with httpx.AsyncClient() as client:
+                logger.info(f"Scraping {url} with ScrapingBee with params: {params}")
                 response = await client.get(self.base_url, params=params, timeout=30.0)
 
                 if response.status_code == 200:
@@ -85,6 +93,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
         except Exception as e:
             logger.error(f"Error scraping {url}: {str(e)}")
+            logger.exception(e, stack_info=True)
             return None
 
     async def _extract_text_content_async(self, html_content: str) -> str:
@@ -99,13 +108,7 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
     def _run(self, url: str, query: Optional[str] = None) -> str:
         """Synchronous run method required by LangChain"""
-        # Create event loop and run async method
-        loop = asyncio.get_event_loop()
-        content = loop.run_until_complete(self._async_scrape(url=url, query=query))
-
-        if content:
-            return loop.run_until_complete(self._extract_text_content_async(content))
-        return "Error: Failed to scrape the webpage."
+        raise NotImplementedError("Use async version of this tool")
 
     async def _arun(self, url: str, query: Optional[str] = None) -> str:
         """Async run method"""

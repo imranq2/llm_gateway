@@ -66,7 +66,7 @@ class ImageGenerationProvider(BaseImageGenerationProvider):
         assert prompt is not None
         assert isinstance(prompt, str)
 
-        image_bytes: bytes = image_generator.generate_image(prompt=prompt)
+        image_bytes: bytes = await image_generator.generate_image_async(prompt=prompt)
 
         response_data: List[Image]
         if response_format == "b64_json":
@@ -77,7 +77,7 @@ class ImageGenerationProvider(BaseImageGenerationProvider):
             response_data = [Image(b64_json=image_b64_json)]
         else:
             image_full_path = ImageGenerationHelper.get_full_path()
-            image_generator.save_image(image_bytes, image_full_path)
+            await image_generator.save_image_async(image_bytes, image_full_path)
             url = ImageGenerationHelper.get_url_for_file_name(image_full_path)
             response_data = [Image(url=url)]
 

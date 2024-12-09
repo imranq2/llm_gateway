@@ -18,6 +18,7 @@ class ModelsRouter:
 
     def __init__(
         self,
+        *,
         prefix: str = "/api/v1",
         tags: list[str | Enum] | None = None,
         dependencies: Sequence[params.Depends] | None = None,

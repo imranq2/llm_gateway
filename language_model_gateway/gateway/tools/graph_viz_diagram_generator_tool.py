@@ -1,14 +1,28 @@
 import logging
 from pathlib import Path
+from typing import Type
 
 from graphviz import Digraph
 from langchain.tools import BaseTool
+from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.utilities.image_generation_helper import (
     ImageGenerationHelper,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class GraphVizDiagramGeneratorToolInput(BaseModel):
+    dot_input: str = Field(
+        description="a string describing the nodes and edges in DOT format. "
+        "For example:\n"
+        "digraph G {\n"
+        "  A -> B;\n"
+        "  B -> C;\n"
+        "  C -> A;\n"
+        "}"
+    )
 
 
 class GraphVizDiagramGeneratorTool(BaseTool):
@@ -28,6 +42,7 @@ class GraphVizDiagramGeneratorTool(BaseTool):
         "}"
         "This will generate a directed graph with three nodes: A, B, and C."
     )
+    args_schema: Type[BaseModel] = GraphVizDiagramGeneratorToolInput
 
     def _run(self, dot_input: str) -> str:
         """

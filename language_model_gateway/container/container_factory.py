@@ -1,3 +1,7 @@
+import logging
+import os
+
+from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
@@ -25,11 +29,17 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
     OpenAiChatCompletionsProvider,
 )
 from language_model_gateway.gateway.tools.tool_provider import ToolProvider
+from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
+
+
+logger = logging.getLogger(__name__)
 
 
 class ContainerFactory:
     # noinspection PyMethodMayBeStatic
     async def create_container_async(self) -> SimpleContainer:
+        logger.info("Initializing DI container")
+
         container = SimpleContainer()
 
         # register services here
@@ -62,11 +72,27 @@ class ContainerFactory:
                 tool_provider=c.resolve(ToolProvider),
             ),
         )
+        # we want only one instance of the cache so we use singleton
+        container.singleton(
+            ExpiringCache,
+            ExpiringCache(
+                ttl_seconds=(
+                    int(os.environ["CONFIG_CACHE_TIMEOUT_SECONDS"])
+                    if os.environ.get("CONFIG_CACHE_TIMEOUT_SECONDS")
+                    else 60 * 60
+                )
+            ),
+        )
+
+        container.register(
+            ConfigReader, lambda c: ConfigReader(cache=c.resolve(ExpiringCache))
+        )
         container.register(
             ChatCompletionManager,
             lambda c: ChatCompletionManager(
                 open_ai_provider=c.resolve(OpenAiChatCompletionsProvider),
                 langchain_provider=c.resolve(LangChainCompletionsProvider),
+                config_reader=c.resolve(ConfigReader),
             ),
         )
 
@@ -83,5 +109,8 @@ class ContainerFactory:
             ),
         )
 
-        container.register(ModelManager, lambda c: ModelManager())
+        container.register(
+            ModelManager, lambda c: ModelManager(config_reader=c.resolve(ConfigReader))
+        )
+        logger.info("DI container initialized")
         return container

@@ -31,8 +31,6 @@ from tests.gateway.mocks.mock_open_ai_completions_provider import (
 async def test_call_agent_with_input(async_client: httpx.AsyncClient) -> None:
     print("")
 
-    # environ["RUN_TESTS_WITH_REAL_LLM"] = "true"
-
     chat_history: List[ChatCompletionMessageParam] = []
     user_message: ChatCompletionMessageParam = ChatCompletionUserMessageParam(
         role="user",

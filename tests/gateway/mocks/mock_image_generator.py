@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import override
 
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
@@ -6,10 +7,12 @@ from language_model_gateway.gateway.image_generation.image_generator import (
 
 
 class MockImageGenerator(ImageGenerator):
-    def generate_image(
+    @override
+    async def generate_image_async(
         self, prompt: str, style: str = "natural", image_size: str = "1024x1024"
     ) -> bytes:
         return b"mock_image_data"
 
-    def save_image(self, image_data: bytes, filename: Path) -> None:
+    @override
+    async def save_image_async(self, image_data: bytes, filename: Path) -> None:
         pass

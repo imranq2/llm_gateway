@@ -3,7 +3,7 @@ services:
   open-webui:
     ports:
       - '3050:8080'
-    image: ghcr.io/open-webui/open-webui:v0.4.7
+    image: ghcr.io/open-webui/open-webui:v0.4.8
     depends_on:
       - open-webui-db
     env_file:
@@ -31,7 +31,8 @@ services:
       LOAD_PROMPT_FROM_LANGCHAIN_HUB: False
       WEBUI_FAVICON_URL: "http://dev:5000/favicon.png"
       WEBUI_NAME: "b.ai"
-#    volumes:
+      WEBUI_BANNERS: '[{"id": "1", "type":"info", "title":"Welcome to b.ai", "content":"Welcome to b.well AI (https://www.cnn.com)", "dismissible": false, "timestamp": 100000}]'
+  #    volumes:
 #      - ./openwebui/backend/data:/app/backend/data
 #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
 
