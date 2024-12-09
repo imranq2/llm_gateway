@@ -38,20 +38,26 @@ class ConfigReader:
         config_path: str = os.environ["CONFIG_PATH"]
         assert config_path is not None, "CONFIG_PATH environment variable is not set"
 
+        logger.info(
+            f"ConfigReader with id: {self._identifier} reading model configurations from {config_path}"
+        )
+
         # Check cache first
         cached_configs: List[ChatModelConfig] | None = await self._cache.get()
         if cached_configs is not None:
-            logger.debug(
+            logger.info(
                 f"ConfigReader with id: {self._identifier} using cached model configurations"
             )
             return cached_configs
+        else:
+            logger.info(f"ConfigReader with id: {self._identifier} cache is empty")
 
         # Use lock to prevent multiple simultaneous loads
         async with self._lock:
             # Check again in case another request loaded the configs while we were waiting
             cached_configs = await self._cache.get()
             if cached_configs is not None:
-                logger.debug(
+                logger.info(
                     f"ConfigReader with id: {self._identifier} using cached model configurations"
                 )
                 return cached_configs

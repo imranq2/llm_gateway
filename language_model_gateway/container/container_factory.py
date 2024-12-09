@@ -66,14 +66,15 @@ class ContainerFactory:
                 tool_provider=c.resolve(ToolProvider),
             ),
         )
-        container.register(
+        # we want only one instance of the cache so we use singleton
+        container.singleton(
             ExpiringCache,
             lambda c: ExpiringCache(
                 ttl_seconds=(
                     int(os.environ["CONFIG_CACHE_TIMEOUT_SECONDS"])
                     if os.environ.get("CONFIG_CACHE_TIMEOUT_SECONDS")
                     else 60 * 60
-                )  # 60 minutes in seconds
+                )
             ),
         )
 
