@@ -46,6 +46,7 @@ class ModelFactory:
                 client=None,
                 provider="anthropic",
                 credentials_profile_name=os.environ.get("AWS_CREDENTIALS_PROFILE"),
+                region_name=os.environ.get("AWS_REGION", "us-east-1"),
                 # Setting temperature to 0 for deterministic results
                 **model_parameters_dict,
             )

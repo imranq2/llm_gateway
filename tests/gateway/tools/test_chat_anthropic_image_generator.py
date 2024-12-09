@@ -57,7 +57,7 @@ async def test_chat_anthropic_image_generator(async_client: httpx.AsyncClient) -
                 type="langchain",
                 model=ModelConfig(
                     provider="bedrock",
-                    model="anthropic.claude-3-5-sonnet-20240620-v1:0",
+                    model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
                     ToolConfig(name="image_generator"),
@@ -135,7 +135,7 @@ async def test_chat_anthropic_image_generator_streaming(
                 type="langchain",
                 model=ModelConfig(
                     provider="bedrock",
-                    model="anthropic.claude-3-5-sonnet-20240620-v1:0",
+                    model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
                     ToolConfig(name="image_generator"),

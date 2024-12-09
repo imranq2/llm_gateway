@@ -48,7 +48,7 @@ async def test_chat_anthropic_with_web_scraping(
                 type="langchain",
                 model=ModelConfig(
                     provider="bedrock",
-                    model="anthropic.claude-3-5-sonnet-20240620-v1:0",
+                    model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 system_prompts=[
                     PromptConfig(

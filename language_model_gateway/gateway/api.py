@@ -3,7 +3,7 @@ import os
 from contextlib import asynccontextmanager
 from os import makedirs, environ
 from pathlib import Path
-from typing import AsyncGenerator, Annotated, List, Any
+from typing import AsyncGenerator, Annotated, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.params import Depends
@@ -21,24 +21,17 @@ from language_model_gateway.gateway.routers.image_generation_router import (
     ImageGenerationRouter,
 )
 from language_model_gateway.gateway.routers.models_router import ModelsRouter
+from language_model_gateway.gateway.utilities.endpoint_filter import EndpointFilter
 
 # warnings.filterwarnings("ignore", category=LangChainBetaWarning)
 
 logger = logging.getLogger(__name__)
 
-
-class EndpointFilter(logging.Filter):
-    def __init__(
-        self,
-        path: str,
-        *args: Any,
-        **kwargs: Any,
-    ):
-        super().__init__(*args, **kwargs)
-        self._path = path
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.getMessage().find(self._path) == -1
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 uvicorn_logger = logging.getLogger("uvicorn.access")
@@ -51,11 +44,6 @@ async def lifespan(app1: FastAPI) -> AsyncGenerator[None, None]:
     worker_id = id(app)
     try:
         # Configure logging
-        log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-        logging.basicConfig(
-            level=getattr(logging, log_level),
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
         logger.info(f"Starting application initialization for worker {worker_id}...")
 
         # perform any startup tasks here
