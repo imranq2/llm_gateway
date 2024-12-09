@@ -128,7 +128,7 @@ CMD ["sh", "-c", "\
     \
     # Calculate workers using formula: (cores * threads + 1) \
     WORKER_COUNT=$((CORE_COUNT * THREAD_COUNT + 1)) && \
-    FINAL_WORKERS=${WORKERS:-$WORKER_COUNT} && \
+    FINAL_WORKERS=${NUM_WORKERS:-$WORKER_COUNT} && \
     \
     # Log the configuration \
     echo \"Starting with $FINAL_WORKERS workers (cores: $CORE_COUNT, threads: $THREAD_COUNT)\" && \
