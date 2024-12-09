@@ -139,12 +139,3 @@ class GoogleSearchTool(BaseTool):
         # Result follows https://developers.google.com/custom-search/v1/reference/rest/v1/Search
         result = response.json()
         return cast(List[Dict[str, Any]], result.get("items", []))
-
-    def __del__(self) -> None:
-        """Ensure the client is closed when the object is deleted."""
-        import asyncio
-
-        try:
-            asyncio.get_event_loop().run_until_complete(self.aclose())
-        except Exception:
-            pass
