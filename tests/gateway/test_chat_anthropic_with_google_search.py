@@ -25,6 +25,7 @@ from tests.gateway.mocks.mock_model_factory import MockModelFactory
 async def test_chat_completions_with_web_search(
     async_client: httpx.AsyncClient,
 ) -> None:
+    print("")
     test_container: SimpleContainer = await get_container_async()
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container.register(
@@ -53,7 +54,7 @@ async def test_chat_completions_with_web_search(
                 ),
                 tools=[
                     ToolConfig(name="google_search"),
-                    ToolConfig(name="scraping_bee_web_scraper"),
+                    ToolConfig(name="get_web_page"),
                 ],
             )
         ]
