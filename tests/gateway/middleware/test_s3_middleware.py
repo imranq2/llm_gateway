@@ -32,7 +32,6 @@ def s3_middleware(fastapi_app: FastAPI, mock_s3: boto3.client) -> S3Middleware:
     )
 
 
-@pytest.mark.asyncio
 async def test_s3_middleware_check_extension(s3_middleware: S3Middleware) -> None:
     # Test allowed extensions
     assert s3_middleware.check_extension("image.jpg") == True
@@ -44,8 +43,6 @@ async def test_s3_middleware_check_extension(s3_middleware: S3Middleware) -> Non
     assert s3_middleware.check_extension("image.gif") == True
 
 
-@pytest.mark.asyncio
-@mock_aws
 async def test_s3_middleware_handle_s3_request_with_moto(
     fastapi_app: FastAPI, mock_s3: boto3.client
 ) -> None:
@@ -62,7 +59,7 @@ async def test_s3_middleware_handle_s3_request_with_moto(
     # Create middleware
     middleware = S3Middleware(
         app=fastapi_app,
-        image_generation_path=f"s3://{bucket_name}/images/",
+        image_generation_path=f"s3://{bucket_name}/images",
         target_path="/image_generation/",
         allowed_extensions=["jpg", "png"],
     )
@@ -71,20 +68,14 @@ async def test_s3_middleware_handle_s3_request_with_moto(
     mock_request = MagicMock(spec=Request)
     mock_request.url.path = "/image_generation/test.jpg"
 
-    # Patch UrlParser to return our test bucket and key
-    with patch(
-        "your_module.UrlParser.parse_s3_uri",
-        return_value=(bucket_name, "images/test.jpg"),
-    ):
-        # Call handle_s3_request
-        response = await middleware.handle_s3_request(mock_request)
+    # Call handle_s3_request
+    response = await middleware.handle_s3_request(mock_request)
 
-        # Assertions
-        assert response.status_code == 200
-        assert response.body == test_image_content
+    # Assertions
+    assert response.status_code == 200
+    assert response.body == test_image_content
 
 
-@pytest.mark.asyncio
 async def test_s3_middleware_local_file_handling(
     fastapi_app: FastAPI, tmp_path: Path
 ) -> None:
@@ -113,7 +104,6 @@ async def test_s3_middleware_local_file_handling(
     assert response.body == test_content
 
 
-@pytest.mark.asyncio
 async def test_s3_middleware_extension_filtering(fastapi_app: FastAPI) -> None:
     # Create middleware with specific allowed extensions
     middleware = S3Middleware(
@@ -135,7 +125,6 @@ async def test_s3_middleware_extension_filtering(fastapi_app: FastAPI) -> None:
     assert response.body == b"File type not allowed"
 
 
-@pytest.mark.asyncio
 async def test_s3_middleware_file_not_found(fastapi_app: FastAPI) -> None:
     # Create middleware
     middleware = S3Middleware(
