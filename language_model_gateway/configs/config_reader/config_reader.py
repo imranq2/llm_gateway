@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import os
-from typing import List
+from typing import List, Optional
+from urllib.parse import urlparse, ParseResult
 from uuid import UUID, uuid4
 
 from language_model_gateway.configs.config_reader.file_config_reader import (
@@ -62,13 +63,20 @@ class ConfigReader:
                 f"ConfigReader with id: {self._identifier} reading model configurations from {config_path}"
             )
 
+            def is_github_url(url: str) -> bool:
+                parsed_url: ParseResult = urlparse(url)
+                host: Optional[str] = parsed_url.hostname
+                return host is not None and (
+                    host == "github.com" or host.endswith(".github.com")
+                )
+
             models: List[ChatModelConfig]
             if config_path.startswith("s3"):
                 models = await S3ConfigReader().read_model_configs(s3_url=config_path)
                 logger.info(
                     f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
                 )
-            elif "github.com" in config_path:
+            elif is_github_url(config_path):
                 models = await GitHubConfigReader().read_model_configs(
                     github_url=config_path
                 )
