@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import time
 
 import httpx
 import json
@@ -19,6 +20,8 @@ class GitHubConfigReader:
 
         """
         self.github_token: Optional[str] = os.environ.get("GITHUB_TOKEN")
+        self.max_retries: int = 5
+        self.base_delay: int = 1  # Base delay in seconds
 
     @staticmethod
     def parse_github_url(github_url: str) -> Tuple[str, str, str]:
@@ -55,6 +58,68 @@ class GitHubConfigReader:
 
         return f"{owner}/{repo}", path, branch
 
+    async def _make_request(
+        self,
+        *,
+        client: httpx.AsyncClient,
+        url: str,
+        headers: Dict[str, str],
+        retry_count: int = 0,
+    ) -> httpx.Response:
+        """
+        Make an HTTP request with rate limit handling and retries
+        """
+        try:
+            response = await client.get(url, headers=headers)
+
+            # Check for rate limit
+            if (
+                response.status_code == 403
+                and "rate limit exceeded" in response.text.lower()
+            ):
+                remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
+                reset_time = int(response.headers.get("X-RateLimit-Reset", 0))
+
+                if remaining == 0 and reset_time:
+                    wait_time = reset_time - time.time()
+                    if wait_time > 0:
+                        logger.warning(
+                            f"Rate limit exceeded. Waiting for {wait_time:.2f} seconds"
+                        )
+                        await asyncio.sleep(wait_time)
+                        return await self._make_request(
+                            client=client,
+                            url=url,
+                            headers=headers,
+                            retry_count=retry_count,
+                        )
+
+            # Handle other 4xx/5xx errors with exponential backoff
+            if response.status_code >= 400:
+                if retry_count >= self.max_retries:
+                    response.raise_for_status()
+
+                delay = self.base_delay * (2**retry_count)  # Exponential backoff
+                logger.warning(
+                    f"Request failed with status {response.status_code}. Retrying in {delay} seconds..."
+                )
+                await asyncio.sleep(delay)
+                return await self._make_request(
+                    client=client, url=url, headers=headers, retry_count=retry_count + 1
+                )
+
+            return response
+
+        except httpx.RequestError as e:
+            if retry_count >= self.max_retries:
+                raise
+            delay = self.base_delay * (2**retry_count)
+            logger.warning(f"Request error: {str(e)}. Retrying in {delay} seconds...")
+            await asyncio.sleep(delay)
+            return await self._make_request(
+                client=client, url=url, headers=headers, retry_count=retry_count + 1
+            )
+
     async def read_model_configs(self, *, github_url: str) -> List[ChatModelConfig]:
         """
         Read model configurations from JSON files stored in a GitHub repository
@@ -77,9 +142,8 @@ class GitHubConfigReader:
             logger.exception(e, stack_info=True)
             return []
 
-    @staticmethod
     async def _read_model_configs(
-        *, repo_url: str, path: str, branch: str, github_token: Optional[str]
+        self, *, repo_url: str, path: str, branch: str, github_token: Optional[str]
     ) -> List[ChatModelConfig]:
         """
         Read model configurations from JSON files stored in a GitHub repository
@@ -105,8 +169,13 @@ class GitHubConfigReader:
                 headers = (
                     {"Authorization": f"token {github_token}"} if github_token else {}
                 )
-                # Get the list of files in the specified path
-                response = await client.get(api_url, headers=headers)
+                headers["Accept"] = "application/vnd.github.v3+json"
+
+                # Get the list of files with rate limit handling
+                response = await self._make_request(
+                    client=client, url=api_url, headers=headers
+                )
+
                 response.raise_for_status()
 
                 # Process each file in the directory
