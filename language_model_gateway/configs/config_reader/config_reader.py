@@ -42,7 +42,7 @@ class ConfigReader:
         cached_configs: List[ChatModelConfig] | None = await self._cache.get()
         if cached_configs is not None:
             logger.debug(
-                f"Identifier: {self._identifier} Using cached model configurations"
+                f"ConfigReader with id: {self._identifier} using cached model configurations"
             )
             return cached_configs
 
@@ -52,31 +52,31 @@ class ConfigReader:
             cached_configs = await self._cache.get()
             if cached_configs is not None:
                 logger.debug(
-                    f"Identifier: {self._identifier} Using cached model configurations"
+                    f"ConfigReader with id: {self._identifier} using cached model configurations"
                 )
                 return cached_configs
 
             logger.info(
-                f"Identifier: {self._identifier} Reading model configurations from {config_path}"
+                f"ConfigReader with id: {self._identifier} reading model configurations from {config_path}"
             )
 
             models: List[ChatModelConfig]
             if config_path.startswith("s3"):
                 models = await S3ConfigReader().read_model_configs(s3_url=config_path)
                 logger.info(
-                    f"Identifier: {self._identifier} Loaded {len(models)} model configurations from S3"
+                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
                 )
             elif "github.com" in config_path:
                 models = await GitHubConfigReader().read_model_configs(
                     github_url=config_path
                 )
                 logger.info(
-                    f"Identifier: {self._identifier} Loaded {len(models)} model configurations from GitHub"
+                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub"
                 )
             else:
                 models = FileConfigReader().read_model_configs(config_path=config_path)
                 logger.info(
-                    f"Identifier: {self._identifier} Loaded {len(models)} model configurations from file system"
+                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from file system"
                 )
 
             # if we can't load models another way then try to load them from the file system
@@ -86,7 +86,7 @@ class ConfigReader:
                     config_path=config_path_backup
                 )
                 logger.info(
-                    f"Identifier: {self._identifier} Loaded {len(models)} model configurations from backup config store"
+                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from backup config store"
                 )
 
             await self._cache.set(models)
@@ -94,4 +94,4 @@ class ConfigReader:
 
     async def clear_cache(self) -> None:
         await self._cache.clear()
-        logger.info(f"Cleared cache for identifier: {self._identifier}")
+        logger.info(f"ConfigReader with id:  {self._identifier} cleared cache")

@@ -119,7 +119,7 @@ RUN chown -R appuser:appgroup ${PROJECT_DIR} /usr/local/lib/python3.12/site-pack
 USER appuser
 
 # Set the command to run the application using pipenv and uvicorn
-CMD ["ddtrace-run", "uvicorn", "language_model_gateway.gateway.api:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4", "--log-level", "debug"]
+CMD ["sh", "-c", "ddtrace-run uvicorn language_model_gateway.gateway.api:app --host 0.0.0.0 --port 5000 --workers ${WORKERS:-4} --log-level $(echo ${LOG_LEVEL:-info} | tr '[:upper:]' '[:lower:]')"]
 
 # Set the command to run the application using pipenv and Python without uvicorn and ddtrace-run
 #CMD ["pipenv", "run", "python", "-m", "complaintparser.api"]
