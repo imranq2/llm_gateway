@@ -26,7 +26,7 @@ from tests.gateway.mocks.mock_image_generator_factory import MockImageGeneratorF
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
-async def test_chat_diagram_generator(async_client: httpx.AsyncClient) -> None:
+async def test_chat_sequence_diagram_generator(async_client: httpx.AsyncClient) -> None:
     print("")
     test_container: SimpleContainer = await get_container_async()
 
@@ -60,7 +60,7 @@ async def test_chat_diagram_generator(async_client: httpx.AsyncClient) -> None:
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
-                    ToolConfig(name="graph_viz_diagram_generator"),
+                    ToolConfig(name="sequence_diagram_generator"),
                 ],
             )
         ]
@@ -82,7 +82,19 @@ async def test_chat_diagram_generator(async_client: httpx.AsyncClient) -> None:
         messages=[
             {
                 "role": "user",
-                "content": "Create a diagram that shows a client calling a FHIR server",
+                "content": """
+Create a sequence diagram with these participants:
+- User
+- AuthService
+- Database
+
+Interactions:
+1. User sends login() to AuthService
+2. AuthService queries validateCredentials() to Database
+3. Database returns authResult to AuthService
+4. AuthService sends loginResponse to User
+
+Title: User Authentication Flow""",
             }
         ],
         model="General Purpose",

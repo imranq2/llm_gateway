@@ -27,6 +27,9 @@ from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
 from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
     ScrapingBeeWebScraperTool,
 )
+from language_model_gateway.gateway.tools.sequence_diagram_generator_tool import (
+    SequenceDiagramGeneratorTool,
+)
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
 
 
@@ -65,6 +68,9 @@ class ToolProvider:
                 file_manager_factory=file_manager_factory,
             ),
             "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "sequence_diagram_generator": SequenceDiagramGeneratorTool(
                 file_manager_factory=file_manager_factory
             ),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
