@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
   "id": "general_purpose",
   "name": "General Purpose",
-  "description": "General Purpose Language Model",
+  "description": "This is a general purpose language model that can be used for a wide variety of tasks.",
   "type": "langchain",
   "model": {
     "provider": "bedrock",
