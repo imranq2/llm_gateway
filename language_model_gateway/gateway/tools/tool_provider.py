@@ -17,6 +17,9 @@ from language_model_gateway.gateway.image_generation.image_generator_factory imp
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
+from language_model_gateway.gateway.tools.er_diagram_generator_tool import (
+    ERDiagramGeneratorTool,
+)
 from language_model_gateway.gateway.tools.flow_chart_generator_tool import (
     FlowChartGeneratorTool,
 )
@@ -77,6 +80,9 @@ class ToolProvider:
                 file_manager_factory=file_manager_factory
             ),
             "flow_chart_generator": FlowChartGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "er_diagram_generator": ERDiagramGeneratorTool(
                 file_manager_factory=file_manager_factory
             ),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
