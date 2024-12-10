@@ -1,3 +1,4 @@
+import os
 from typing import Optional, Dict, Any, List, cast
 
 import httpx
@@ -20,18 +21,16 @@ class ProviderSearchToolInput(BaseModel):
 
 class ProviderSearchTool(BaseTool):
     name = "provider_search"
-    description = "Search for healthcare providers based on various criteria like name, specialty, location, insurance etc."
+    description = "Search for healthcare providers (e.g., doctors, clinics and hospitals) based on various criteria like name, specialty, location, insurance etc."
 
-    def __init__(
-        self, api_url: Optional[str], headers: Optional[Dict[str, str]] = None
-    ):
+    def __init__(self) -> None:
         super().__init__()
-        self.api_url: Optional[str] = api_url
-        self.headers = headers or {
+        self.api_url: Optional[str] = os.environ.get("PROVIDER_SEARCH_API_URL")
+        self.headers = {
             "Content-Type": "application/json",
         }
 
-        self.async_client = httpx.AsyncClient(headers=self.headers)
+        self.async_client: httpx.AsyncClient = httpx.AsyncClient(headers=self.headers)
 
     # noinspection PyMethodMayBeStatic
     def _build_query(self) -> str:
