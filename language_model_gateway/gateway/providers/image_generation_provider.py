@@ -62,7 +62,8 @@ class ImageGenerationProvider(BaseImageGenerationProvider):
             image_generation_request.get("response_format")
         )
 
-        logger.info(f"image_generation_request: {image_generation_request}")
+        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+            logger.info(f"image_generation_request: {image_generation_request}")
 
         model: Union[str, ImageModel, None] | NotGiven = image_generation_request.get(
             "model"

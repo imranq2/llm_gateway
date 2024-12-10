@@ -118,7 +118,8 @@ class ChatCompletionManager:
         if help_response is not None:
             return help_response
 
-        logger.info(f"Running chat completion for {chat_request}")
+        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+            logger.info(f"Running chat completion for {chat_request}")
         # Use the provider to get the completions
         return await provider.chat_completions(
             model_config=model_config, headers=headers, chat_request=chat_request
@@ -175,9 +176,10 @@ class ChatCompletionManager:
             )
 
         last_message_content: str = cast(str, user_messages[-1]["content"])
-        logger.info(
-            f"Last message content: {last_message_content}, type: {type(last_message_content)}"
-        )
+        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+            logger.info(
+                f"Last message content: {last_message_content}, type: {type(last_message_content)}"
+            )
 
         help_keywords: List[str] = os.environ.get("HELP_KEYWORDS", "help").split(";")
         if (
@@ -220,7 +222,8 @@ class ChatCompletionManager:
                 created=int(time.time()),
                 object="chat.completion",
             )
-            logger.info(f"Returning help response: {chat_response.model_dump()}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Returning help response: {chat_response.model_dump()}")
             if chat_request.get("stream"):
 
                 async def foo(

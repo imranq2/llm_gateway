@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Type, Literal, Tuple
 
 import httpx
@@ -54,9 +55,10 @@ class URLToMarkdownTool(BaseTool):
             content: str = await HtmlToMarkdownConverter.get_markdown_from_html_async(
                 html_content=html_content
             )
-            logger.info(
-                f"====== Scraped {url} ======\n{content}\n====== End of Scraped Markdown ======"
-            )
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(
+                    f"====== Scraped {url} ======\n{content}\n====== End of Scraped Markdown ======"
+                )
             return content, f"URLToMarkdownTool: Scraped content from <{url}> "
         except Exception as e:
             return (

@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from os import environ
 from random import randint
 from typing import Any, Dict, AsyncGenerator
@@ -95,7 +96,8 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                     content=f"Error validating response: {e}. url: {agent_url}\n{response_text}",
                     status_code=500,
                 )
-            logger.info(f"Non-streaming response {request_id}: {response}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Non-streaming response {request_id}: {response}")
             return JSONResponse(content=response.model_dump())
 
     async def get_streaming_response_async(
@@ -143,12 +145,13 @@ class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):
                     data: str = sse.data
                     i += 1
 
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug(
-                            f"----- Received data from stream {i} {event} {type(data)} ------"
-                        )
-                        logger.debug(data)
-                        logger.debug(
-                            f"----- End data from stream {i} {event} {type(data)} ------"
-                        )
+                    if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug(
+                                f"----- Received data from stream {i} {event} {type(data)} ------"
+                            )
+                            logger.debug(data)
+                            logger.debug(
+                                f"----- End data from stream {i} {event} {type(data)} ------"
+                            )
                     yield f"data: {data}\n\n"
