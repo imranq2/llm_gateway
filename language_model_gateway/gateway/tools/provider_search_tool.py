@@ -52,8 +52,8 @@ class ProviderSearchTool(BaseTool):
                     total_count
                     results {
                         id
+                        npi
                         content
-                        score
                         name {
                             text
                             family
