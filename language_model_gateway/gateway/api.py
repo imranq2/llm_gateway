@@ -20,6 +20,7 @@ from language_model_gateway.gateway.routers.chat_completion_router import (
 from language_model_gateway.gateway.routers.image_generation_router import (
     ImageGenerationRouter,
 )
+from language_model_gateway.gateway.routers.images_router import ImagesRouter
 from language_model_gateway.gateway.routers.models_router import ModelsRouter
 from language_model_gateway.gateway.utilities.endpoint_filter import EndpointFilter
 
@@ -87,11 +88,8 @@ def create_app() -> FastAPI:
     ), "IMAGE_GENERATION_PATH environment variable must be set"
 
     makedirs(image_generation_path, exist_ok=True)
-
-    app1.mount(
-        "/image_generation",
-        StaticFiles(directory=image_generation_path),
-        name="static",
+    app1.include_router(
+        ImagesRouter(image_generation_path=image_generation_path).get_router()
     )
     return app1
 

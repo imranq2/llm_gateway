@@ -2,13 +2,12 @@ import asyncio
 import base64
 import json
 import logging
-import os
 from concurrent.futures.thread import ThreadPoolExecutor
-from pathlib import Path
 from typing import override, Dict, Any
 
 import boto3
 
+from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
 )
@@ -17,22 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 class AwsImageGenerator(ImageGenerator):
-    def __init__(self) -> None:
+    def __init__(self, *, aws_client_factory: AwsClientFactory) -> None:
         self.executor: ThreadPoolExecutor = ThreadPoolExecutor()
-
-    def _create_bedrock_client(self) -> boto3.client:
-        """Create and return a Bedrock client"""
-        session1 = boto3.Session(profile_name=os.environ.get("AWS_CREDENTIALS_PROFILE"))
-        bedrock_client = session1.client(
-            service_name="bedrock-runtime",
-            region_name="us-east-1",
-        )
-        return bedrock_client
+        self.aws_client_factory: AwsClientFactory = aws_client_factory
+        assert self.aws_client_factory is not None
+        assert isinstance(self.aws_client_factory, AwsClientFactory)
 
     def _invoke_model(self, request_body: Dict[str, Any]) -> Dict[str, Any]:
         """Synchronous model invocation"""
 
-        client: boto3.client = self._create_bedrock_client()
+        client: boto3.client = self.aws_client_factory.create_client(
+            service_name="bedrock-runtime"
+        )
         response: Dict[str, Any] = client.invoke_model(
             modelId="amazon.titan-image-generator-v2:0",
             body=json.dumps(request_body),
@@ -84,31 +79,3 @@ class AwsImageGenerator(ImageGenerator):
             logger.error(f"Error generating image for prompt {prompt}: {str(e)}")
             logger.exception(e, stack_info=True)
             raise
-
-    # noinspection PyMethodMayBeStatic
-    @override
-    async def save_image_async(self, image_data: bytes, filename: Path) -> None:
-        """Save the generated image to a file"""
-        if image_data:
-            with open(filename, "wb") as f:
-                f.write(image_data)
-            logger.info(f"Image saved as {filename}")
-        else:
-            logger.error("No image to save")
-
-    # @override
-    # async def save_image_async(self, image_data: bytes, filename: Path) -> None:
-    #     """Save the generated image to a file asynchronously"""
-    #     if not image_data:
-    #         logger.warning("No image data to save")
-    #         return
-    #
-    #     try:
-    #         # Use aiofiles for async file operations
-    #         async with aiofiles.open(filename, mode='wb') as f:
-    #             await f.write(image_data)
-    #         logger.info(f"Image saved as {filename}")
-    #
-    #     except Exception as e:
-    #         logger.error(f"Error saving image to {filename}: {str(e)}")
-    #         raise

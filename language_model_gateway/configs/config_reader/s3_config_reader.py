@@ -1,33 +1,25 @@
 import logging
-from urllib.parse import urlparse
 import boto3
 import json
-from typing import List, Tuple
+from typing import List
 from botocore.exceptions import ClientError
 from language_model_gateway.configs.config_schema import ChatModelConfig
+from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
 
 class S3ConfigReader:
-
-    @staticmethod
-    def parse_s3_uri(uri: str) -> Tuple[str, str]:
-        parsed = urlparse(uri)
-        if parsed.scheme != "s3":
-            raise ValueError(f"Invalid S3 URI scheme: {uri}")
-
-        bucket = parsed.netloc
-        path = parsed.path.lstrip("/")  # Remove leading slash
-
-        return bucket, path
-
+    # noinspection PyMethodMayBeStatic
     async def read_model_configs(self, *, s3_url: str) -> List[ChatModelConfig]:
         """
         Read model configurations from JSON files stored in an S3 bucket
         """
 
-        bucket_name, prefix = self.parse_s3_uri(s3_url)
+        # Parse S3 URL
+        bucket_name: str
+        prefix: str
+        bucket_name, prefix = UrlParser.parse_s3_uri(s3_url)
 
         assert bucket_name
         assert prefix

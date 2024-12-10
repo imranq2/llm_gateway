@@ -1,19 +1,23 @@
 import base64
 import logging
-from typing import Tuple, Literal, Type
+import os
+from typing import Tuple, Literal, Type, Optional
+from uuid import uuid4
 
 from langchain.tools import BaseTool
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field
 
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.image_generation.image_generator import (
     ImageGenerator,
 )
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
-from language_model_gateway.gateway.utilities.image_generation_helper import (
-    ImageGenerationHelper,
-)
+from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +40,8 @@ class ImageGeneratorEmbeddedTool(BaseTool):
     args_schema: Type[BaseModel] = ImageGeneratorToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    image_generator_factory: ImageGeneratorFactory = PrivateAttr()
+    image_generator_factory: ImageGeneratorFactory
+    file_manager_factory: FileManagerFactory
 
     def _run(self, prompt: str) -> Tuple[str, str]:
         """
@@ -66,9 +71,27 @@ class ImageGeneratorEmbeddedTool(BaseTool):
             embedded_url = f"data:image/png;base64,{base64_image}"
             markdown_image = f"![Generated Image]({embedded_url})"
 
-            image_file_path = ImageGenerationHelper.get_full_path()
-            await image_generator.save_image_async(image_data, image_file_path)
-            url = ImageGenerationHelper.get_url_for_file_name(image_file_path)
+            image_generation_path_ = os.environ["IMAGE_GENERATION_PATH"]
+            assert (
+                image_generation_path_
+            ), "IMAGE_GENERATION_PATH environment variable is not set"
+            image_file_name: str = f"{uuid4()}.png"
+            file_manager: FileManager = self.file_manager_factory.get_file_manager(
+                folder=image_generation_path_
+            )
+            file_path: Optional[str] = await file_manager.save_file_async(
+                image_data=image_data,
+                folder=image_generation_path_,
+                filename=image_file_name,
+            )
+            if file_path is None:
+                return (
+                    f"Failed to save image to disk",
+                    f"ImageGeneratorEmbeddedTool: Failed to save image to disk from prompt: {prompt}",
+                )
+            url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
+            if url is None:
+                return "Failed to generate image", ""
             return f"{url}", markdown_image
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
