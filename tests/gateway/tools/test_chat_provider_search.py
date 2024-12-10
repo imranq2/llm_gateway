@@ -26,23 +26,23 @@ from tests.gateway.mocks.mock_image_generator_factory import MockImageGeneratorF
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
-async def test_chat_anthropic_provider_search(async_client: httpx.AsyncClient) -> None:
+async def test_chat_provider_search(async_client: httpx.AsyncClient) -> None:
     print("")
     test_container: SimpleContainer = await get_container_async()
 
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "20852"
-    #             )
-    #         ),
-    #     )
-    #     test_container.register(
-    #         ImageGeneratorFactory,
-    #         lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "20852"
+                )
+            ),
+        )
+        test_container.register(
+            ImageGeneratorFactory,
+            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+        )
 
     # set the model configuration for this test
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
@@ -104,7 +104,7 @@ async def test_chat_anthropic_provider_search(async_client: httpx.AsyncClient) -
     # assert "data:image/png;base64" in content
 
 
-async def test_chat_anthropic_provider_search_streaming(
+async def test_chat_provider_search_streaming(
     async_client: httpx.AsyncClient,
 ) -> None:
     print("")
@@ -181,4 +181,4 @@ async def test_chat_anthropic_provider_search_streaming(
     print("======== Final Content ========")
     print(content)
     print("====== End of Final Content ======")
-    assert "Internal Medicine" in content
+    assert "20852" in content
