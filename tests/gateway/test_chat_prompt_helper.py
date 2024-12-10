@@ -13,7 +13,13 @@ from language_model_gateway.configs.config_schema import (
 )
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
+from language_model_gateway.gateway.models.model_factory import ModelFactory
+from language_model_gateway.gateway.utilities.environment_reader import (
+    EnvironmentReader,
+)
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
+from tests.gateway.mocks.mock_chat_model import MockChatModel
+from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
 @pytest.mark.asyncio
@@ -22,15 +28,15 @@ async def test_chat_prompt_helper(async_client: httpx.AsyncClient) -> None:
 
     test_container: SimpleContainer = await get_container_async()
 
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "Barack"
-    #             )
-    #         ),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "doctor"
+                )
+            ),
+        )
 
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
         test_container.resolve(ExpiringCache)
@@ -91,4 +97,4 @@ async def test_chat_prompt_helper(async_client: httpx.AsyncClient) -> None:
 
     assert content is not None
     print(content)
-    # assert "Barack" in content
+    assert "doctor" in content
