@@ -9,7 +9,6 @@ from fastapi import HTTPException
 from starlette.responses import StreamingResponse
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
-from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ class LocalFileManager(FileManager):
     async def read_file_async(
         self, *, folder: str, file_path: str
     ) -> StreamingResponse:
-        full_path: str = UrlParser.combine_path(prefix=folder, filename=file_path)
+        full_path: str = str(Path(folder) / Path(file_path))
         try:
             # Determine file size and MIME type
             file_size = os.path.getsize(full_path)

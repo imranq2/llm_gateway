@@ -39,6 +39,7 @@ async def test_chat_anthropic_image_download(async_client: httpx.AsyncClient) ->
         )
 
     file_path = Path(os.environ["IMAGE_GENERATION_PATH"]).joinpath("foo.png")
+    print(f"Writing to {file_path}")
     # Save image locally
     with open(file_path, "wb") as f:
         f.write(b"image content")
