@@ -59,6 +59,9 @@
       "name": "image_generator"
     },
     {
+      "name": "graph_viz_diagram_generator"
+    },
+    {
       "name": "provider_search"
     },
     {

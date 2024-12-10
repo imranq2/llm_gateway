@@ -55,6 +55,15 @@ class GraphVizDiagramGeneratorTool(BaseTool):
         :param dot_input: The DOT description of the graph.
         :return: The path to the generated diagram.
         """
+        raise NotImplementedError("Call the asynchronous version of the tool")
+
+    async def _arun(self, dot_input: str) -> Tuple[str, str]:
+        """
+        Asynchronous version of the tool.
+        :param dot_input: The DOT description of the graph.
+        :return: The path to the generated diagram.
+        """
+        # For simplicity, call the synchronous version
         try:
             # Create a Graphviz object
             dot = Digraph(format="png")
@@ -94,12 +103,3 @@ class GraphVizDiagramGeneratorTool(BaseTool):
             )
         except Exception as e:
             raise ValueError(f"Failed to generate diagram: {str(e)}")
-
-    async def _arun(self, dot_input: str) -> Tuple[str, str]:
-        """
-        Asynchronous version of the tool.
-        :param dot_input: The DOT description of the graph.
-        :return: The path to the generated diagram.
-        """
-        # For simplicity, call the synchronous version
-        return self._run(dot_input)
