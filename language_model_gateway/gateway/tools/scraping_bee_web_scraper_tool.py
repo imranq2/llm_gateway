@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional, Dict, Type, Tuple, Literal
 
 import httpx
@@ -78,13 +79,17 @@ class ScrapingBeeWebScraperTool(BaseTool):
 
         try:
             async with httpx.AsyncClient() as client:
-                logger.info(f"Scraping {url} with ScrapingBee with params: {params}")
+                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                    logger.info(
+                        f"Scraping {url} with ScrapingBee with params: {params}"
+                    )
                 response = await client.get(self.base_url, params=params, timeout=30.0)
 
                 if response.status_code == 200:
-                    logger.info(
-                        f"====== Scraped {url} ======\n{response.text}\n====== End of Scraped Content ======"
-                    )
+                    if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                        logger.info(
+                            f"====== Scraped {url} ======\n{response.text}\n====== End of Scraped Content ======"
+                        )
                     return response.text
                 else:
                     logger.error(

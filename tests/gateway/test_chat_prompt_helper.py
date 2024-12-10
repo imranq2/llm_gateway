@@ -1,95 +1,41 @@
-import json
-from typing import List
+from typing import Optional, List
 
 import httpx
-from httpx import Response
-from openai import AsyncOpenAI, AsyncStream
-from openai.types import CompletionUsage
-from openai.types.chat import ChatCompletionChunk
-from pytest_httpx import HTTPXMock, IteratorStream
+import pytest
+from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletion
 
 from language_model_gateway.configs.config_schema import (
     ChatModelConfig,
     ModelConfig,
-    ModelParameterConfig,
     PromptConfig,
+    ModelParameterConfig,
 )
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
+from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
-from openai.types.chat.chat_completion_chunk import ChoiceDelta, Choice as ChunkChoice
-
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
+from tests.gateway.mocks.mock_chat_model import MockChatModel
+from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
-async def test_chat_completions_streaming(
-    async_client: httpx.AsyncClient, httpx_mock: HTTPXMock
-) -> None:
+@pytest.mark.asyncio
+async def test_chat_prompt_helper(async_client: httpx.AsyncClient) -> None:
+    print("")
+
     test_container: SimpleContainer = await get_container_async()
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        chunks_json: List[ChatCompletionChunk] = [
-            ChatCompletionChunk(
-                id=str(0),
-                created=1633660000,
-                model="b.well PHR",
-                choices=[
-                    ChunkChoice(
-                        index=0,
-                        delta=ChoiceDelta(role="assistant", content="This" + " "),
-                    )
-                ],
-                usage=CompletionUsage(
-                    prompt_tokens=0, completion_tokens=0, total_tokens=0
-                ),
-                object="chat.completion.chunk",
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "doctor"
+                )
             ),
-            ChatCompletionChunk(
-                id=str(0),
-                created=1633660000,
-                model="b.well PHR",
-                choices=[
-                    ChunkChoice(
-                        index=0,
-                        delta=ChoiceDelta(role="assistant", content="is a" + " "),
-                    )
-                ],
-                usage=CompletionUsage(
-                    prompt_tokens=0, completion_tokens=0, total_tokens=0
-                ),
-                object="chat.completion.chunk",
-            ),
-            ChatCompletionChunk(
-                id=str(0),
-                created=1633660000,
-                model="b.well PHR",
-                choices=[
-                    ChunkChoice(
-                        index=0,
-                        delta=ChoiceDelta(role="assistant", content="test" + " "),
-                    )
-                ],
-                usage=CompletionUsage(
-                    prompt_tokens=0, completion_tokens=0, total_tokens=0
-                ),
-                object="chat.completion.chunk",
-            ),
-        ]
-        chunks: List[bytes] = [
-            f"data: {json.dumps(chunks_json[0].model_dump())}\n\n".encode("utf-8"),
-            f"data: {json.dumps(chunks_json[1].model_dump())}\n\n".encode("utf-8"),
-            f"data: {json.dumps(chunks_json[2].model_dump())}\n\n".encode("utf-8"),
-            b"data: [DONE]\n\n",
-        ]
-        httpx_mock.add_callback(
-            callback=lambda request: Response(
-                status_code=200,
-                headers={"Content-Type": "text/event-stream"},
-                stream=IteratorStream(chunks),
-            ),
-            url="http://host.docker.internal:5055/api/v1/chat/completions",
         )
 
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
@@ -98,15 +44,14 @@ async def test_chat_completions_streaming(
     await model_configuration_cache.set(
         [
             ChatModelConfig(
-                id="b_well_phr",
-                name="b.well PHR",
-                description="b.well PHR",
-                type="openai",
+                id="prompt_helper",
+                name="Prompt Helper",
+                description="Prompt Helper",
+                type="langchain",
                 model=ModelConfig(
                     provider="bedrock",
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
-                url="http://host.docker.internal:5055/api/v1/chat/completions",
                 model_parameters=[ModelParameterConfig(key="temperature", value=0.5)],
                 system_prompts=[
                     PromptConfig(
@@ -134,13 +79,22 @@ async def test_chat_completions_streaming(
         http_client=async_client,
     )
 
-    stream: AsyncStream[ChatCompletionChunk] = await client.chat.completions.create(
-        model="b.well PHR",
-        messages=[{"role": "user", "content": "Say this is a test"}],
-        stream=True,
+    # call API
+    chat_completion: ChatCompletion = await client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": "I want to find doctors in the country that are part of John Muir Health and work in Walnut Creek. And are family doctors",
+            }
+        ],
+        model="Prompt Helper",
     )
-    async for chunk in stream:
-        delta_content = "\n".join(
-            [choice.delta.content or "" for choice in chunk.choices]
-        )
-        print(delta_content)
+
+    # print the top "choice"
+    content: Optional[str] = "\n".join(
+        choice.message.content or "" for choice in chat_completion.choices
+    )
+
+    assert content is not None
+    print(content)
+    assert "doctor" in content

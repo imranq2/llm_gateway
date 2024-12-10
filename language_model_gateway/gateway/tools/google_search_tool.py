@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import random
 from os import environ
 from typing import Optional, Dict, Any, List, cast, Type, Literal, Tuple
@@ -82,9 +83,10 @@ class GoogleSearchTool(BaseTool):
 
         while True:
             try:
-                logger.info(
-                    f"Running Google search with query {params['q']}.  Params: {params}.  Retry count: {retry_count}"
-                )
+                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                    logger.info(
+                        f"Running Google search with query {params['q']}.  Params: {params}.  Retry count: {retry_count}"
+                    )
 
                 response = await self._client.get(url, params=params)
 
@@ -143,7 +145,8 @@ class GoogleSearchTool(BaseTool):
                     snippets.append(f"- {result['snippet']} ({result.get('link')})")
 
             response: str = "\n".join(snippets)
-            logger.info(f"Google Search results: {response}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Google Search results: {response}")
             return response, f'GoogleSearchTool: Searched Google for "{query}"'
         except Exception as e:
             logger.exception(e, stack_info=True)

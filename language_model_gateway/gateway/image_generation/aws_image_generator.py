@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 import logging
+import os
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import override, Dict, Any
 
@@ -39,7 +40,8 @@ class AwsImageGenerator(ImageGenerator):
         self, prompt: str, style: str = "natural", image_size: str = "1024x1024"
     ) -> bytes:
         """Generate an image using Titan Image Generator"""
-        logger.info(f"Generating image for prompt: {prompt}")
+        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+            logger.info(f"Generating image for prompt: {prompt}")
 
         request_body = {
             "textToImageParams": {"text": prompt},
@@ -72,7 +74,8 @@ class AwsImageGenerator(ImageGenerator):
             # Convert base64 to bytes
             image_data = base64.b64decode(base64_image)
 
-            logger.info(f"Image generated successfully for prompt: {prompt}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Image generated successfully for prompt: {prompt}")
             return image_data
 
         except Exception as e:

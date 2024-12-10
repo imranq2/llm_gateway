@@ -25,13 +25,13 @@ services:
 #      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
       ENABLE_IMAGE_GENERATION: True
       IMAGE_GENERATION_ENGINE: "openai"
-      IMAGES_OPENAI_API_BASE_URL: "http://dev:5000/api/v1"
+      IMAGES_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       IMAGES_OPENAI_API_KEY: "bedrock"
       IMAGE_GENERATION_MODEL: "amazon.titan-image-generator-v2:0"
       LOAD_PROMPT_FROM_LANGCHAIN_HUB: False
       WEBUI_FAVICON_URL: "http://dev:5000/favicon.png"
       WEBUI_NAME: "b.ai"
-      WEBUI_BANNERS: '[{"id": "1", "type":"info", "title":"Welcome to b.ai", "content":"Welcome to b.well AI (https://www.cnn.com)", "dismissible": false, "timestamp": 100000}]'
+      WEBUI_BANNERS: '[{"id": "1", "type":"info", "title":"Welcome to b.well AI", "content":"Welcome to b.well AI (https://icanbwell.atlassian.net/wiki/spaces/BRG/pages/5092442117/AI+Resource+Guide)", "dismissible": false, "timestamp": 100000},{"id": "2", "type":"info", "title":"Help", "content":"Type \"help\" if you need help", "dismissible": false, "timestamp": 100000}]'
   #    volumes:
 #      - ./openwebui/backend/data:/app/backend/data
 #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached

@@ -124,6 +124,7 @@ USER appuser
 # The number of workers can be controlled using the NUM_WORKERS environment variable
 # Otherwise the number of workers for uvicorn (using the multiprocessing worker) is  chosen based on these guidelines:
 # (https://sentry.io/answers/number-of-uvicorn-workers-needed-in-production/)
+# basically (cores * threads + 1)
 CMD ["sh", "-c", "\
     # Get CPU info \
     CORE_COUNT=$(nproc) && \

@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Type
 
 from langchain_core.tools import BaseTool
@@ -23,9 +24,11 @@ class PythonReplTool(BaseTool):
         """Async implementation of the tool (in this case, just calls _run)"""
         try:
             python_repl = PythonREPL()
-            logger.info(f"Running Python Repl with query: {query}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Running Python Repl with query: {query}")
             result: str = python_repl.run(command=query)
-            logger.info(f"Python Repl result: {result}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Python Repl result: {result}")
             return result
         except Exception as e:
             logger.error(f"Error running Python Repl: {e}")
@@ -35,9 +38,11 @@ class PythonReplTool(BaseTool):
     def _run(self, query: str) -> str:
         try:
             python_repl = PythonREPL()
-            logger.info(f"Running Python Repl with query: {query}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Running Python Repl with query: {query}")
             result: str = python_repl.run(command=query)
-            logger.info(f"Python Repl result: {result}")
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(f"Python Repl result: {result}")
             return result
         except Exception as e:
             logger.error(f"Error running Python Repl: {e}")
