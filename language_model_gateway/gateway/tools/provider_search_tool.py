@@ -95,6 +95,9 @@ class ProviderSearchTool(BaseTool):
                         insurance_plan {
                             name
                         }
+                        endpoint {
+                            name
+                        }
                     }
                 }
             }
