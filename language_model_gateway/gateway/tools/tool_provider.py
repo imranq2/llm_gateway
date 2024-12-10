@@ -17,6 +17,9 @@ from language_model_gateway.gateway.image_generation.image_generator_factory imp
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
+from language_model_gateway.gateway.tools.flow_chart_generator_tool import (
+    FlowChartGeneratorTool,
+)
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
@@ -71,6 +74,9 @@ class ToolProvider:
                 file_manager_factory=file_manager_factory
             ),
             "sequence_diagram_generator": SequenceDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "flow_chart_generator": FlowChartGeneratorTool(
                 file_manager_factory=file_manager_factory
             ),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(

@@ -135,7 +135,7 @@ class SequenceDiagramGeneratorTool(BaseTool):
             if file_path is None:
                 return (
                     f"Failed to save image to disk",
-                    f"ImageGeneratorTool: Failed to save image to disk ",
+                    f"SequenceDiagramGeneratorTool: Failed to save image to disk ",
                 )
 
             # Generate URL for the image
@@ -143,7 +143,7 @@ class SequenceDiagramGeneratorTool(BaseTool):
             if url is None:
                 return (
                     f"Failed to save image to disk",
-                    f"GraphVizDiagramGeneratorTool: Failed to save image to disk",
+                    f"SequenceDiagramGeneratorTool: Failed to save image to disk",
                 )
 
             return (
