@@ -26,6 +26,7 @@ services:
       # Number of worker process to run
       NUM_WORKERS: 1
       AWS_REGION: 'us-east-1'
+      HELP_KEYWORD: "/help"
     env_file: docker.env
     ports:
       - '5050:5000'
