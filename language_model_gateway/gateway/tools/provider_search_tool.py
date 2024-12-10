@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Dict, Any, List, cast
+from typing import Optional, Dict, Any, List, cast, Type
 
 import httpx
 from langchain.tools import BaseTool
@@ -20,17 +20,13 @@ class ProviderSearchToolInput(BaseModel):
 
 
 class ProviderSearchTool(BaseTool):
-    name = "provider_search"
-    description = "Search for healthcare providers (e.g., doctors, clinics and hospitals) based on various criteria like name, specialty, location, insurance etc."
+    name: str = "provider_search"
+    description: str = (
+        "Search for healthcare providers (e.g., doctors, clinics and hospitals) based on various criteria like name, specialty, location, insurance etc."
+    )
+    args_schema: Type[BaseModel] = ProviderSearchToolInput
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.api_url: Optional[str] = os.environ.get("PROVIDER_SEARCH_API_URL")
-        self.headers = {
-            "Content-Type": "application/json",
-        }
-
-        self.async_client: httpx.AsyncClient = httpx.AsyncClient(headers=self.headers)
+    api_url: Optional[str] = os.environ.get("PROVIDER_SEARCH_API_URL")
 
     # noinspection PyMethodMayBeStatic
     def _build_query(self) -> str:
@@ -42,13 +38,16 @@ class ProviderSearchTool(BaseTool):
                 $insurance: [InputCoding]
             ) {
                 providers(
+                    client: [
+                        {
+                            id: lee_health
+                            data_sets: nppes
+                        }
+                    ]
                     search: $search
                     search_position: $searchPosition
                     specialty: $specialty
                     insurance: $insurance
-                    limit: $limit
-                    offset: $offset
-                    order_by: $orderBy
                 ) {
                     total_count
                     results {
@@ -187,10 +186,15 @@ class ProviderSearchTool(BaseTool):
 
         payload = self._prepare_request_payload(variables)
 
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            "accept": "*/*",
+        }
+
+        async_client: httpx.AsyncClient = httpx.AsyncClient(headers=headers)
+
         try:
-            response = await self.async_client.post(
-                self.api_url, json=payload, timeout=30.0
-            )
+            response = await async_client.post(self.api_url, json=payload, timeout=30.0)
             return self._handle_response(response)
 
         except httpx.TimeoutException:

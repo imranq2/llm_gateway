@@ -18,11 +18,11 @@ services:
       IMAGE_GENERATION_PATH: "/usr/src/language_model_gateway/image_generation"
 #      IMAGE_GENERATION_PATH: "s3://bwell-dev-data-science-ue1/openwebui/image_generation/"
       IMAGE_GENERATION_URL: "http://localhost:5050/image_generation"
-#      CONFIG_PATH: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
-      CONFIG_PATH: "https://github.com/icanbwell/language-model-gateway-configuration/tree/main/configs/chat_completions"
+      CONFIG_PATH: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
+#      CONFIG_PATH: "https://github.com/icanbwell/language-model-gateway-configuration/tree/main/configs/chat_completions"
       CONFIG_PATH_BACKUP: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
       CONFIG_CACHE_TIMEOUT_SECONDS: 120
-      PROVIDER_SEARCH_API_URL: "https://provider-search.prod-mstarvac.icanbwell.com/graphql"
+      PROVIDER_SEARCH_API_URL: "https://provider-search.prod.icanbwell.com/graphql"
       # Number of worker process to run
       NUM_WORKERS: 1
       AWS_REGION: 'us-east-1'
