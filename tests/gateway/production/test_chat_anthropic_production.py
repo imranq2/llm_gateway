@@ -1,14 +1,16 @@
+import os
 from typing import Optional
 
 import httpx
+import pytest
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 
 
-# @pytest.mark.skipif(
-#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-#     reason="hits production API",
-# )
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="hits production API",
+)
 async def test_chat_completions_production(async_client: httpx.AsyncClient) -> None:
     print("")
 
