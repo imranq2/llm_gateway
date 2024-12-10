@@ -1,7 +1,8 @@
+import json
 import logging
 import os
 import time
-from typing import Dict, List, cast
+from typing import Dict, List, cast, AsyncGenerator
 
 from fastapi import HTTPException
 from openai.types import CompletionUsage
@@ -11,6 +12,7 @@ from openai.types.chat import (
     ChatCompletion,
     ChatCompletionMessage,
     ChatCompletionUserMessageParam,
+    ChatCompletionChunk,
 )
 from openai.types.chat.chat_completion import Choice
 from starlette.responses import StreamingResponse, JSONResponse
@@ -27,6 +29,7 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
     OpenAiChatCompletionsProvider,
 )
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
+from openai.types.chat.chat_completion_chunk import ChoiceDelta, Choice as ChunkChoice
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +110,14 @@ class ChatCompletionManager:
                     detail=f"Model type {model_config.type} not supported",
                 )
 
+        help_response: StreamingResponse | JSONResponse | None = (
+            self.handle_help_prompt(
+                chat_request=chat_request, model=model, model_config=model_config
+            )
+        )
+        if help_response is not None:
+            return help_response
+
         logger.info(f"Running chat completion for {chat_request}")
         # Use the provider to get the completions
         return await provider.chat_completions(
@@ -179,6 +190,11 @@ class ChatCompletionManager:
                 )
             ]
             if model_config.example_prompts is not None:
+                response_messages.append(
+                    ChatCompletionMessage(
+                        role="assistant", content="Here are some example prompts:"
+                    )
+                )
                 response_messages.extend(
                     [
                         ChatCompletionMessage(role="assistant", content=prompt.content)
@@ -204,7 +220,41 @@ class ChatCompletionManager:
             )
             logger.info(f"Returning help response: {chat_response.model_dump()}")
             if chat_request.get("stream"):
-                return StreamingResponse(content=chat_response.model_dump())
+
+                async def foo(
+                    response_messages1: List[ChatCompletionMessage],
+                ) -> AsyncGenerator[str, None]:
+                    for response_message in response_messages1:
+                        if response_message.content:
+                            chat_stream_response: ChatCompletionChunk = (
+                                ChatCompletionChunk(
+                                    id="1",
+                                    created=int(time.time()),
+                                    model=chat_request["model"],
+                                    choices=[
+                                        ChunkChoice(
+                                            index=0,
+                                            delta=ChoiceDelta(
+                                                role="assistant",
+                                                content=response_message.content + "\n",
+                                            ),
+                                        )
+                                    ],
+                                    usage=CompletionUsage(
+                                        prompt_tokens=0,
+                                        completion_tokens=0,
+                                        total_tokens=0,
+                                    ),
+                                    object="chat.completion.chunk",
+                                )
+                            )
+                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+                    yield "data: [DONE]\n\n"
+
+                return StreamingResponse(
+                    content=foo(response_messages1=response_messages),
+                    media_type="text/event-stream",
+                )
             else:
                 return JSONResponse(content=chat_response.model_dump())
 
