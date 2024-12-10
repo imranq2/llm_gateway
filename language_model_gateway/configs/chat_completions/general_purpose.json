@@ -90,7 +90,7 @@
     },
     {
       "role": "user",
-      "content": "What is the boiling point of water?"
+      "content": "```Generate an Entity-Relationship Diagram with the following specifications:\n\nEntities and Attributes:\n1. User Entity\n   - user_id* (primary key)\n   - username\n   - email\n   - registration_date\n\n2. Product Entity\n   - product_id* (primary key)\n   - name\n   - price\n   - category\n   - stock_quantity\n\n3. Order Entity\n   - order_id* (primary key)\n   - user_id (foreign key)\n   - order_date\n   - total_amount\n   - status\n\nRelationships:\n- User places Order (one_to_many)\n- Order contains Product (many_to_many)\n- Product belongs to Category (many_to_one)\n\nDiagram Requirements:\n- Use distinct colors for each entity\n- Clearly mark primary keys\n- Show relationship cardinalities```"
     }
   ]
 }

@@ -179,9 +179,11 @@ class ChatCompletionManager:
             f"Last message content: {last_message_content}, type: {type(last_message_content)}"
         )
 
-        if isinstance(
-            last_message_content, str
-        ) and last_message_content.lower() == os.environ.get("HELP_KEYWORD", "/help"):
+        help_keywords: List[str] = os.environ.get("HELP_KEYWORDS", "help").split(";")
+        if (
+            isinstance(last_message_content, str)
+            and last_message_content.lower() in help_keywords
+        ):
             logger.info(f"Help requested for model {model}")
             response_messages: List[ChatCompletionMessage] = [
                 ChatCompletionMessage(
