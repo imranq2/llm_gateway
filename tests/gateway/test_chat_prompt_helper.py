@@ -9,6 +9,7 @@ from language_model_gateway.configs.config_schema import (
     ChatModelConfig,
     ModelConfig,
     PromptConfig,
+    ModelParameterConfig,
 )
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
@@ -45,6 +46,7 @@ async def test_chat_prompt_helper(async_client: httpx.AsyncClient) -> None:
                     provider="bedrock",
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
+                model_parameters=[ModelParameterConfig(key="temperature", value=0.5)],
                 system_prompts=[
                     PromptConfig(
                         role="system",
@@ -52,9 +54,14 @@ async def test_chat_prompt_helper(async_client: httpx.AsyncClient) -> None:
                     ),
                     PromptConfig(
                         role="system",
-                        content="The user will provide a Task, Goal, or Current Prompt",
+                        content="The user will provide a Task, Goal, or Current Prompt.",
                     ),
                 ],
+                # tools=[
+                #     ToolConfig(
+                #         name="current_date"
+                #     )
+                # ]
             )
         ]
     )
@@ -71,7 +78,7 @@ async def test_chat_prompt_helper(async_client: httpx.AsyncClient) -> None:
         messages=[
             {
                 "role": "user",
-                "content": "Task, Goal, or Current Prompt: I want to find doctors in the country that are part of John Muir Health and work in Walnut Creek. And are family doctors",
+                "content": "I want to find doctors in the country that are part of John Muir Health and work in Walnut Creek. And are family doctors",
             }
         ],
         model="Prompt Helper",
