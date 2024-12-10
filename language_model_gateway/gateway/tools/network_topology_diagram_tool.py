@@ -1,9 +1,9 @@
 import logging
 import os
-from typing import Type, Literal, Tuple, Optional, List, Dict, Union, Set
+from typing import Type, Literal, Tuple, Optional, List, Dict, Any
 from uuid import uuid4
 
-from graphviz import Digraph
+from graphviz import Graph  # Note: Using Graph instead of Digraph
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -23,27 +23,25 @@ class NetworkTopologyInput(BaseModel):
     Example input:
     {
         "nodes": {
-            "Internet": {"style": {"shape": "cloud", "color": "lightgray"}},
-            "Router": {"style": {"shape": "diamond", "color": "lightblue"}},
-            "Switch": {"style": {"shape": "box", "color": "lightgreen"}},
-            "Server1": {"style": {"shape": "box3d", "color": "lightcoral"}},
-            "Server2": {"style": {"shape": "box3d", "color": "lightyellow"}}
+            "Internet": {"type": "cloud", "location": "external"},
+            "Router": {"type": "router", "location": "edge"},
+            "Switch1": {"type": "switch", "location": "distribution"},
+            "Server1": {"type": "server", "location": "internal"}
         },
         "connections": [
-            {"from": "Internet", "to": "Router", "label": "WAN"},
-            {"from": "Router", "to": "Switch", "label": "LAN"},
-            {"from": "Switch", "to": "Server1", "label": "eth0"},
-            {"from": "Switch", "to": "Server2", "label": "eth1"}
+            {"from": "Internet", "to": "Router", "type": "wan", "bandwidth": "1 Gbps"},
+            {"from": "Router", "to": "Switch1", "type": "lan", "bandwidth": "10 Gbps"},
+            {"from": "Switch1", "to": "Server1", "type": "access", "bandwidth": "1 Gbps"}
         ],
         "title": "Simple Network Topology"
     }
     """
 
-    nodes: Dict[str, Dict[str, Union[str, Dict[str, str]]]] = Field(
-        description='Dictionary of network nodes with optional styling. Example: "Router": {"style": {"shape": "diamond", "color": "lightblue"}}'
+    nodes: Dict[str, Dict[str, str]] = Field(
+        description="Dictionary of network nodes with type and location"
     )
     connections: List[Dict[str, str]] = Field(
-        description='List of connections between nodes. Example: {"from": "Router", "to": "Switch", "label": "LAN"}'
+        description="List of connections between nodes with details"
     )
     title: Optional[str] = Field(
         default=None, description="Optional title for the network topology diagram"
@@ -52,41 +50,22 @@ class NetworkTopologyInput(BaseModel):
 
 class NetworkTopologyGeneratorTool(BaseTool):
     """
-    LangChain-compatible tool for generating network topology diagrams using Graphviz
+    LangChain-compatible tool for generating network topology diagrams
     """
 
     name: str = "network_topology_generator"
-    description: str = (
-        "Generate a network topology diagram using Graphviz. "
-        "Provide nodes and their connections. "
-        "Example:\n"
-        "nodes: {"
-        "  'Internet': {'style': {'shape': 'cloud', 'color': 'lightgray'}},"
-        "  'Router': {'style': {'shape': 'diamond', 'color': 'lightblue'}}"
-        "}\n"
-        "connections: ["
-        "  {'from': 'Internet', 'to': 'Router', 'label': 'WAN'},"
-        "  {'from': 'Router', 'to': 'Switch', 'label': 'LAN'}"
-        "]"
-    )
+    description: str = "Generate a network topology diagram using Graphviz"
+
     args_schema: Type[BaseModel] = NetworkTopologyInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
     file_manager_factory: FileManagerFactory
 
-    def _run(
-        self,
-        nodes: Dict[str, Dict[str, Union[str, Dict[str, str]]]],
-        connections: List[Dict[str, str]],
-        title: Optional[str] = None,
-    ) -> Tuple[str, str]:
-        """
-        Synchronous method (not implemented)
-        """
-        raise NotImplementedError("Call the asynchronous version of the tool")
+    def _run(self, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError("Use async version of this tool")
 
     async def _arun(
         self,
-        nodes: Dict[str, Dict[str, Union[str, Dict[str, str]]]],
+        nodes: Dict[str, Dict[str, str]],
         connections: List[Dict[str, str]],
         title: Optional[str] = None,
     ) -> Tuple[str, str]:
@@ -94,81 +73,104 @@ class NetworkTopologyGeneratorTool(BaseTool):
         Asynchronous method to generate a network topology diagram
         """
         try:
-            # Create a Graphviz Digraph for the network topology
-            dot = Digraph(
+            # Create a Graphviz Graph (undirected) for network topology
+            dot = Graph(
                 "network_topology",
                 filename="network_topology",
-                node_attr={"style": "filled", "color": "lightblue"},
+                engine="neato",  # Use neato for more spread-out layout
+                strict=True,  # Prevent multiple edges between same nodes
             )
 
-            # Set graph attributes
-            dot.attr(rankdir="TB")  # Top to Bottom layout
+            # Set graph attributes for a more network-like layout
+            dot.attr(
+                overlap="false",  # Prevent node overlapping
+                splines="true",  # Use curved edges
+                sep="0.5",  # Add spacing between nodes
+            )
 
             # Add title if provided
             if title:
                 dot.attr(label=title, labelloc="t", fontsize="16")
 
-            # Determine which nodes are actually used in connections
-            connected_nodes: Set[str] = set()
-            for connection in connections:
-                connected_nodes.add(connection["from"])
-                connected_nodes.add(connection["to"])
-
-            # Add only connected nodes with custom styling
-            for node_name in connected_nodes:
-                # Default style
-                node_style = {
-                    "shape": "box",
-                    "color": "lightblue",
+            # Node type to shape and color mapping
+            node_styles = {
+                "cloud": {
+                    "shape": "ellipse",
                     "style": "filled",
+                    "color": "lightgray",
                     "fontcolor": "black",
-                }
+                },
+                "router": {
+                    "shape": "diamond",
+                    "style": "filled",
+                    "color": "lightblue",
+                    "fontcolor": "black",
+                },
+                "switch": {
+                    "shape": "box",
+                    "style": "filled",
+                    "color": "lightgreen",
+                    "fontcolor": "black",
+                },
+                "server": {
+                    "shape": "box3d",
+                    "style": "filled",
+                    "color": "lightcoral",
+                    "fontcolor": "black",
+                },
+                "firewall": {
+                    "shape": "hexagon",
+                    "style": "filled",
+                    "color": "lightsalmon",
+                    "fontcolor": "black",
+                },
+                "default": {
+                    "shape": "circle",
+                    "style": "filled",
+                    "color": "lightblue",
+                    "fontcolor": "black",
+                },
+            }
 
-                # Update with custom style if provided
-                if node_name in nodes and "style" in nodes[node_name]:
-                    custom_style = nodes[node_name]["style"]
-                    # Node shape mapping for network topology
-                    node_shapes = {
-                        "cloud": "ellipse",
-                        "router": "diamond",
-                        "switch": "box",
-                        "server": "box3d",
-                        "firewall": "hexagon",
-                        "default": "circle",
-                    }
+            # Connection type to style mapping
+            connection_styles = {
+                "wan": {"style": "dashed", "color": "red"},
+                "lan": {"style": "solid", "color": "green"},
+                "access": {"style": "dotted", "color": "blue"},
+                "default": {"style": "solid", "color": "black"},
+            }
 
-                    # Determine shape based on custom or default
-                    shape_key = custom_style.get("shape", "default").lower()  # type: ignore[union-attr]
-                    shape = node_shapes.get(shape_key, node_shapes["default"])
+            # Add nodes with custom styling
+            for node_name, node_details in nodes.items():
+                # Determine node style based on type
+                node_type = node_details.get("type", "default").lower()
+                node_style = node_styles.get(node_type, node_styles["default"])
 
-                    node_style.update(
-                        {
-                            "shape": shape,
-                            "color": custom_style.get("color", node_style["color"]),  # type: ignore[union-attr]
-                            "style": custom_style.get("style", node_style["style"]),  # type: ignore[union-attr]
-                            "fontcolor": custom_style.get(  # type: ignore[union-attr]
-                                "font_color", node_style["fontcolor"]
-                            ),
-                        }
-                    )
-
-                # Add node with styling
+                # Add node with detailed styling
                 dot.node(
                     node_name,
                     node_name,
                     shape=node_style["shape"],
-                    color=node_style["color"],
                     style=node_style["style"],
+                    color=node_style["color"],
                     fontcolor=node_style["fontcolor"],
                 )
 
-            # Add connections
+            # Add connections with custom styling
             for connection in connections:
+                # Determine connection style
+                conn_type = connection.get("type", "default").lower()
+                conn_style = connection_styles.get(
+                    conn_type, connection_styles["default"]
+                )
+
+                # Create edge with style and optional label
                 dot.edge(
                     connection["from"],
                     connection["to"],
-                    label=connection.get("label", ""),
-                    color=connection.get("color", "black"),
+                    style=conn_style["style"],
+                    color=conn_style["color"],
+                    label=connection.get("bandwidth", ""),
                 )
 
             # Render the diagram to bytes
@@ -177,22 +179,21 @@ class NetworkTopologyGeneratorTool(BaseTool):
             # Generate a unique filename
             image_file_name: str = f"{uuid4()}.png"
 
-            # Use file manager to save the file (if needed)
+            # Use file manager to save the file
             image_generation_path_ = os.environ.get("IMAGE_GENERATION_PATH", "/tmp")
             file_manager: FileManager = self.file_manager_factory.get_file_manager(
                 folder=image_generation_path_
             )
-
-            # Attempt to save the file
             file_path: Optional[str] = await file_manager.save_file_async(
                 image_data=image_data,
                 folder=image_generation_path_,
                 filename=image_file_name,
             )
+            # Attempt to save the file
             if file_path is None:
                 return (
                     f"Failed to save image to disk",
-                    f"NetworkTopologyGeneratorTool: Failed to save image to disk ",
+                    f"SequenceDiagramGeneratorTool: Failed to save image to disk ",
                 )
 
             # Generate URL for the image
@@ -200,14 +201,14 @@ class NetworkTopologyGeneratorTool(BaseTool):
             if url is None:
                 return (
                     f"Failed to save image to disk",
-                    f"NetworkTopologyGeneratorTool: Failed to save image to disk",
+                    f"SequenceDiagramGeneratorTool: Failed to save image to disk",
                 )
 
-            # Return the image bytes and a description
-            return (
-                url,
-                f"NetworkTopologyGeneratorTool: Generated network topology diagram <{url}> ",
+            artifact: str = (
+                f"NetworkTopologyGeneratorTool: Generated network topology diagram <{url}> "
             )
+            # Return the image bytes and a description
+            return url, artifact
 
         except Exception as e:
             logger.error(f"Failed to generate network topology diagram: {str(e)}")

@@ -117,9 +117,7 @@ class GraphVizDiagramGeneratorTool(BaseTool):
                     f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
                 )
 
-            return (
-                url,
-                f"GraphVizDiagramGeneratorTool: Generated image: <{url}> ",
-            )
+            artifact: str = f"GraphVizDiagramGeneratorTool: Generated image: <{url}> "
+            return url, artifact
         except Exception as e:
             raise ValueError(f"Failed to generate diagram: {str(e)}")

@@ -210,11 +210,11 @@ class ERDiagramGeneratorTool(BaseTool):
                     f"ERDiagramGeneratorTool: Failed to save image to disk",
                 )
 
-            # Return the image bytes and a description
-            return (
-                url,
-                f"ERDiagramGeneratorTool: Generated ER diagram with {len(entities)} entities <{url}> ",
+            artifact: str = (
+                f"ERDiagramGeneratorTool: Generated ER diagram with {len(entities)} entities <{url}> "
             )
+            # Return the image bytes and a description
+            return url, artifact
 
         except Exception as e:
             logger.error(f"Failed to generate ER diagram: {str(e)}")

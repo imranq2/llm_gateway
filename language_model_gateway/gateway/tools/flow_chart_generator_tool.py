@@ -185,7 +185,8 @@ class FlowChartGeneratorTool(BaseTool):
                     f"FlowChartGeneratorTool: Failed to save image to disk",
                 )
             # Return the image bytes and a description
-            return (url, f"FlowChartGeneratorTool: Generated flow chart  <{url}> ")
+            artifact: str = f"FlowChartGeneratorTool: Generated flow chart  <{url}> "
+            return url, artifact
 
         except Exception as e:
             logger.error(f"Failed to generate flow chart: {str(e)}")
