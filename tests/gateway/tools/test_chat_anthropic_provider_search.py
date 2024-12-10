@@ -35,7 +35,7 @@ async def test_chat_anthropic_provider_search(async_client: httpx.AsyncClient) -
     #         ModelFactory,
     #         lambda c: MockModelFactory(
     #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
+    #                 fn_get_response=lambda messages: "20852"
     #             )
     #         ),
     #     )
@@ -97,12 +97,14 @@ async def test_chat_anthropic_provider_search(async_client: httpx.AsyncClient) -
         [choice.message.content or "" for choice in choices]
     )
     assert content is not None
+    print("======== Final Content ========")
     print(content)
-    assert "Internal Medicine" in content
+    print("====== End of Final Content ======")
+    assert "20852" in content
     # assert "data:image/png;base64" in content
 
 
-async def test_chat_anthropic_image_generator_streaming(
+async def test_chat_anthropic_provider_search_streaming(
     async_client: httpx.AsyncClient,
 ) -> None:
     print("")
@@ -113,7 +115,7 @@ async def test_chat_anthropic_image_generator_streaming(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
+                    fn_get_response=lambda messages: "20852"
                 )
             ),
         )
@@ -138,7 +140,7 @@ async def test_chat_anthropic_image_generator_streaming(
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
-                    ToolConfig(name="image_generator"),
+                    ToolConfig(name="provider_search"),
                 ],
             )
         ]
@@ -156,7 +158,7 @@ async def test_chat_anthropic_image_generator_streaming(
         messages=[
             {
                 "role": "user",
-                "content": "Generate an image depicting a neural network",
+                "content": "Get me the address of Dr. Scott Rodriguez",
             }
         ],
         model="General Purpose",
@@ -179,4 +181,4 @@ async def test_chat_anthropic_image_generator_streaming(
     print("======== Final Content ========")
     print(content)
     print("====== End of Final Content ======")
-    assert "http://localhost:5050/image_generation/" in content
+    assert "Internal Medicine" in content

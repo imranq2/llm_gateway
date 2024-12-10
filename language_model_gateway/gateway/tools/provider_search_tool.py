@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Dict, Any, List, cast, Type
+from typing import Optional, Dict, Any, List, cast, Type, Literal, Tuple
 
 import httpx
 from langchain.tools import BaseTool
@@ -25,7 +25,7 @@ class ProviderSearchTool(BaseTool):
         "Search for healthcare providers (e.g., doctors, clinics and hospitals) based on various criteria like name, specialty, location, insurance etc."
     )
     args_schema: Type[BaseModel] = ProviderSearchToolInput
-
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
     api_url: Optional[str] = os.environ.get("PROVIDER_SEARCH_API_URL")
 
     # noinspection PyMethodMayBeStatic
@@ -170,7 +170,7 @@ class ProviderSearchTool(BaseTool):
         distance: Optional[float] = None,
         specialty: Optional[List[str]] = None,
         insurance: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Tuple[Dict[str, Any], str]:
         """Asynchronous execution"""
 
         assert self.api_url, "API URL is required"
@@ -195,7 +195,10 @@ class ProviderSearchTool(BaseTool):
 
         try:
             response = await async_client.post(self.api_url, json=payload, timeout=30.0)
-            return self._handle_response(response)
+            return (
+                self._handle_response(response),
+                f"ProviderSearchTool: Searched for {search} {variables} ",
+            )
 
         except httpx.TimeoutException:
             raise Exception("Request timed out")
