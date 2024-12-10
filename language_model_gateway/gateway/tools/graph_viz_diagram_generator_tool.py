@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Type, Literal, Tuple
+from typing import Type, Literal, Tuple, Optional
 from uuid import uuid4
 
 from graphviz import Digraph
@@ -89,17 +89,37 @@ class GraphVizDiagramGeneratorTool(BaseTool):
                 image_generation_path_
             ), "IMAGE_GENERATION_PATH environment variable is not set"
             image_file_name: str = f"{uuid4()}.png"
+
+            # dot.render(output_file, cleanup=True)
+            # Create a BytesIO object to store the image
+            # image_bytes = BytesIO()
+
+            # Render the diagram directly to bytes
+            image_data: bytes = dot.pipe(format="png")
             file_manager: FileManager = self.file_manager_factory.get_file_manager(
                 folder=image_generation_path_
             )
-            output_file: str = file_manager.get_full_path(
-                folder=image_generation_path_, filename=image_file_name
+            file_path: Optional[str] = await file_manager.save_file_async(
+                image_data=image_data,
+                folder=image_generation_path_,
+                filename=image_file_name,
             )
-            dot.render(output_file, cleanup=True)
-            url: str = UrlParser.get_url_for_file_name(image_file_name)
+            if file_path is None:
+                return (
+                    f"Failed to save image to disk",
+                    f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
+                )
+
+            url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
+            if url is None:
+                return (
+                    f"Failed to save image to disk",
+                    f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
+                )
+
             return (
                 url,
-                f"GraphVizDiagramGeneratorTool: Generated diagram from DOT input: <{url}> ",
+                f"GraphVizDiagramGeneratorTool: Generated image: <{url}> ",
             )
         except Exception as e:
             raise ValueError(f"Failed to generate diagram: {str(e)}")
