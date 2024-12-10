@@ -1,7 +1,10 @@
 import logging
-from typing import Dict, List
+from typing import Dict, List, cast
 
-from openai.types.chat import ChatCompletionSystemMessageParam
+from openai.types.chat import (
+    ChatCompletionSystemMessageParam,
+    ChatCompletionMessageParam,
+)
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
@@ -75,6 +78,35 @@ class ChatCompletionManager:
         )
         if model_config is None:
             return JSONResponse(content=f"Model {model} not found in the config")
+
+        request_messages: List[ChatCompletionMessageParam] = [
+            m for m in chat_request["messages"]
+        ]
+        if request_messages is None:
+            return JSONResponse(content="Messages not found in the request")
+
+        user_messages: List[ChatCompletionMessageParam] = [
+            m for m in request_messages if m["role"] == "user"
+        ]
+        if user_messages is None or len(user_messages) == 0:
+            return JSONResponse(content="User messages not found in the request")
+
+        last_message_content: str = cast(str, user_messages[-1]["content"])
+        if (
+            isinstance(last_message_content, str)
+            and last_message_content.lower() == "help"
+        ):
+            response_content = model_config.description
+            if model_config.example_prompts is not None:
+                response_content += "\n\nExample prompts:\n"
+                response_content += "\n".join(
+                    [
+                        prompt.content
+                        for prompt in model_config.example_prompts
+                        if prompt.content is not None
+                    ]
+                )
+            return JSONResponse(content=response_content)
 
         chat_request = self.add_system_messages(
             chat_request=chat_request, system_prompts=model_config.system_prompts
