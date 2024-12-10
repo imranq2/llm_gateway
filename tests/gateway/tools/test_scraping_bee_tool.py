@@ -14,7 +14,7 @@ from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
 async def test_scraping_bee_tool_tool_async() -> None:
     print("")
     tool = ScrapingBeeWebScraperTool(api_key=os.environ["SCRAPING_BEE_API_KEY"])
-    result = await tool._arun(url="https://www.example.com")
+    result, message = await tool._arun(url="https://www.example.com")
     print(result)
     assert "This domain is for use in illustrative examples in documents." in result
 
@@ -30,7 +30,7 @@ async def test_scraping_bee_tool_tool_complex_async() -> None:
         premium_proxy=True,
         return_markdown=True,
     )
-    result = await tool._arun(
+    result, message = await tool._arun(
         url="https://www.johnmuirhealth.com/doctor/David-Chang-MD/1174545909"
     )
     print(result)
@@ -48,7 +48,7 @@ async def test_scraping_bee_tool_tool_complex_answer_query_async() -> None:
         premium_proxy=True,
         return_markdown=True,
     )
-    result = await tool._arun(
+    result, message = await tool._arun(
         url="https://www.johnmuirhealth.com/doctor/David-Chang-MD/1174545909",
         query="Address",
     )
@@ -63,7 +63,7 @@ async def test_scraping_bee_tool_tool_complex_answer_query_async() -> None:
 async def test_scraping_bee_tool_tool_printable_async() -> None:
     print("")
     tool = ScrapingBeeWebScraperTool(api_key=os.environ["SCRAPING_BEE_API_KEY"])
-    result = await tool._arun(
+    result, message = await tool._arun(
         url="https://www.johnmuirhealth.com/fad/doctor/profilePrintable/1174545909"
     )
     print(result)

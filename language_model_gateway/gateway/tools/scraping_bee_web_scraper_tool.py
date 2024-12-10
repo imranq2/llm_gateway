@@ -120,7 +120,8 @@ class ScrapingBeeWebScraperTool(BaseTool):
                 await self._extract_text_content_async(content),
                 f"ScrapingBeeWebScraperTool: Scraped content using ScrapingBee from <{url}> ",
             )
-        return (
-            "Error: Failed to scrape the webpage.",
-            f"ScrapingBeeWebScraperTool: Failed to scrape <{url}> ",
-        )
+        else:
+            return (
+                "Error: Failed to scrape the webpage.",
+                f"ScrapingBeeWebScraperTool: Failed to scrape <{url}> ",
+            )

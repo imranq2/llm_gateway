@@ -1,7 +1,18 @@
 import logging
-from typing import Dict, List
+import os
+import time
+from typing import Dict, List, cast
 
-from openai.types.chat import ChatCompletionSystemMessageParam
+from fastapi import HTTPException
+from openai.types import CompletionUsage
+from openai.types.chat import (
+    ChatCompletionSystemMessageParam,
+    ChatCompletionMessageParam,
+    ChatCompletion,
+    ChatCompletionMessage,
+    ChatCompletionUserMessageParam,
+)
+from openai.types.chat.chat_completion import Choice
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
@@ -62,6 +73,7 @@ class ChatCompletionManager:
         chat_request: ChatRequest,
     ) -> StreamingResponse | JSONResponse:
         # Use the model to choose the provider
+
         model: str = chat_request["model"]
         assert model is not None
 
@@ -74,7 +86,10 @@ class ChatCompletionManager:
             (config for config in configs if config.name.lower() == model.lower()), None
         )
         if model_config is None:
-            return JSONResponse(content=f"Model {model} not found in the config")
+            logger.error(f"Model {model} not found in the config")
+            raise HTTPException(
+                status_code=400, detail=f"Model {model} not found in the config"
+            )
 
         chat_request = self.add_system_messages(
             chat_request=chat_request, system_prompts=model_config.system_prompts
@@ -87,8 +102,9 @@ class ChatCompletionManager:
             case "langchain":
                 provider = self.langchain_provider
             case _:
-                return JSONResponse(
-                    content=f"Model type {model_config.type} not supported"
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Model type {model_config.type} not supported",
                 )
 
         logger.info(f"Running chat completion for {chat_request}")
@@ -124,3 +140,72 @@ class ChatCompletionManager:
             ]
 
         return chat_request
+
+    # noinspection PyMethodMayBeStatic
+    def handle_help_prompt(
+        self, *, chat_request: ChatRequest, model: str, model_config: ChatModelConfig
+    ) -> StreamingResponse | JSONResponse | None:
+        request_messages: List[ChatCompletionMessageParam] = [
+            m for m in chat_request["messages"]
+        ]
+        if request_messages is None:
+            logger.error("Messages not found in the request")
+            raise HTTPException(
+                status_code=400, detail="Messages not found in the request"
+            )
+
+        user_messages: List[ChatCompletionUserMessageParam] = [
+            m for m in request_messages if m["role"] == "user"
+        ]
+        if user_messages is None or len(user_messages) == 0:
+            logger.error("User messages not found in the request")
+            raise HTTPException(
+                status_code=400, detail="User messages not found in the request"
+            )
+
+        last_message_content: str = cast(str, user_messages[-1]["content"])
+        logger.info(
+            f"Last message content: {last_message_content}, type: {type(last_message_content)}"
+        )
+
+        if isinstance(
+            last_message_content, str
+        ) and last_message_content.lower() == os.environ.get("HELP_KEYWORD", "/help"):
+            logger.info(f"Help requested for model {model}")
+            response_messages: List[ChatCompletionMessage] = [
+                ChatCompletionMessage(
+                    role="assistant",
+                    content=model_config.description or "No description available",
+                )
+            ]
+            if model_config.example_prompts is not None:
+                response_messages.extend(
+                    [
+                        ChatCompletionMessage(role="assistant", content=prompt.content)
+                        for prompt in model_config.example_prompts
+                    ]
+                )
+
+            choices: List[Choice] = [
+                Choice(index=i, message=m, finish_reason="stop")
+                for i, m in enumerate(response_messages)
+            ]
+            chat_response: ChatCompletion = ChatCompletion(
+                id="1",
+                model=chat_request["model"],
+                choices=choices,
+                usage=CompletionUsage(
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    total_tokens=0,
+                ),
+                created=int(time.time()),
+                object="chat.completion",
+            )
+            logger.info(f"Returning help response: {chat_response.model_dump()}")
+            if chat_request.get("stream"):
+                return StreamingResponse(content=chat_response.model_dump())
+            else:
+                return JSONResponse(content=chat_response.model_dump())
+
+        return None

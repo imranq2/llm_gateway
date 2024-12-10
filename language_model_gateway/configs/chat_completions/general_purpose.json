@@ -59,10 +59,23 @@
       "name": "image_generator"
     },
     {
+      "name": "provider_search"
+    },
+    {
       "name": "get_web_page"
     },
     {
       "name": "scraping_bee_web_scraper"
+    }
+  ],
+  "example_prompts": [
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    },
+    {
+      "role": "user",
+      "content": "What is the boiling point of water?"
     }
   ]
 }

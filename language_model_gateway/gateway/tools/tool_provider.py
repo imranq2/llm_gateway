@@ -22,6 +22,7 @@ from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool impor
     GraphVizDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.image_generator_tool import ImageGeneratorTool
+from language_model_gateway.gateway.tools.provider_search_tool import ProviderSearchTool
 from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
 from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
     ScrapingBeeWebScraperTool,
@@ -69,6 +70,7 @@ class ToolProvider:
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
                 api_key=environ.get("SCRAPING_BEE_API_KEY")
             ),
+            "provider_search": ProviderSearchTool(),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(

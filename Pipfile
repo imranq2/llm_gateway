@@ -19,7 +19,7 @@ ariadne = ">=0.23.0"
 # fastapi is a Python library for building APIs
 fastapi = ">=0.115.6"
 # boto3 is a Python library for interacting with AWS services
-boto3 = ">=1.35.76"
+boto3 = ">=1.35.77"
 # uvicorn is a Python library for running ASGI applications
 uvicorn = ">=0.32.1"
 # ddtrace is a Python library for tracing requests
@@ -43,7 +43,7 @@ langchain-aws = ">=0.2.9"
 # openai is a Python library for interacting with OpenAI
 openai = ">=1.57.0"
 # langchain-openai is a Python library for interacting with OpenAI
-langchain-openai = ">=0.2.11"
+langchain-openai = ">=0.2.12"
 # langchain-community is a Python library that contains ommmunity extensions
 langchain-community = ">=0.3.8"
 # grpcio is a Python library for working with gRPC.   Needed by Google Vertex AI
