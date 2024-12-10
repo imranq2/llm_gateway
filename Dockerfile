@@ -60,7 +60,7 @@ ARG GITHUB_TOKEN
 
 # Install runtime dependencies required by the application (e.g., for shapely, grpcio, scipy, google-crc32 and numpy)
 # You can use auditwheel to check any package and identify the native library dependencies
-RUN apk add --no-cache curl libstdc++ libffi git
+RUN apk add --no-cache curl libstdc++ libffi git graphviz graphviz-dev
 
 # Install pipenv to manage and run the application
 RUN pip install --no-cache-dir pipenv
@@ -108,6 +108,9 @@ EXPOSE 5000
 
 # Switch to the root user to perform user management tasks
 USER root
+
+# verify the installed version of the dot command for graphviz
+RUN dot -V
 
 # Create a restricted user (appuser) and group (appgroup) for running the application
 RUN addgroup -S appgroup && adduser -S -h /etc/appuser appuser -G appgroup

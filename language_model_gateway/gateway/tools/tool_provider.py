@@ -17,15 +17,27 @@ from language_model_gateway.gateway.image_generation.image_generator_factory imp
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
+from language_model_gateway.gateway.tools.er_diagram_generator_tool import (
+    ERDiagramGeneratorTool,
+)
+from language_model_gateway.gateway.tools.flow_chart_generator_tool import (
+    FlowChartGeneratorTool,
+)
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.image_generator_tool import ImageGeneratorTool
+from language_model_gateway.gateway.tools.network_topology_diagram_tool import (
+    NetworkTopologyGeneratorTool,
+)
 from language_model_gateway.gateway.tools.provider_search_tool import ProviderSearchTool
 from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
 from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
     ScrapingBeeWebScraperTool,
+)
+from language_model_gateway.gateway.tools.sequence_diagram_generator_tool import (
+    SequenceDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
 
@@ -65,6 +77,18 @@ class ToolProvider:
                 file_manager_factory=file_manager_factory,
             ),
             "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "sequence_diagram_generator": SequenceDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "flow_chart_generator": FlowChartGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "er_diagram_generator": ERDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "network_topology_generator": NetworkTopologyGeneratorTool(
                 file_manager_factory=file_manager_factory
             ),
             "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(

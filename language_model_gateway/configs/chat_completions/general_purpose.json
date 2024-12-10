@@ -59,6 +59,21 @@
       "name": "image_generator"
     },
     {
+      "name": "graph_viz_diagram_generator"
+    },
+    {
+      "name": "sequence_diagram_generator"
+    },
+    {
+      "name": "flow_chart_generator"
+    },
+    {
+      "name": "er_diagram_generator"
+    },
+    {
+      "name": "network_topology_generator"
+    },
+    {
       "name": "provider_search"
     },
     {
