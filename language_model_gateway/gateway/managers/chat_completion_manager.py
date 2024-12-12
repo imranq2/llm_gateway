@@ -119,7 +119,9 @@ class ChatCompletionManager:
             return help_response
 
         if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
-            logger.info(f"Running chat completion for {chat_request}")
+            logger.info(
+                f"Running chat completion for {chat_request} with headers {headers}"
+            )
         # Use the provider to get the completions
         return await provider.chat_completions(
             model_config=model_config, headers=headers, chat_request=chat_request
