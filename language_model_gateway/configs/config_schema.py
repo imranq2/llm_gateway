@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -88,8 +88,11 @@ class ChatModelConfig(BaseModel):
     description: str
     """A description of the model"""
 
-    type: str
+    type: str = "langchain"
     """The type of model"""
+
+    owner: Optional[str] = None
+    """The owner of the model"""
 
     url: str | None = None
     """The URL to access the model"""

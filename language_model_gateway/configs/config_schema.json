@@ -21,6 +21,9 @@
     "type": {
       "type": "string"
     },
+    "owner": {
+      "type": "string"
+    },
     "url": {
       "type": "string",
       "format": "uri"

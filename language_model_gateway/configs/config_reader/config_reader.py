@@ -62,24 +62,17 @@ class ConfigReader:
                 f"ConfigReader with id: {self._identifier} reading model configurations from {config_path}"
             )
 
-            models: List[ChatModelConfig]
-            if config_path.startswith("s3"):
-                models = await S3ConfigReader().read_model_configs(s3_url=config_path)
-                logger.info(
-                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
+            models: List[ChatModelConfig] = await self.read_models_from_path_async(
+                config_path
+            )
+            models_testing: List[ChatModelConfig] = []
+
+            config_testing_path = os.environ.get("CONFIG_TESTING_PATH")
+            if config_testing_path:
+                models_testing = await self.read_models_from_path_async(
+                    config_testing_path
                 )
-            elif UrlParser.is_github_url(config_path):
-                models = await GitHubConfigReader().read_model_configs(
-                    github_url=config_path
-                )
-                logger.info(
-                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub"
-                )
-            else:
-                models = FileConfigReader().read_model_configs(config_path=config_path)
-                logger.info(
-                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from file system"
-                )
+                models.extend(models_testing)
 
             # if we can't load models another way then try to load them from the file system
             if not models or len(models) == 0:
@@ -95,6 +88,29 @@ class ConfigReader:
             models = [model for model in models if not model.disabled]
             await self._cache.set(models)
             return models
+
+    async def read_models_from_path_async(
+        self, config_path: str
+    ) -> List[ChatModelConfig]:
+        models: List[ChatModelConfig]
+        if config_path.startswith("s3"):
+            models = await S3ConfigReader().read_model_configs(s3_url=config_path)
+            logger.info(
+                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
+            )
+        elif UrlParser.is_github_url(config_path):
+            models = await GitHubConfigReader().read_model_configs(
+                github_url=config_path
+            )
+            logger.info(
+                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub"
+            )
+        else:
+            models = FileConfigReader().read_model_configs(config_path=config_path)
+            logger.info(
+                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from file system"
+            )
+        return models
 
     async def clear_cache(self) -> None:
         await self._cache.clear()
