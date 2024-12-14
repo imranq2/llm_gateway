@@ -3,8 +3,13 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.container.container_factory import ContainerFactory
 from language_model_gateway.container.simple_container import SimpleContainer
+from language_model_gateway.gateway.aws.aws_client_factory import AwsClientFactory
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.managers.chat_completion_manager import (
     ChatCompletionManager,
 )
@@ -45,3 +50,27 @@ def get_image_generation_manager(
     """helper function to get the model manager"""
     assert isinstance(container, SimpleContainer), type(container)
     return container.resolve(ImageGenerationManager)
+
+
+def get_config_reader(
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
+) -> ConfigReader:
+    """helper function to get the chat manager"""
+    assert isinstance(container, SimpleContainer), type(container)
+    return container.resolve(ConfigReader)
+
+
+def get_aws_client_factory(
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
+) -> AwsClientFactory:
+    """helper function to get the chat manager"""
+    assert isinstance(container, SimpleContainer), type(container)
+    return container.resolve(AwsClientFactory)
+
+
+def get_file_manager_factory(
+    container: Annotated[SimpleContainer, Depends(get_container_async)]
+) -> FileManagerFactory:
+    """helper function to get the chat manager"""
+    assert isinstance(container, SimpleContainer), type(container)
+    return container.resolve(FileManagerFactory)

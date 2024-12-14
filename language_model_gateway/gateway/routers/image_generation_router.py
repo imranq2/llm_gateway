@@ -1,7 +1,9 @@
 import logging
 from enum import Enum
 from typing import Annotated, Dict, Sequence, Any, cast
-from fastapi import APIRouter, Depends
+
+from botocore.exceptions import TokenRetrievalError
+from fastapi import APIRouter, Depends, HTTPException
 from starlette.requests import Request
 from fastapi import params
 from starlette.responses import JSONResponse, StreamingResponse
@@ -24,6 +26,7 @@ class ImageGenerationRouter:
 
     def __init__(
         self,
+        *,
         prefix: str = "/api/v1",
         tags: list[str | Enum] | None = None,
         dependencies: Sequence[params.Depends] | None = None,
@@ -69,12 +72,26 @@ class ImageGenerationRouter:
         Returns:
             Dictionary containing list of available models
         """
-        return await model_manager.generate_image_async(
-            image_generation_request=cast(
-                ImageGenerationRequest, image_generation_request
-            ),
-            headers={k: v for k, v in request.headers.items()},
-        )
+        try:
+            return await model_manager.generate_image_async(
+                image_generation_request=cast(
+                    ImageGenerationRequest, image_generation_request
+                ),
+                headers={k: v for k, v in request.headers.items()},
+            )
+        except TokenRetrievalError as e:
+            logger.exception(e, stack_info=True)
+            # return JSONResponse(content=f"Error retrieving AWS token: {e}", status_code=500)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error retrieving AWS token: {e}.  If running on developer machines, run `aws sso login --profile [profile_name]` to get the token.",
+            )
+        except Exception as e:
+            logger.exception(f"Error generating image", e)
+            # return JSONResponse(content=f"Error generating image: {e}", status_code=500)
+            raise HTTPException(
+                status_code=500, detail=f"Error retrieving AWS token: {e}"
+            )
 
     def get_router(self) -> APIRouter:
         """Get the configured router"""

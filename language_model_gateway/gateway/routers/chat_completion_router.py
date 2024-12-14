@@ -3,6 +3,8 @@ import logging
 import traceback
 from enum import Enum
 from typing import Annotated, Dict, Any, TypedDict, cast, Sequence
+
+from botocore.exceptions import TokenRetrievalError
 from fastapi import APIRouter, Depends, HTTPException
 from starlette.requests import Request
 from starlette.responses import StreamingResponse, JSONResponse
@@ -31,6 +33,7 @@ class ChatCompletionsRouter:
 
     def __init__(
         self,
+        *,
         prefix: str = "/api/v1",
         tags: list[str | Enum] | None = None,
         dependencies: Sequence[params.Depends] | None = None,
@@ -85,6 +88,13 @@ class ChatCompletionsRouter:
                 headers={k: v for k, v in request.headers.items()},
                 chat_request=cast(ChatRequest, chat_request),
             )
+        except* TokenRetrievalError as e:
+            logger.exception(e, stack_info=True)
+            # return JSONResponse(content=f"Error retrieving AWS token: {e}", status_code=500)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error retrieving AWS token: {e}.  If running on developer machines, run `aws sso login --profile [profile_name]` to get the token.",
+            )
 
         except* ConnectionError as e:
             call_stack = traceback.format_exc()
@@ -94,7 +104,7 @@ class ChatCompletionsRouter:
                 "trace_id": "",
                 "call_stack": call_stack,
             }
-            logger.error(f"Connection error: {e}\n{call_stack}")
+            logger.exception(e, stack_info=True)
             raise HTTPException(status_code=503, detail=error_detail)
 
         except* ValueError as e:
@@ -105,7 +115,7 @@ class ChatCompletionsRouter:
                 "trace_id": "",
                 "call_stack": call_stack,
             }
-            logger.error(f"Validation error: {e}\n{call_stack}")
+            logger.exception(e, stack_info=True)
             raise HTTPException(status_code=400, detail=error_detail)
 
         except* Exception as e:
@@ -116,7 +126,7 @@ class ChatCompletionsRouter:
                 "trace_id": "",
                 "call_stack": call_stack,
             }
-            logger.error(f"Unexpected error: {e}\n{call_stack}")
+            logger.exception(e, stack_info=True)
             raise HTTPException(status_code=500, detail=error_detail)
 
     def get_router(self) -> APIRouter:

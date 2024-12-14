@@ -8,25 +8,47 @@ from langchain_community.tools import (
 from langchain_core.tools import BaseTool
 
 from language_model_gateway.configs.config_schema import ToolConfig
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
+)
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
+from language_model_gateway.gateway.tools.er_diagram_generator_tool import (
+    ERDiagramGeneratorTool,
+)
+from language_model_gateway.gateway.tools.flow_chart_generator_tool import (
+    FlowChartGeneratorTool,
+)
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
 )
-from language_model_gateway.gateway.tools.image_generator_embedded_tool import (
-    ImageGeneratorEmbeddedTool,
+from language_model_gateway.gateway.tools.image_generator_tool import ImageGeneratorTool
+from language_model_gateway.gateway.tools.network_topology_diagram_tool import (
+    NetworkTopologyGeneratorTool,
 )
+from language_model_gateway.gateway.tools.provider_search_tool import ProviderSearchTool
 from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
+from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
+    ScrapingBeeWebScraperTool,
+)
+from language_model_gateway.gateway.tools.sequence_diagram_generator_tool import (
+    SequenceDiagramGeneratorTool,
+)
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
 
 
 class ToolProvider:
-    def __init__(self, *, image_generator_factory: ImageGeneratorFactory) -> None:
+    def __init__(
+        self,
+        *,
+        image_generator_factory: ImageGeneratorFactory,
+        file_manager_factory: FileManagerFactory,
+    ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
             "DEFAULT_WEB_SEARCH_TOOL", "duckduckgo"
@@ -50,10 +72,29 @@ class ToolProvider:
             "python_repl": PythonReplTool(),
             "get_web_page": URLToMarkdownTool(),
             "arxiv_search": ArxivQueryRun(),
-            "image_generator": ImageGeneratorEmbeddedTool(
-                image_generator_factory=image_generator_factory
+            "image_generator": ImageGeneratorTool(
+                image_generator_factory=image_generator_factory,
+                file_manager_factory=file_manager_factory,
             ),
-            "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(),
+            "graph_viz_diagram_generator": GraphVizDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "sequence_diagram_generator": SequenceDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "flow_chart_generator": FlowChartGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "er_diagram_generator": ERDiagramGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "network_topology_generator": NetworkTopologyGeneratorTool(
+                file_manager_factory=file_manager_factory
+            ),
+            "scraping_bee_web_scraper": ScrapingBeeWebScraperTool(
+                api_key=environ.get("SCRAPING_BEE_API_KEY")
+            ),
+            "provider_search": ProviderSearchTool(),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(

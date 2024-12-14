@@ -94,6 +94,8 @@ class ChatModelConfig(BaseModel):
     url: str | None = None
     """The URL to access the model"""
 
+    disabled: bool | None = None
+
     model: ModelConfig | None = None
     """The model configuration"""
 

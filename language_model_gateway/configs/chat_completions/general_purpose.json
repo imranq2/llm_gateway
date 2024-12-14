@@ -2,11 +2,11 @@
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
   "id": "general_purpose",
   "name": "General Purpose",
-  "description": "General Purpose Language Model",
+  "description": "This is a general purpose language model that can be used for a wide variety of tasks.",
   "type": "langchain",
   "model": {
     "provider": "bedrock",
-    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    "model": "us.anthropic.claude-3-5-haiku-20241022-v1:0"
   },
   "system_prompts": [
     {
@@ -57,6 +57,40 @@
     },
     {
       "name": "image_generator"
+    },
+    {
+      "name": "graph_viz_diagram_generator"
+    },
+    {
+      "name": "sequence_diagram_generator"
+    },
+    {
+      "name": "flow_chart_generator"
+    },
+    {
+      "name": "er_diagram_generator"
+    },
+    {
+      "name": "network_topology_generator"
+    },
+    {
+      "name": "provider_search"
+    },
+    {
+      "name": "get_web_page"
+    },
+    {
+      "name": "scraping_bee_web_scraper"
+    }
+  ],
+  "example_prompts": [
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    },
+    {
+      "role": "user",
+      "content": "```Generate an Entity-Relationship Diagram with the following specifications:\n\nEntities and Attributes:\n1. User Entity\n   - user_id* (primary key)\n   - username\n   - email\n   - registration_date\n\n2. Product Entity\n   - product_id* (primary key)\n   - name\n   - price\n   - category\n   - stock_quantity\n\n3. Order Entity\n   - order_id* (primary key)\n   - user_id (foreign key)\n   - order_date\n   - total_amount\n   - status\n\nRelationships:\n- User places Order (one_to_many)\n- Order contains Product (many_to_many)\n- Product belongs to Category (many_to_one)\n\nDiagram Requirements:\n- Use distinct colors for each entity\n- Clearly mark primary keys\n- Show relationship cardinalities```"
     }
   ]
 }

@@ -60,7 +60,7 @@ ARG GITHUB_TOKEN
 
 # Install runtime dependencies required by the application (e.g., for shapely, grpcio, scipy, google-crc32 and numpy)
 # You can use auditwheel to check any package and identify the native library dependencies
-RUN apk add --no-cache curl libstdc++ libffi git
+RUN apk add --no-cache curl libstdc++ libffi git graphviz graphviz-dev
 
 # Install pipenv to manage and run the application
 RUN pip install --no-cache-dir pipenv
@@ -109,6 +109,9 @@ EXPOSE 5000
 # Switch to the root user to perform user management tasks
 USER root
 
+# verify the installed version of the dot command for graphviz
+RUN dot -V
+
 # Create a restricted user (appuser) and group (appgroup) for running the application
 RUN addgroup -S appgroup && adduser -S -h /etc/appuser appuser -G appgroup
 
@@ -118,8 +121,26 @@ RUN chown -R appuser:appgroup ${PROJECT_DIR} /usr/local/lib/python3.12/site-pack
 # Switch to the restricted user to enhance security
 USER appuser
 
-# Set the command to run the application using pipenv and uvicorn
-CMD ["ddtrace-run", "uvicorn", "language_model_gateway.gateway.api:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4", "--log-level", "debug"]
-
-# Set the command to run the application using pipenv and Python without uvicorn and ddtrace-run
-#CMD ["pipenv", "run", "python", "-m", "complaintparser.api"]
+# The number of workers can be controlled using the NUM_WORKERS environment variable
+# Otherwise the number of workers for uvicorn (using the multiprocessing worker) is  chosen based on these guidelines:
+# (https://sentry.io/answers/number-of-uvicorn-workers-needed-in-production/)
+# basically (cores * threads + 1)
+CMD ["sh", "-c", "\
+    # Get CPU info \
+    CORE_COUNT=$(nproc) && \
+    THREAD_COUNT=$(nproc --all) && \
+    \
+    # Calculate workers using formula: (cores * threads + 1) \
+    WORKER_COUNT=$((CORE_COUNT * THREAD_COUNT + 1)) && \
+    FINAL_WORKERS=${NUM_WORKERS:-$WORKER_COUNT} && \
+    \
+    # Log the configuration \
+    echo \"Starting with $FINAL_WORKERS workers (cores: $CORE_COUNT, threads: $THREAD_COUNT)\" && \
+    \
+    # Start the application \
+    ddtrace-run uvicorn language_model_gateway.gateway.api:app \
+        --host 0.0.0.0 \
+        --port 5000 \
+        --workers $FINAL_WORKERS \
+        --log-level $(echo ${LOG_LEVEL:-info} | tr '[:upper:]' '[:lower:]') \
+    "]

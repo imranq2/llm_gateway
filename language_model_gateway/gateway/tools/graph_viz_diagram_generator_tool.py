@@ -1,14 +1,31 @@
 import logging
-from pathlib import Path
+import os
+from typing import Type, Literal, Tuple, Optional
+from uuid import uuid4
 
 from graphviz import Digraph
 from langchain.tools import BaseTool
+from pydantic import BaseModel, Field
 
-from language_model_gateway.gateway.utilities.image_generation_helper import (
-    ImageGenerationHelper,
+from language_model_gateway.gateway.file_managers.file_manager import FileManager
+from language_model_gateway.gateway.file_managers.file_manager_factory import (
+    FileManagerFactory,
 )
+from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
+
+
+class GraphVizDiagramGeneratorToolInput(BaseModel):
+    dot_input: str = Field(
+        description="a string describing the nodes and edges in DOT format. "
+        "For example:\n"
+        "digraph G {\n"
+        "  A -> B;\n"
+        "  B -> C;\n"
+        "  C -> A;\n"
+        "}"
+    )
 
 
 class GraphVizDiagramGeneratorTool(BaseTool):
@@ -28,16 +45,26 @@ class GraphVizDiagramGeneratorTool(BaseTool):
         "}"
         "This will generate a directed graph with three nodes: A, B, and C."
     )
-    return_direct: bool = True
+    args_schema: Type[BaseModel] = GraphVizDiagramGeneratorToolInput
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
+    file_manager_factory: FileManagerFactory
 
-    def _run(self, dot_input: str) -> str:
+    def _run(self, dot_input: str) -> Tuple[str, str]:
         """
         Run the tool to generate a diagram from DOT input.
         :param dot_input: The DOT description of the graph.
         :return: The path to the generated diagram.
         """
+        raise NotImplementedError("Call the asynchronous version of the tool")
+
+    async def _arun(self, dot_input: str) -> Tuple[str, str]:
+        """
+        Asynchronous version of the tool.
+        :param dot_input: The DOT description of the graph.
+        :return: The path to the generated diagram.
+        """
+        # For simplicity, call the synchronous version
         try:
-            output_file: Path = ImageGenerationHelper.get_full_path()
             # Create a Graphviz object
             dot = Digraph(format="png")
             # Parse the DOT input
@@ -57,16 +84,40 @@ class GraphVizDiagramGeneratorTool(BaseTool):
                     dot.node(node)
 
             # Render the diagram
-            dot.render(output_file, cleanup=True)
-            return ImageGenerationHelper.get_url_for_file_name(output_file)
+            image_generation_path_ = os.environ["IMAGE_GENERATION_PATH"]
+            assert (
+                image_generation_path_
+            ), "IMAGE_GENERATION_PATH environment variable is not set"
+            image_file_name: str = f"{uuid4()}.png"
+
+            # dot.render(output_file, cleanup=True)
+            # Create a BytesIO object to store the image
+            # image_bytes = BytesIO()
+
+            # Render the diagram directly to bytes
+            image_data: bytes = dot.pipe(format="png")
+            file_manager: FileManager = self.file_manager_factory.get_file_manager(
+                folder=image_generation_path_
+            )
+            file_path: Optional[str] = await file_manager.save_file_async(
+                image_data=image_data,
+                folder=image_generation_path_,
+                filename=image_file_name,
+            )
+            if file_path is None:
+                return (
+                    f"Failed to save image to disk",
+                    f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
+                )
+
+            url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
+            if url is None:
+                return (
+                    f"Failed to save image to disk",
+                    f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
+                )
+
+            artifact: str = f"GraphVizDiagramGeneratorTool: Generated image: <{url}> "
+            return url, artifact
         except Exception as e:
             raise ValueError(f"Failed to generate diagram: {str(e)}")
-
-    async def _arun(self, dot_input: str) -> str:
-        """
-        Asynchronous version of the tool.
-        :param dot_input: The DOT description of the graph.
-        :return: The path to the generated diagram.
-        """
-        # For simplicity, call the synchronous version
-        return self._run(dot_input)

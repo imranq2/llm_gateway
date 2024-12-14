@@ -1,6 +1,21 @@
-import aiohttp
-from bs4 import BeautifulSoup
+import logging
+import os
+from typing import Type, Literal, Tuple
+
+import httpx
 from langchain.tools import BaseTool
+from pydantic import BaseModel, Field
+
+from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
+    HtmlToMarkdownConverter,
+)
+
+
+logger = logging.getLogger(__name__)
+
+
+class URLToMarkdownToolInput(BaseModel):
+    url: str = Field(description="url of the webpage to scrape")
 
 
 class URLToMarkdownTool(BaseTool):
@@ -13,8 +28,10 @@ class URLToMarkdownTool(BaseTool):
         "Fetches the content of a webpage from a given URL and converts it to Markdown format. "
         "Provide the URL as input. The tool will return the main content of the page formatted as Markdown."
     )
+    args_schema: Type[BaseModel] = URLToMarkdownToolInput
+    response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    def _run(self, url: str) -> str:
+    def _run(self, url: str) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
         :param url: The URL of the webpage to fetch.
@@ -22,37 +39,29 @@ class URLToMarkdownTool(BaseTool):
         """
         raise NotImplementedError("Use async version of this tool")
 
-    async def _arun(self, url: str) -> str:
+    async def _arun(self, url: str) -> Tuple[str, str]:
         """
         Asynchronous version of the tool.
         :param url: The URL of the webpage to fetch.
         :return: The content of the webpage in Markdown format.
         """
+        logger.info(f"Fetching and converting URL to Markdown: {url}")
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    response.raise_for_status()
-                    html_content = await response.text()
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                html_content = response.text
 
-            soup = BeautifulSoup(html_content, "html.parser")
-
-            # Extract the main content (e.g., headings and paragraphs)
-            markdown_content = ""
-            for element in soup.find_all(
-                ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "li"]
-            ):
-                if element.name.startswith("h"):
-                    level = element.name[1]
-                    markdown_content += (
-                        f"{'#' * int(level)} {element.get_text().strip()}\n\n"
-                    )
-                elif element.name == "p":
-                    markdown_content += f"{element.get_text().strip()}\n\n"
-                elif element.name in ["ul", "ol"]:
-                    for li in element.find_all("li"):
-                        prefix = "-" if element.name == "ul" else "1."
-                        markdown_content += f"{prefix} {li.get_text().strip()}\n"
-
-            return markdown_content.strip()
+            content: str = await HtmlToMarkdownConverter.get_markdown_from_html_async(
+                html_content=html_content
+            )
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(
+                    f"====== Scraped {url} ======\n{content}\n====== End of Scraped Markdown ======"
+                )
+            return content, f"URLToMarkdownTool: Scraped content from <{url}> "
         except Exception as e:
-            raise ValueError(f"Failed to fetch or process the URL: {str(e)}")
+            return (
+                f"Failed to fetch or process the URL {url}: {str(e)}",
+                f"URLToMarkdownTool: Failed to fetch or process the URL: <{url}> ",
+            )

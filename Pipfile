@@ -15,21 +15,21 @@ wheel = ">=0.45.1"
 # requests is needed for making HTTP requests
 requests = ">=2.32.3"
 # aridne is a Python library for building GraphQL APIs
-ariadne= ">=0.23.0"
+ariadne = ">=0.23.0"
 # fastapi is a Python library for building APIs
-fastapi = ">=0.115.5"
+fastapi = ">=0.115.6"
 # boto3 is a Python library for interacting with AWS services
-boto3 = ">=1.35.71"
+boto3 = ">=1.35.77"
 # uvicorn is a Python library for running ASGI applications
 uvicorn = ">=0.32.1"
 # ddtrace is a Python library for tracing requests
-ddtrace=">=2.17.2"
+ddtrace = ">=2.17.2"
 # prometheus-fastapi-instrumentator is a Python library for instrumenting FastAPI applications
 prometheus-fastapi-instrumentator = ">=7.0.0"
 # python-crfsuite is a Python library used when installing some packages
-python-crfsuite = {version = "==0.9.10", index = "alpine-wheels"}
+python-crfsuite = { version = "==0.9.10", index = "alpine-wheels" }
 # httpx is a Python library for making HTTP requests
-httpx = ">=0.27.2"
+httpx = ">=0.28.1"
 # httpx-sse is a Python library for making Server-Sent Events requests
 httpx-sse = ">=0.4.0"
 # langchain is a Python library for building language models
@@ -39,26 +39,26 @@ pydantic = ">=2.0,<3.0.0"  # needed by langchain
 # langchain-core is a Python library for building language models
 langchain-core = ">=0.3.21"
 # langchain-aws is a Python library for interacting with AWS services
-langchain-aws = ">=0.2.7"
+langchain-aws = ">=0.2.9"
 # openai is a Python library for interacting with OpenAI
-openai = ">=1.55.2"
+openai = ">=1.57.0"
 # langchain-openai is a Python library for interacting with OpenAI
-langchain-openai = ">=0.2.10"
+langchain-openai = ">=0.2.12"
 # langchain-community is a Python library that contains ommmunity extensions
 langchain-community = ">=0.3.8"
 # grpcio is a Python library for working with gRPC.   Needed by Google Vertex AI
-grpcio = {version = "==1.66.0", index = "alpine-wheels"}
+grpcio = { version = "==1.66.0", index = "alpine-wheels" }
 # langchain-google-community is a Python library that contains Google community extensions
 langchain-google-community = ">=2.0.3"
 # langgraph is a Python library for building language models
-langgraph= ">=0.2.53"
+langgraph = ">=0.2.53"
 # langchainhub is a Python library for interacting with the LangChainHub API
 langchainhub = ">=0.1.21"
 # furl is a Python library for working with URLs
 furl = ">=2.1.3"
 # tiktoken is a fast BPE tokeniser for use with OpenAI's models
 # tiktoken 0.8.0 is missing wheel for tiktoken-0.7.0-cp312-cp312-musllinux_1_2_aarch64.whl: https://pypi.org/simple/tiktoken/
-tiktoken= "==0.7.0"
+tiktoken = "==0.7.0"
 # duckduckgo-search is a Python library for searching DuckDuckGo web results
 duckduckgo-search = ">=6.3.7"
 # xmltodict is a Python library for working with XML.  It is used by the PubMed tool
@@ -80,12 +80,18 @@ arxiv = ">=2.1.3"
 beautifulsoup4 = ">=4.12.3"
 # graphviz is a Python library for working with Graphviz
 graphviz = ">=0.20.3"
+# markdownify is a Python library for converting HTML to Markdown
+markdownify = ">=0.14.1"
+# cachetools is a Python library for caching
+cachetools = ">=5.5.0"
+# aiofiles is a Python library for working with files asynchronously
+#aiofiles = ">=24.1.0"
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks
-pre-commit=">=3.8.0"
+pre-commit = ">=3.8.0"
 # autoflake is a Python library for removing unused imports
-autoflake=">=2.3.1"
+autoflake = ">=2.3.1"
 # mypy is a Python library for type checking
 mypy = ">=1.13.0"
 # pytest is a Python library for running tests
@@ -101,6 +107,10 @@ types-requests = "*"
 pytest-httpx = ">=0.35.0"
 # types-beautifulsoup is a Python library for typing BeautifulSoup
 types-beautifulsoup4 = ">=4.12.0.20241020"
+# types-cachetools is a Python library for typing cachetools
+types-cachetools = ">=5.5.0"
+# moto is a Python library for mocking AWS services
+moto = { version = ">=5.0.22", extras = ["s3"] }
 
 [requires]
 python_version = "3.12"

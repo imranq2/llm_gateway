@@ -65,7 +65,7 @@ def generate_image(
         raise Exception(f"Error generating image: {str(e)}")
 
 
-def save_image(image_data: bytes, filename: str = "generated_image.png") -> None:
+def save_image(image_data: bytes, filename: str) -> None:
     """Save the generated image to a file"""
     if image_data:
         with open(filename, "wb") as f:
@@ -75,8 +75,12 @@ def save_image(image_data: bytes, filename: str = "generated_image.png") -> None
         print("No image to save")
 
 
-@pytest.mark.skip(reason="This test requires AWS credentials")
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="Requires AWS Credentials",
+)
 def test_chat_aws_image_model() -> None:
+    print("")
     data_dir: Path = Path(__file__).parent.joinpath("./")
     temp_folder = data_dir.joinpath("../temp")
     if path.isdir(temp_folder):
@@ -97,5 +101,6 @@ def test_chat_aws_image_model() -> None:
 
         if image_data:
             save_image(
-                image_data, str(data_dir.joinpath(f"temp/generated_image_{style}.png"))
+                image_data,
+                filename=str(temp_folder.joinpath(f"generated_image_{style}.png")),
             )
