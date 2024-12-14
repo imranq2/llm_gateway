@@ -34,7 +34,10 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
+# disable INFO logging for httpx because it logs every request
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
+# disable logging calls to /health endpoint
 uvicorn_logger = logging.getLogger("uvicorn.access")
 uvicorn_logger.addFilter(EndpointFilter(path="/health"))
 

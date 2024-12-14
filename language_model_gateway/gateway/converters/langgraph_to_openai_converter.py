@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 from typing import (
     Any,
@@ -118,6 +119,9 @@ class LangGraphToOpenAIConverter:
                             content_text, str
                         ), f"content_text: {content_text} (type: {type(content_text)})"
 
+                        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                            logger.info(f"Returning content: {content_text}")
+
                         if content_text:
                             chat_stream_response: ChatCompletionChunk = (
                                 ChatCompletionChunk(
@@ -176,6 +180,9 @@ class LangGraphToOpenAIConverter:
                         # print(f"on_tool_end: {tool_message}")
 
                         if artifact:
+                            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                                logger.info(f"Returning artifact: {artifact}")
+
                             chat_stream_response = ChatCompletionChunk(
                                 id=request_id,
                                 created=int(time.time()),
@@ -265,6 +272,10 @@ class LangGraphToOpenAIConverter:
                     Choice(index=i, message=m, finish_reason="stop")
                     for i, m in enumerate(output_messages)
                 ]
+                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                    choices_text = "\n".join([f"{c.message.content}" for c in choices])
+                    logger.info(f"Returning content: {choices_text}")
+
                 chat_response: ChatCompletion = ChatCompletion(
                     id=request_id,
                     model=request["model"],
@@ -534,12 +545,23 @@ class LangGraphToOpenAIConverter:
 
         async def call_model(state: MyMessagesState) -> MyMessagesState:
             messages: List[AnyMessage] = state["messages"]
-            base_message: BaseMessage = await model_with_tools.ainvoke(messages)
-            # assert isinstance(base_message, AnyMessage)
-            response: AnyMessage = cast(AnyMessage, base_message)
-            usage_metadata: Optional[UsageMetadata] = (
-                response.usage_metadata if hasattr(response, "usage_metadata") else None
-            )
+            response: AnyMessage
+            usage_metadata: Optional[UsageMetadata] = None
+            try:
+                base_message: BaseMessage = await model_with_tools.ainvoke(messages)
+                # assert isinstance(base_message, AnyMessage)
+                response = cast(AnyMessage, base_message)
+                usage_metadata = (
+                    response.usage_metadata
+                    if hasattr(response, "usage_metadata")
+                    else None
+                )
+            except Exception as e:
+                logger.exception(e, stack_info=True)
+                response = AIMessage(
+                    content=f"An error occurred while processing the request. {e}",
+                    role="assistant",
+                )
             return MyMessagesState(messages=[response], usage_metadata=usage_metadata)
 
         workflow = StateGraph(MyMessagesState)
@@ -570,12 +592,23 @@ class LangGraphToOpenAIConverter:
 
         async def call_model(state: MyMessagesState) -> MyMessagesState:
             messages: List[AnyMessage] = state["messages"]
-            base_message: BaseMessage = await llm.ainvoke(messages)
-            # assert isinstance(base_message, AnyMessage)
-            response: AnyMessage = cast(AnyMessage, base_message)
-            usage_metadata: Optional[UsageMetadata] = (
-                response.usage_metadata if hasattr(response, "usage_metadata") else None
-            )
+
+            response: AnyMessage
+            usage_metadata: Optional[UsageMetadata] = None
+            try:
+                base_message: BaseMessage = await llm.ainvoke(messages)
+                response = cast(AnyMessage, base_message)
+                usage_metadata = (
+                    response.usage_metadata
+                    if hasattr(response, "usage_metadata")
+                    else None
+                )
+            except Exception as e:
+                logger.exception(e, stack_info=True)
+                response = AIMessage(
+                    content=f"An error occurred while processing the request. {e}",
+                    role="assistant",
+                )
             return MyMessagesState(messages=[response], usage_metadata=usage_metadata)
 
         workflow = StateGraph(MyMessagesState)
