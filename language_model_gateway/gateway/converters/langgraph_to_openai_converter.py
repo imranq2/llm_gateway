@@ -81,57 +81,121 @@ class LangGraphToOpenAIConverter:
         Yields:
             The streaming response as a string.
         """
+        try:
+            # Process streamed events from the graph and yield messages over the SSE stream.
+            event: StandardStreamEvent | CustomStreamEvent
+            async for event in self.astream_events(
+                request=request,
+                compiled_state_graph=compiled_state_graph,
+                messages=messages,
+            ):
+                if not event:
+                    continue
 
-        # Process streamed events from the graph and yield messages over the SSE stream.
-        event: StandardStreamEvent | CustomStreamEvent
-        async for event in self.astream_events(
-            request=request,
-            compiled_state_graph=compiled_state_graph,
-            messages=messages,
-        ):
-            if not event:
-                continue
+                event_type: str = event["event"]
 
-            event_type: str = event["event"]
+                # events are described here: https://python.langchain.com/docs/how_to/streaming/#using-stream-events
 
-            # events are described here: https://python.langchain.com/docs/how_to/streaming/#using-stream-events
+                print(f"===== {event_type} =====\n{event}\n")
 
-            print(f"===== {event_type} =====\n{event}\n")
-
-            match event_type:
-                case "on_chain_start":
-                    # Handle the start of the chain event
-                    pass
-                case "on_chain_stream":
-                    # Handle the chain stream event.  Be sure not to write duplicate responses to what is done in the on_chat_model_stream event.
-                    pass
-                case "on_chat_model_stream":
-                    # Handle the chat model stream event
-                    chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
-                    if chunk is not None:
-                        content: str | list[str | dict[str, Any]] = chunk.content
-
-                        # print(f"chunk: {chunk}")
-
-                        usage_metadata = chunk.usage_metadata
-                        completion_usage_metadata = (
-                            self.convert_usage_meta_data_to_openai(
-                                usages=[usage_metadata] if usage_metadata else []
-                            )
+                match event_type:
+                    case "on_chain_start":
+                        # Handle the start of the chain event
+                        pass
+                    case "on_chain_stream":
+                        # Handle the chain stream event.  Be sure not to write duplicate responses to what is done in the on_chat_model_stream event.
+                        pass
+                    case "on_chat_model_stream":
+                        # Handle the chat model stream event
+                        chunk: AIMessageChunk | None = event.get("data", {}).get(
+                            "chunk"
                         )
+                        if chunk is not None:
+                            content: str | list[str | dict[str, Any]] = chunk.content
 
-                        content_text: str = convert_message_content_to_string(content)
+                            # print(f"chunk: {chunk}")
 
-                        assert isinstance(
-                            content_text, str
-                        ), f"content_text: {content_text} (type: {type(content_text)})"
+                            usage_metadata = chunk.usage_metadata
+                            completion_usage_metadata = (
+                                self.convert_usage_meta_data_to_openai(
+                                    usages=[usage_metadata] if usage_metadata else []
+                                )
+                            )
 
-                        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
-                            logger.info(f"Returning content: {content_text}")
+                            content_text: str = convert_message_content_to_string(
+                                content
+                            )
 
-                        if content_text:
-                            chat_model_stream_response: ChatCompletionChunk = (
+                            assert isinstance(
+                                content_text, str
+                            ), f"content_text: {content_text} (type: {type(content_text)})"
+
+                            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                                logger.info(f"Returning content: {content_text}")
+
+                            if content_text:
+                                chat_model_stream_response: ChatCompletionChunk = (
+                                    ChatCompletionChunk(
+                                        id=request_id,
+                                        created=int(time.time()),
+                                        model=request["model"],
+                                        choices=[
+                                            ChunkChoice(
+                                                index=0,
+                                                delta=ChoiceDelta(
+                                                    role="assistant",
+                                                    content=content_text,
+                                                ),
+                                            )
+                                        ],
+                                        usage=completion_usage_metadata,
+                                        object="chat.completion.chunk",
+                                    )
+                                )
+                                yield f"data: {json.dumps(chat_model_stream_response.model_dump())}\n\n"
+                    case "on_chain_end":
+                        # print(f"===== {event_type} =====\n{event}\n")
+                        output: Dict[str, Any] | str | None = event.get("data", {}).get(
+                            "output"
+                        )
+                        if (
+                            output
+                            and isinstance(output, dict)
+                            and output.get("usage_metadata")
+                        ):
+                            completion_usage_metadata = (
+                                self.convert_usage_meta_data_to_openai(
+                                    usages=[output["usage_metadata"]]
+                                )
+                            )
+
+                            # Handle the end of the chain event
+                            chat_end_stream_response: ChatCompletionChunk = (
                                 ChatCompletionChunk(
+                                    id=request_id,
+                                    created=int(time.time()),
+                                    model=request["model"],
+                                    choices=[],
+                                    usage=completion_usage_metadata,
+                                    object="chat.completion.chunk",
+                                )
+                            )
+                            yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
+                    case "on_tool_end":
+                        # Handle the end of the tool event
+                        tool_message: ToolMessage | None = event.get("data", {}).get(
+                            "output"
+                        )
+                        if tool_message:
+                            artifact: Optional[Any] = tool_message.artifact
+
+                            # print(f"on_tool_end: {tool_message}")
+
+                            if artifact:
+                                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                                    logger.info(f"Returning artifact: {artifact}")
+
+                                chat_stream_response = ChatCompletionChunk(
                                     id=request_id,
                                     created=int(time.time()),
                                     model=request["model"],
@@ -139,79 +203,42 @@ class LangGraphToOpenAIConverter:
                                         ChunkChoice(
                                             index=0,
                                             delta=ChoiceDelta(
-                                                role="assistant", content=content_text
+                                                role="assistant",
+                                                content=f"\n[{artifact}]\n",
                                             ),
                                         )
                                     ],
-                                    usage=completion_usage_metadata,
+                                    usage=CompletionUsage(
+                                        prompt_tokens=0,
+                                        completion_tokens=0,
+                                        total_tokens=0,
+                                    ),
                                     object="chat.completion.chunk",
                                 )
-                            )
-                            yield f"data: {json.dumps(chat_model_stream_response.model_dump())}\n\n"
-                case "on_chain_end":
-                    # print(f"===== {event_type} =====\n{event}\n")
-                    output: Dict[str, Any] | str | None = event.get("data", {}).get(
-                        "output"
+                                yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+                    case _:
+                        # Handle other event types
+                        pass
+        except Exception as e:
+            chat_stream_response = ChatCompletionChunk(
+                id=request_id,
+                created=int(time.time()),
+                model=request["model"],
+                choices=[
+                    ChunkChoice(
+                        index=0,
+                        delta=ChoiceDelta(
+                            role="assistant",
+                            content=f"\nError:\n{e}\n",
+                        ),
                     )
-                    if (
-                        output
-                        and isinstance(output, dict)
-                        and output.get("usage_metadata")
-                    ):
-                        completion_usage_metadata = (
-                            self.convert_usage_meta_data_to_openai(
-                                usages=[output["usage_metadata"]]
-                            )
-                        )
-
-                        # Handle the end of the chain event
-                        chat_end_stream_response: ChatCompletionChunk = (
-                            ChatCompletionChunk(
-                                id=request_id,
-                                created=int(time.time()),
-                                model=request["model"],
-                                choices=[],
-                                usage=completion_usage_metadata,
-                                object="chat.completion.chunk",
-                            )
-                        )
-                        yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
-                case "on_tool_end":
-                    # Handle the end of the tool event
-                    tool_message: ToolMessage | None = event.get("data", {}).get(
-                        "output"
-                    )
-                    if tool_message:
-                        artifact: Optional[Any] = tool_message.artifact
-
-                        # print(f"on_tool_end: {tool_message}")
-
-                        if artifact:
-                            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
-                                logger.info(f"Returning artifact: {artifact}")
-
-                            chat_stream_response = ChatCompletionChunk(
-                                id=request_id,
-                                created=int(time.time()),
-                                model=request["model"],
-                                choices=[
-                                    ChunkChoice(
-                                        index=0,
-                                        delta=ChoiceDelta(
-                                            role="assistant",
-                                            content=f"\n[{artifact}]\n",
-                                        ),
-                                    )
-                                ],
-                                usage=CompletionUsage(
-                                    prompt_tokens=0, completion_tokens=0, total_tokens=0
-                                ),
-                                object="chat.completion.chunk",
-                            )
-                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
-                case _:
-                    # Handle other event types
-                    pass
+                ],
+                usage=CompletionUsage(
+                    prompt_tokens=0, completion_tokens=0, total_tokens=0
+                ),
+                object="chat.completion.chunk",
+            )
+            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
 
         yield "data: [DONE]\n\n"
 
@@ -561,21 +588,12 @@ class LangGraphToOpenAIConverter:
             messages: List[AnyMessage] = state["messages"]
             response: AnyMessage
             usage_metadata: Optional[UsageMetadata] = None
-            try:
-                base_message: BaseMessage = await model_with_tools.ainvoke(messages)
-                # assert isinstance(base_message, AnyMessage)
-                response = cast(AnyMessage, base_message)
-                usage_metadata = (
-                    response.usage_metadata
-                    if hasattr(response, "usage_metadata")
-                    else None
-                )
-            except Exception as e:
-                logger.exception(e, stack_info=True)
-                response = AIMessage(
-                    content=f"An error occurred while processing the request. {e}",
-                    role="assistant",
-                )
+            base_message: BaseMessage = await model_with_tools.ainvoke(messages)
+            # assert isinstance(base_message, AnyMessage)
+            response = cast(AnyMessage, base_message)
+            usage_metadata = (
+                response.usage_metadata if hasattr(response, "usage_metadata") else None
+            )
             return MyMessagesState(messages=[response], usage_metadata=usage_metadata)
 
         workflow = StateGraph(MyMessagesState)
