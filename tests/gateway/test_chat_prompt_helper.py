@@ -178,5 +178,7 @@ async def test_chat_prompt_helper_streaming(async_client: httpx.AsyncClient) -> 
         print("------ END CHUNK ------")
 
     assert content is not None
+    print("------ FINAL CONTENT ------")
     print(content)
+    print("------ END FINAL CONTENT ------")
     assert "doctor" in content

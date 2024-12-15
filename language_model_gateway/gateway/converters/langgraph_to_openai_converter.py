@@ -92,6 +92,8 @@ class LangGraphToOpenAIConverter:
 
             event_type: str = event["event"]
 
+            # events are described here: https://python.langchain.com/docs/how_to/streaming/#using-stream-events
+
             print(f"===== {event_type} =====\n{event}\n")
 
             match event_type:

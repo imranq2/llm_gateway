@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import time
-from typing import Dict, List, cast, AsyncGenerator
+from typing import Dict, List, cast, AsyncGenerator, Optional
 
 from fastapi import HTTPException
 from openai.types import CompletionUsage
@@ -76,56 +76,59 @@ class ChatCompletionManager:
         chat_request: ChatRequest,
     ) -> StreamingResponse | JSONResponse:
         # Use the model to choose the provider
+        try:
+            model: str = chat_request["model"]
+            assert model is not None
 
-        model: str = chat_request["model"]
-        assert model is not None
-
-        configs: List[ChatModelConfig] = (
-            await self.config_reader.read_model_configs_async()
-        )
-
-        # Find the model config
-        model_config: ChatModelConfig | None = next(
-            (config for config in configs if config.name.lower() == model.lower()), None
-        )
-        if model_config is None:
-            logger.error(f"Model {model} not found in the config")
-            raise HTTPException(
-                status_code=400, detail=f"Model {model} not found in the config"
+            configs: List[ChatModelConfig] = (
+                await self.config_reader.read_model_configs_async()
             )
 
-        chat_request = self.add_system_messages(
-            chat_request=chat_request, system_prompts=model_config.system_prompts
-        )
-
-        provider: BaseChatCompletionsProvider
-        match model_config.type:
-            case "openai":
-                provider = self.openai_provider
-            case "langchain":
-                provider = self.langchain_provider
-            case _:
+            # Find the model config
+            model_config: ChatModelConfig | None = next(
+                (config for config in configs if config.name.lower() == model.lower()),
+                None,
+            )
+            if model_config is None:
+                logger.error(f"Model {model} not found in the config")
                 raise HTTPException(
-                    status_code=400,
-                    detail=f"Model type {model_config.type} not supported",
+                    status_code=400, detail=f"Model {model} not found in the config"
                 )
 
-        help_response: StreamingResponse | JSONResponse | None = (
-            self.handle_help_prompt(
-                chat_request=chat_request, model=model, model_config=model_config
+            chat_request = self.add_system_messages(
+                chat_request=chat_request, system_prompts=model_config.system_prompts
             )
-        )
-        if help_response is not None:
-            return help_response
 
-        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
-            logger.info(
-                f"Running chat completion for {chat_request} with headers {headers}"
+            provider: BaseChatCompletionsProvider
+            match model_config.type:
+                case "openai":
+                    provider = self.openai_provider
+                case "langchain":
+                    provider = self.langchain_provider
+                case _:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Model type {model_config.type} not supported",
+                    )
+
+            help_response: StreamingResponse | JSONResponse | None = (
+                self.handle_help_prompt(
+                    chat_request=chat_request, model=model, model_config=model_config
+                )
             )
-        # Use the provider to get the completions
-        return await provider.chat_completions(
-            model_config=model_config, headers=headers, chat_request=chat_request
-        )
+            if help_response is not None:
+                return help_response
+
+            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                logger.info(
+                    f"Running chat completion for {chat_request} with headers {headers}"
+                )
+            # Use the provider to get the completions
+            return await provider.chat_completions(
+                model_config=model_config, headers=headers, chat_request=chat_request
+            )
+        except Exception as e:
+            return await self.handle_exception(chat_request=chat_request, e=e)
 
     # noinspection PyMethodMayBeStatic
     def add_system_messages(
@@ -208,13 +211,65 @@ class ChatCompletionManager:
                     ]
                 )
 
+            return self.write_response(
+                chat_request=chat_request, response_messages=response_messages
+            )
+
+        return None
+
+    # noinspection PyMethodMayBeStatic
+    def write_response(
+        self,
+        *,
+        chat_request: ChatRequest,
+        response_messages: List[ChatCompletionMessage],
+    ) -> StreamingResponse | JSONResponse:
+        chat_model: str = chat_request["model"]
+        should_stream_response: Optional[bool] = cast(
+            Optional[bool], chat_request.get("stream")
+        )
+        if should_stream_response:
+
+            async def foo(
+                response_messages1: List[ChatCompletionMessage],
+            ) -> AsyncGenerator[str, None]:
+                for response_message in response_messages1:
+                    if response_message.content:
+                        chat_stream_response: ChatCompletionChunk = ChatCompletionChunk(
+                            id="1",
+                            created=int(time.time()),
+                            model=chat_model,
+                            choices=[
+                                ChunkChoice(
+                                    index=0,
+                                    delta=ChoiceDelta(
+                                        role="assistant",
+                                        content=response_message.content + "\n",
+                                    ),
+                                )
+                            ],
+                            usage=CompletionUsage(
+                                prompt_tokens=0,
+                                completion_tokens=0,
+                                total_tokens=0,
+                            ),
+                            object="chat.completion.chunk",
+                        )
+                        yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+                yield "data: [DONE]\n\n"
+
+            return StreamingResponse(
+                content=foo(response_messages1=response_messages),
+                media_type="text/event-stream",
+            )
+        else:
             choices: List[Choice] = [
                 Choice(index=i, message=m, finish_reason="stop")
                 for i, m in enumerate(response_messages)
             ]
             chat_response: ChatCompletion = ChatCompletion(
                 id="1",
-                model=chat_request["model"],
+                model=chat_model,
                 choices=choices,
                 usage=CompletionUsage(
                     prompt_tokens=0,
@@ -226,43 +281,14 @@ class ChatCompletionManager:
             )
             if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
                 logger.info(f"Returning help response: {chat_response.model_dump()}")
-            if chat_request.get("stream"):
 
-                async def foo(
-                    response_messages1: List[ChatCompletionMessage],
-                ) -> AsyncGenerator[str, None]:
-                    for response_message in response_messages1:
-                        if response_message.content:
-                            chat_stream_response: ChatCompletionChunk = (
-                                ChatCompletionChunk(
-                                    id="1",
-                                    created=int(time.time()),
-                                    model=chat_request["model"],
-                                    choices=[
-                                        ChunkChoice(
-                                            index=0,
-                                            delta=ChoiceDelta(
-                                                role="assistant",
-                                                content=response_message.content + "\n",
-                                            ),
-                                        )
-                                    ],
-                                    usage=CompletionUsage(
-                                        prompt_tokens=0,
-                                        completion_tokens=0,
-                                        total_tokens=0,
-                                    ),
-                                    object="chat.completion.chunk",
-                                )
-                            )
-                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
-                    yield "data: [DONE]\n\n"
+            return JSONResponse(content=chat_response.model_dump())
 
-                return StreamingResponse(
-                    content=foo(response_messages1=response_messages),
-                    media_type="text/event-stream",
-                )
-            else:
-                return JSONResponse(content=chat_response.model_dump())
-
-        return None
+    async def handle_exception(
+        self, *, chat_request: ChatRequest, e: Exception
+    ) -> StreamingResponse | JSONResponse:
+        logger.error(f"Error in chat completion: {e}")
+        return self.write_response(
+            chat_request=chat_request,
+            response_messages=[ChatCompletionMessage(role="assistant", content=str(e))],
+        )
