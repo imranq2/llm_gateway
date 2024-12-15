@@ -96,7 +96,7 @@ class LangGraphToOpenAIConverter:
 
                 # events are described here: https://python.langchain.com/docs/how_to/streaming/#using-stream-events
 
-                print(f"===== {event_type} =====\n{event}\n")
+                # print(f"===== {event_type} =====\n{event}\n")
 
                 match event_type:
                     case "on_chain_start":
