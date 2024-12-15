@@ -92,12 +92,60 @@ class LangGraphToOpenAIConverter:
 
             event_type: str = event["event"]
 
-            # print(f"===== {event_type} =====\n{event}\n")
+            print(f"===== {event_type} =====\n{event}\n")
 
             match event_type:
                 case "on_chain_start":
                     # Handle the start of the chain event
                     pass
+                case "on_chain_stream":
+                    stream_chunk: Dict[str, Any] | None = event.get("data", {}).get(
+                        "chunk"
+                    )
+                    if stream_chunk is not None and isinstance(stream_chunk, dict):
+                        stream_messages: List[AIMessage] = stream_chunk.get(
+                            "messages", []
+                        )
+                        message_index: int
+                        message: AIMessage
+                        for message_index, message in enumerate(stream_messages):
+                            if isinstance(message, AIMessage):
+                                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                                    logger.info(f"Returning content: {message.content}")
+
+                                usage_metadata: Optional[UsageMetadata] = (
+                                    message.usage_metadata
+                                )
+                                completion_usage_metadata = (
+                                    self.convert_usage_meta_data_to_openai(
+                                        usages=(
+                                            [usage_metadata] if usage_metadata else []
+                                        )
+                                    )
+                                )
+                                if message.content:
+                                    chat_stream_response: ChatCompletionChunk = (
+                                        ChatCompletionChunk(
+                                            id=request_id,
+                                            created=int(time.time()),
+                                            model=request["model"],
+                                            choices=[
+                                                ChunkChoice(
+                                                    index=message_index,
+                                                    delta=ChoiceDelta(
+                                                        role="assistant",
+                                                        content=convert_message_content_to_string(
+                                                            message.content
+                                                        ),
+                                                    ),
+                                                )
+                                            ],
+                                            usage=completion_usage_metadata,
+                                            object="chat.completion.chunk",
+                                        )
+                                    )
+                                    yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+
                 case "on_chat_model_stream":
                     # Handle the chat model stream event
                     chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
@@ -106,7 +154,7 @@ class LangGraphToOpenAIConverter:
 
                         # print(f"chunk: {chunk}")
 
-                        usage_metadata: Optional[UsageMetadata] = chunk.usage_metadata
+                        usage_metadata = chunk.usage_metadata
                         completion_usage_metadata = (
                             self.convert_usage_meta_data_to_openai(
                                 usages=[usage_metadata] if usage_metadata else []
@@ -123,7 +171,7 @@ class LangGraphToOpenAIConverter:
                             logger.info(f"Returning content: {content_text}")
 
                         if content_text:
-                            chat_stream_response: ChatCompletionChunk = (
+                            chat_model_stream_response: ChatCompletionChunk = (
                                 ChatCompletionChunk(
                                     id=request_id,
                                     created=int(time.time()),
@@ -140,7 +188,7 @@ class LangGraphToOpenAIConverter:
                                     object="chat.completion.chunk",
                                 )
                             )
-                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+                            yield f"data: {json.dumps(chat_model_stream_response.model_dump())}\n\n"
                 case "on_chain_end":
                     # print(f"===== {event_type} =====\n{event}\n")
                     output: Dict[str, Any] | str | None = event.get("data", {}).get(
