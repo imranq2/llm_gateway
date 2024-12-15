@@ -14,7 +14,7 @@ services:
       DEFAULT_PATIENT_ID: "eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
 #      DEFAULT_WEB_SEARCH_TOOL: "duckduckgo_search"
       DEFAULT_WEB_SEARCH_TOOL: "google_search"
-      RUN_TESTS_WITH_REAL_LLM: 1
+      RUN_TESTS_WITH_REAL_LLM: 0
       IMAGE_GENERATION_PATH: "/usr/src/language_model_gateway/image_generation"
 #      IMAGE_GENERATION_PATH: "s3://bwell-dev-data-science-ue1/openwebui/image_generation/"
       IMAGE_GENERATION_URL: "http://localhost:5050/image_generation"
@@ -38,7 +38,7 @@ services:
     volumes:
     - ./:/usr/src/language_model_gateway/:cached
       # uncomment this for testing AWS models and the docker.env above (need the AWS_CREDENTIALS_PROFILE env var)
-#    - ~/.aws/:/etc/appuser/.aws/
+    - ~/.aws/:/etc/appuser/.aws/
     healthcheck:
       test: curl --fail -s http://localhost:5000/health || exit 1
       interval: 10s
