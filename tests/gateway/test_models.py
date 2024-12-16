@@ -12,7 +12,7 @@ async def test_models(async_client: httpx.AsyncClient) -> None:
         http_client=async_client,
     )
     models: AsyncPage[Model] = await client.models.list()
-    print(models.model_dump_json())
+    # print(models.model_dump_json())
     assert models
     mode: Model
     i = 0
