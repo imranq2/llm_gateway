@@ -111,9 +111,6 @@ class ChatModelConfig(BaseModel):
     model_parameters: List[ModelParameterConfig] | None = None
     """The model parameters"""
 
-    few_shot_examples: List[FewShotExampleConfig] | None = None
-    """The few shot examples"""
-
     headers: List[HeaderConfig] | None = None
     """The headers to pass to url when calling the model"""
 
