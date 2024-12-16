@@ -35,8 +35,10 @@ class ConfigReader:
 
     # noinspection PyMethodMayBeStatic
     async def read_model_configs_async(self) -> List[ChatModelConfig]:
-        config_path: str = os.environ["CONFIG_PATH"]
-        assert config_path is not None, "CONFIG_PATH environment variable is not set"
+        config_path: str = os.environ["MODELS_OFFICIAL_PATH"]
+        assert (
+            config_path is not None
+        ), "MODELS_OFFICIAL_PATH environment variable is not set"
 
         # Check cache first
         cached_configs: List[ChatModelConfig] | None = await self._cache.get()
@@ -62,28 +64,27 @@ class ConfigReader:
                 f"ConfigReader with id: {self._identifier} reading model configurations from {config_path}"
             )
 
-            models: List[ChatModelConfig]
-            if config_path.startswith("s3"):
-                models = await S3ConfigReader().read_model_configs(s3_url=config_path)
-                logger.info(
-                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
+            models: List[ChatModelConfig] = await self.read_models_from_path_async(
+                config_path
+            )
+            config_testing_path = os.environ.get("MODELS_TESTING_PATH")
+            if config_testing_path:
+                models_testing: List[ChatModelConfig] = (
+                    await self.read_models_from_path_async(config_testing_path)
                 )
-            elif UrlParser.is_github_url(config_path):
-                models = await GitHubConfigReader().read_model_configs(
-                    github_url=config_path
-                )
-                logger.info(
-                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub"
-                )
-            else:
-                models = FileConfigReader().read_model_configs(config_path=config_path)
-                logger.info(
-                    f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from file system"
-                )
+                if models_testing and len(models_testing) > 0:
+                    models.append(
+                        ChatModelConfig(
+                            id="testing",
+                            name="----- Models in Testing -----",
+                            description="",
+                        )
+                    )
+                    models.extend(models_testing)
 
             # if we can't load models another way then try to load them from the file system
             if not models or len(models) == 0:
-                config_path_backup: str = os.environ["CONFIG_PATH_BACKUP"]
+                config_path_backup: str = os.environ["MODELS_PATH_BACKUP"]
                 models = FileConfigReader().read_model_configs(
                     config_path=config_path_backup
                 )
@@ -95,6 +96,29 @@ class ConfigReader:
             models = [model for model in models if not model.disabled]
             await self._cache.set(models)
             return models
+
+    async def read_models_from_path_async(
+        self, config_path: str
+    ) -> List[ChatModelConfig]:
+        models: List[ChatModelConfig]
+        if config_path.startswith("s3"):
+            models = await S3ConfigReader().read_model_configs(s3_url=config_path)
+            logger.info(
+                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
+            )
+        elif UrlParser.is_github_url(config_path):
+            models = await GitHubConfigReader().read_model_configs(
+                github_url=config_path
+            )
+            logger.info(
+                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub"
+            )
+        else:
+            models = FileConfigReader().read_model_configs(config_path=config_path)
+            logger.info(
+                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from file system"
+            )
+        return models
 
     async def clear_cache(self) -> None:
         await self._cache.clear()

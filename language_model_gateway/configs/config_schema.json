@@ -21,6 +21,9 @@
     "type": {
       "type": "string"
     },
+    "owner": {
+      "type": "string"
+    },
     "url": {
       "type": "string",
       "format": "uri"
@@ -48,7 +51,6 @@
       "items": {
         "type": "object",
         "required": [
-          "role",
           "content"
         ],
         "properties": {
@@ -57,6 +59,12 @@
           },
           "content": {
             "type": "string"
+          },
+          "hub_id": {
+            "type": "string"
+          },
+          "cache": {
+            "type": "boolean"
           }
         }
       }

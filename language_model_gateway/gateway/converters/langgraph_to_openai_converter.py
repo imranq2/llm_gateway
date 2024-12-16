@@ -27,6 +27,8 @@ from langchain_core.messages import (
 )
 from langchain_core.messages import AIMessageChunk
 from langchain_core.messages.ai import UsageMetadata
+from langchain_core.prompt_values import PromptValue
+from langchain_core.runnables import Runnable
 from langchain_core.runnables.schema import CustomStreamEvent, StandardStreamEvent
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
@@ -79,52 +81,121 @@ class LangGraphToOpenAIConverter:
         Yields:
             The streaming response as a string.
         """
+        try:
+            # Process streamed events from the graph and yield messages over the SSE stream.
+            event: StandardStreamEvent | CustomStreamEvent
+            async for event in self.astream_events(
+                request=request,
+                compiled_state_graph=compiled_state_graph,
+                messages=messages,
+            ):
+                if not event:
+                    continue
 
-        # Process streamed events from the graph and yield messages over the SSE stream.
-        event: StandardStreamEvent | CustomStreamEvent
-        async for event in self.astream_events(
-            request=request,
-            compiled_state_graph=compiled_state_graph,
-            messages=messages,
-        ):
-            if not event:
-                continue
+                event_type: str = event["event"]
 
-            event_type: str = event["event"]
+                # events are described here: https://python.langchain.com/docs/how_to/streaming/#using-stream-events
 
-            # print(f"===== {event_type} =====\n{event}\n")
+                # print(f"===== {event_type} =====\n{event}\n")
 
-            match event_type:
-                case "on_chain_start":
-                    # Handle the start of the chain event
-                    pass
-                case "on_chat_model_stream":
-                    # Handle the chat model stream event
-                    chunk: AIMessageChunk | None = event.get("data", {}).get("chunk")
-                    if chunk is not None:
-                        content: str | list[str | dict[str, Any]] = chunk.content
-
-                        # print(f"chunk: {chunk}")
-
-                        usage_metadata: Optional[UsageMetadata] = chunk.usage_metadata
-                        completion_usage_metadata = (
-                            self.convert_usage_meta_data_to_openai(
-                                usages=[usage_metadata] if usage_metadata else []
-                            )
+                match event_type:
+                    case "on_chain_start":
+                        # Handle the start of the chain event
+                        pass
+                    case "on_chain_stream":
+                        # Handle the chain stream event.  Be sure not to write duplicate responses to what is done in the on_chat_model_stream event.
+                        pass
+                    case "on_chat_model_stream":
+                        # Handle the chat model stream event
+                        chunk: AIMessageChunk | None = event.get("data", {}).get(
+                            "chunk"
                         )
+                        if chunk is not None:
+                            content: str | list[str | dict[str, Any]] = chunk.content
 
-                        content_text: str = convert_message_content_to_string(content)
+                            # print(f"chunk: {chunk}")
 
-                        assert isinstance(
-                            content_text, str
-                        ), f"content_text: {content_text} (type: {type(content_text)})"
+                            usage_metadata = chunk.usage_metadata
+                            completion_usage_metadata = (
+                                self.convert_usage_meta_data_to_openai(
+                                    usages=[usage_metadata] if usage_metadata else []
+                                )
+                            )
 
-                        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
-                            logger.info(f"Returning content: {content_text}")
+                            content_text: str = convert_message_content_to_string(
+                                content
+                            )
 
-                        if content_text:
-                            chat_stream_response: ChatCompletionChunk = (
+                            assert isinstance(
+                                content_text, str
+                            ), f"content_text: {content_text} (type: {type(content_text)})"
+
+                            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                                logger.info(f"Returning content: {content_text}")
+
+                            if content_text:
+                                chat_model_stream_response: ChatCompletionChunk = (
+                                    ChatCompletionChunk(
+                                        id=request_id,
+                                        created=int(time.time()),
+                                        model=request["model"],
+                                        choices=[
+                                            ChunkChoice(
+                                                index=0,
+                                                delta=ChoiceDelta(
+                                                    role="assistant",
+                                                    content=content_text,
+                                                ),
+                                            )
+                                        ],
+                                        usage=completion_usage_metadata,
+                                        object="chat.completion.chunk",
+                                    )
+                                )
+                                yield f"data: {json.dumps(chat_model_stream_response.model_dump())}\n\n"
+                    case "on_chain_end":
+                        # print(f"===== {event_type} =====\n{event}\n")
+                        output: Dict[str, Any] | str | None = event.get("data", {}).get(
+                            "output"
+                        )
+                        if (
+                            output
+                            and isinstance(output, dict)
+                            and output.get("usage_metadata")
+                        ):
+                            completion_usage_metadata = (
+                                self.convert_usage_meta_data_to_openai(
+                                    usages=[output["usage_metadata"]]
+                                )
+                            )
+
+                            # Handle the end of the chain event
+                            chat_end_stream_response: ChatCompletionChunk = (
                                 ChatCompletionChunk(
+                                    id=request_id,
+                                    created=int(time.time()),
+                                    model=request["model"],
+                                    choices=[],
+                                    usage=completion_usage_metadata,
+                                    object="chat.completion.chunk",
+                                )
+                            )
+                            yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
+                    case "on_tool_end":
+                        # Handle the end of the tool event
+                        tool_message: ToolMessage | None = event.get("data", {}).get(
+                            "output"
+                        )
+                        if tool_message:
+                            artifact: Optional[Any] = tool_message.artifact
+
+                            # print(f"on_tool_end: {tool_message}")
+
+                            if artifact:
+                                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                                    logger.info(f"Returning artifact: {artifact}")
+
+                                chat_stream_response = ChatCompletionChunk(
                                     id=request_id,
                                     created=int(time.time()),
                                     model=request["model"],
@@ -132,79 +203,42 @@ class LangGraphToOpenAIConverter:
                                         ChunkChoice(
                                             index=0,
                                             delta=ChoiceDelta(
-                                                role="assistant", content=content_text
+                                                role="assistant",
+                                                content=f"\n[{artifact}]\n",
                                             ),
                                         )
                                     ],
-                                    usage=completion_usage_metadata,
+                                    usage=CompletionUsage(
+                                        prompt_tokens=0,
+                                        completion_tokens=0,
+                                        total_tokens=0,
+                                    ),
                                     object="chat.completion.chunk",
                                 )
-                            )
-                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
-                case "on_chain_end":
-                    # print(f"===== {event_type} =====\n{event}\n")
-                    output: Dict[str, Any] | str | None = event.get("data", {}).get(
-                        "output"
+                                yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+                    case _:
+                        # Handle other event types
+                        pass
+        except Exception as e:
+            chat_stream_response = ChatCompletionChunk(
+                id=request_id,
+                created=int(time.time()),
+                model=request["model"],
+                choices=[
+                    ChunkChoice(
+                        index=0,
+                        delta=ChoiceDelta(
+                            role="assistant",
+                            content=f"\nError:\n{e}\n",
+                        ),
                     )
-                    if (
-                        output
-                        and isinstance(output, dict)
-                        and output.get("usage_metadata")
-                    ):
-                        completion_usage_metadata = (
-                            self.convert_usage_meta_data_to_openai(
-                                usages=[output["usage_metadata"]]
-                            )
-                        )
-
-                        # Handle the end of the chain event
-                        chat_end_stream_response: ChatCompletionChunk = (
-                            ChatCompletionChunk(
-                                id=request_id,
-                                created=int(time.time()),
-                                model=request["model"],
-                                choices=[],
-                                usage=completion_usage_metadata,
-                                object="chat.completion.chunk",
-                            )
-                        )
-                        yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
-                case "on_tool_end":
-                    # Handle the end of the tool event
-                    tool_message: ToolMessage | None = event.get("data", {}).get(
-                        "output"
-                    )
-                    if tool_message:
-                        artifact: Optional[Any] = tool_message.artifact
-
-                        # print(f"on_tool_end: {tool_message}")
-
-                        if artifact:
-                            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
-                                logger.info(f"Returning artifact: {artifact}")
-
-                            chat_stream_response = ChatCompletionChunk(
-                                id=request_id,
-                                created=int(time.time()),
-                                model=request["model"],
-                                choices=[
-                                    ChunkChoice(
-                                        index=0,
-                                        delta=ChoiceDelta(
-                                            role="assistant",
-                                            content=f"\n[{artifact}]\n",
-                                        ),
-                                    )
-                                ],
-                                usage=CompletionUsage(
-                                    prompt_tokens=0, completion_tokens=0, total_tokens=0
-                                ),
-                                object="chat.completion.chunk",
-                            )
-                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
-                case _:
-                    # Handle other event types
-                    pass
+                ],
+                usage=CompletionUsage(
+                    prompt_tokens=0, completion_tokens=0, total_tokens=0
+                ),
+                object="chat.completion.chunk",
+            )
+            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
 
         yield "data: [DONE]\n\n"
 
@@ -509,12 +543,7 @@ class LangGraphToOpenAIConverter:
         Returns:
             The compiled state graph.
         """
-        if len(tools) > 0:
-            return await self._create_graph_for_llm_with_tools_async(
-                llm=llm, tools=tools
-            )
-        else:
-            return await self._create_graph_for_llm_without_tools_async(llm=llm)
+        return await self._create_graph_for_llm_with_tools_async(llm=llm, tools=tools)
 
     # noinspection PyMethodMayBeStatic
     async def _create_graph_for_llm_with_tools_async(
@@ -528,8 +557,20 @@ class LangGraphToOpenAIConverter:
         :param tools: list of tools
         :return: compiled state graph
         """
-        tool_node: ToolNode = ToolNode(tools)
-        model_with_tools = llm.bind_tools(tools)
+        tool_node: ToolNode | None = None
+        model_with_tools: Runnable[
+            PromptValue
+            | str
+            | Sequence[
+                BaseMessage | list[str] | tuple[str, str] | str | dict[str, Any]
+            ],
+            BaseMessage,
+        ]
+        if len(tools) > 0:
+            tool_node = ToolNode(tools)
+            model_with_tools = llm.bind_tools(tools)
+        else:
+            model_with_tools = llm
 
         def should_continue(
             state: MyMessagesState,
@@ -547,76 +588,26 @@ class LangGraphToOpenAIConverter:
             messages: List[AnyMessage] = state["messages"]
             response: AnyMessage
             usage_metadata: Optional[UsageMetadata] = None
-            try:
-                base_message: BaseMessage = await model_with_tools.ainvoke(messages)
-                # assert isinstance(base_message, AnyMessage)
-                response = cast(AnyMessage, base_message)
-                usage_metadata = (
-                    response.usage_metadata
-                    if hasattr(response, "usage_metadata")
-                    else None
-                )
-            except Exception as e:
-                logger.exception(e, stack_info=True)
-                response = AIMessage(
-                    content=f"An error occurred while processing the request. {e}",
-                    role="assistant",
-                )
+            base_message: BaseMessage = await model_with_tools.ainvoke(messages)
+            # assert isinstance(base_message, AnyMessage)
+            response = cast(AnyMessage, base_message)
+            usage_metadata = (
+                response.usage_metadata if hasattr(response, "usage_metadata") else None
+            )
             return MyMessagesState(messages=[response], usage_metadata=usage_metadata)
 
         workflow = StateGraph(MyMessagesState)
 
         # Define the two nodes we will cycle between
         workflow.add_node("agent", call_model)  # Now using async call_model
-        workflow.add_node("tools", tool_node)
+        if len(tools) > 0:
+            assert tool_node is not None
+            workflow.add_node("tools", tool_node)
 
         workflow.add_edge(START, "agent")
-        workflow.add_conditional_edges("agent", should_continue, ["tools", END])
-        workflow.add_edge("tools", "agent")
-        workflow.add_edge("agent", END)
-
-        compiled_state_graph: CompiledStateGraph = workflow.compile()
-        return compiled_state_graph
-
-    # noinspection PyMethodMayBeStatic
-    async def _create_graph_for_llm_without_tools_async(
-        self, *, llm: BaseChatModel
-    ) -> CompiledStateGraph:
-        """
-        Create a graph for the language model asynchronously.
-
-
-        :param llm: base chat model
-        :return: compiled state graph
-        """
-
-        async def call_model(state: MyMessagesState) -> MyMessagesState:
-            messages: List[AnyMessage] = state["messages"]
-
-            response: AnyMessage
-            usage_metadata: Optional[UsageMetadata] = None
-            try:
-                base_message: BaseMessage = await llm.ainvoke(messages)
-                response = cast(AnyMessage, base_message)
-                usage_metadata = (
-                    response.usage_metadata
-                    if hasattr(response, "usage_metadata")
-                    else None
-                )
-            except Exception as e:
-                logger.exception(e, stack_info=True)
-                response = AIMessage(
-                    content=f"An error occurred while processing the request. {e}",
-                    role="assistant",
-                )
-            return MyMessagesState(messages=[response], usage_metadata=usage_metadata)
-
-        workflow = StateGraph(MyMessagesState)
-
-        # Define the two nodes we will cycle between
-        workflow.add_node("agent", call_model)  # Now using async call_model
-
-        workflow.add_edge(START, "agent")
+        if len(tools) > 0:
+            workflow.add_conditional_edges("agent", should_continue, ["tools", END])
+            workflow.add_edge("tools", "agent")
         workflow.add_edge("agent", END)
 
         compiled_state_graph: CompiledStateGraph = workflow.compile()

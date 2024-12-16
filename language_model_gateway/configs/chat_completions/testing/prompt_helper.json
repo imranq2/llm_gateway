@@ -3,11 +3,6 @@
   "id": "prompt_helper",
   "name": "Prompt Helper",
   "description": "This models helps you craft the best prompt. Specify your goal and constraints, and I will help you create a detailed system prompt to guide a language model in completing the task effectively.",
-  "type": "langchain",
-  "model": {
-    "provider": "bedrock",
-    "model": "us.anthropic.claude-3-5-haiku-20241022-v1:0"
-  },
   "system_prompts": [
     {
       "role": "system",
@@ -16,18 +11,6 @@
     {
       "role": "system",
       "content": "The user will provide a Task, Goal, or Current Prompt"
-    }
-  ],
-  "model_parameters": [
-    {
-      "key": "temperature",
-      "value": 0.5
-    }
-  ],
-  "headers": [
-    {
-      "key": "Authorization",
-      "value": "Bearer OPENAI_API_KEY"
     }
   ],
   "example_prompts": [

@@ -214,6 +214,8 @@ class GitHubConfigReader:
 
                 # Filter out None results and add valid configs to the list
                 configs.extend([config for config in results if config is not None])
+                # sort the configs by name
+                configs.sort(key=lambda x: x.name)
 
                 return configs
 

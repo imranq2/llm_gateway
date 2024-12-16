@@ -62,6 +62,8 @@ class S3ConfigReader:
                                     f"Error parsing JSON from {obj['Key']}: {str(e)}"
                                 )
 
+            # sort the configs by name
+            configs.sort(key=lambda x: x.name)
             return configs
 
         except Exception as e:
