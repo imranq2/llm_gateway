@@ -198,6 +198,12 @@ class ChatCompletionManager:
                     content=model_config.description or "No description available",
                 )
             ]
+            if model_config.owner is not None:
+                response_messages.append(
+                    ChatCompletionMessage(
+                        role="assistant", content=f"Model owner: {model_config.owner}"
+                    )
+                )
             if model_config.example_prompts is not None:
                 response_messages.append(
                     ChatCompletionMessage(
