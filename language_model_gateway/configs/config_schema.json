@@ -194,20 +194,27 @@
           "name": {
             "type": "string",
             "description": "Name of the tool.",
-            "enum": [
-              "current_date",
-              "pubmed",
-              "web_search",
-              "get_web_page",
-              "arxiv_search",
-              "image_generator",
-              "graph_viz_diagram_generator",
-              "sequence_diagram_generator",
-              "flow_chart_generator",
-              "er_diagram_generator",
-              "network_topology_generator",
-              "scraping_bee_web_scraper",
-              "provider_search"
+            "oneOf": [
+              {
+                "enum": [
+                  "current_date",
+                  "pubmed",
+                  "web_search",
+                  "get_web_page",
+                  "arxiv_search",
+                  "image_generator",
+                  "graph_viz_diagram_generator",
+                  "sequence_diagram_generator",
+                  "flow_chart_generator",
+                  "er_diagram_generator",
+                  "network_topology_generator",
+                  "scraping_bee_web_scraper",
+                  "provider_search"
+                ]
+              },
+              {
+                "type": "string"
+              }
             ]
           },
           "parameters": {
