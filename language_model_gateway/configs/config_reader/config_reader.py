@@ -10,6 +10,9 @@ from language_model_gateway.configs.config_reader.file_config_reader import (
 from language_model_gateway.configs.config_reader.github_config_reader import (
     GitHubConfigReader,
 )
+from language_model_gateway.configs.config_reader.github_config_zip_reader import (
+    GitHubConfigZipDownloader,
+)
 from language_model_gateway.configs.config_reader.s3_config_reader import S3ConfigReader
 from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
@@ -105,6 +108,13 @@ class ConfigReader:
             models = await S3ConfigReader().read_model_configs(s3_url=config_path)
             logger.info(
                 f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
+            )
+        elif UrlParser.is_github_zip_url(config_path):
+            models = await GitHubConfigZipDownloader().read_model_configs(
+                github_url=config_path
+            )
+            logger.info(
+                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub"
             )
         elif UrlParser.is_github_url(config_path):
             models = await GitHubConfigReader().read_model_configs(
