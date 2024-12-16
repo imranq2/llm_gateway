@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class PromptConfig(BaseModel):
     """Prompt configuration"""
 
-    role: str
+    role: str = "system"
     """The role of the prompt"""
 
     content: str | None = None
@@ -14,6 +14,9 @@ class PromptConfig(BaseModel):
 
     hub_id: str | None = None
     """The hub id of the prompt"""
+
+    cache: bool | None = None
+    """Whether to cache the prompt"""
 
 
 class ModelParameterConfig(BaseModel):
