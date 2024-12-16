@@ -21,24 +21,36 @@
     },
     "type": {
       "type": "string",
-      "description": "Type of model. langchain models are models that are part of the language model gateway. openai models are models that are part of the OpenAI API.",
-      "enum": [
-        "langchain",
-        "openai"
+      "description": "Type of model.",
+      "default": null,
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Langchain models are models that are part of the language model gateway.",
+          "const": "langchain"
+        },
+        {
+          "type": "string",
+          "description": "OpenAI models are models that are part of the OpenAI API.",
+          "const": "openai"
+        }
       ]
     },
     "owner": {
       "type": "string",
-      "description": "This is the name of the owner of this model.  It is shown when someone types help in that model.  This is to help people reach out to owners of a model if they have questions, have issues or just want to thank the owner for creating this model."
+      "description": "This is the name of the owner of this model.  It is shown when someone types help in that model.  This is to help people reach out to owners of a model if they have questions, have issues or just want to thank the owner for creating this model.",
+      "default": null
     },
     "url": {
       "type": "string",
       "description": "If we are not using the local language model gateway, this is the URL to the model.",
-      "format": "uri"
+      "format": "uri",
+      "default": null
     },
     "disabled": {
       "type": "boolean",
-      "description": "If true, this model will not be shown in the list of models in the b.well AI tool."
+      "description": "If true, this model will not be shown in the list of models in the b.well AI tool.",
+      "default": false
     },
     "model": {
       "type": "object",
@@ -54,13 +66,15 @@
           "enum": [
             "bedrock",
             "openai"
-          ]
+          ],
+          "default": null
         },
         "model": {
           "type": "string",
           "description": "Model name.  This should be a specific language model supported by AWS Bedrock and enabled for our AWS account.  We recommend us.anthropic.claude-3-5-haiku-20241022-v1:0 unless you know what you’re doing."
         }
-      }
+      },
+      "default": null
     },
     "system_prompts": {
       "type": "array",
@@ -78,7 +92,8 @@
               "system",
               "assistant",
               "user"
-            ]
+            ],
+            "default": "system"
           },
           "content": {
             "type": "string",
@@ -86,11 +101,13 @@
           },
           "hub_id": {
             "type": "string",
-            "description": "Langhub ID of the prompt.  If set, the prompt will be fetched from the langhub."
+            "description": "Langhub ID of the prompt.  If set, the prompt will be fetched from the langhub.",
+            "default": null
           },
           "cache": {
             "type": "boolean",
-            "description": "If true, the LLM will cache this prompt for future uses."
+            "description": "If true, the LLM will cache this prompt for future uses.",
+            "default": null
           }
         }
       }
@@ -110,14 +127,16 @@
             "description": "Role of the prompt.  This can be system, assistant or user.",
             "enum": [
               "user"
-            ]
+            ],
+            "default": "user"
           },
           "content": {
             "type": "string",
             "description": "Content of the prompt."
           }
         }
-      }
+      },
+      "default": null
     },
     "model_parameters": {
       "type": "array",
@@ -138,7 +157,8 @@
             "description": "Parameter value."
           }
         }
-      }
+      },
+      "default": null
     },
     "headers": {
       "type": "array",
@@ -159,7 +179,8 @@
             "description": "Header value."
           }
         }
-      }
+      },
+      "default": null
     },
     "tools": {
       "type": "array",
