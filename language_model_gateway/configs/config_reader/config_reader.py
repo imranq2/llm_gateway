@@ -76,7 +76,7 @@ class ConfigReader:
                     models.append(
                         ChatModelConfig(
                             id="testing",
-                            name="----- Testing Models -----",
+                            name="----- Models in Testing -----",
                             description="",
                         )
                     )
