@@ -1,5 +1,8 @@
 import logging
-from typing import Dict, List
+import time
+from typing import Dict, List, Any
+
+from openai.types import Model
 
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.configs.config_schema import ChatModelConfig
@@ -16,13 +19,26 @@ class ModelManager:
         self,
         *,
         headers: Dict[str, str],
-    ) -> Dict[str, List[Dict[str, str]]]:
+    ) -> Dict[str, str | List[Dict[str, str | int]]]:
         configs: List[ChatModelConfig] = (
             await self.config_reader.read_model_configs_async()
         )
         logger = logging.getLogger(__name__)
         logger.info("Received request for models")
-        models = [
-            {"id": config.name, "description": config.description} for config in configs
+        # get time in seconds since epoch from ten minutes ago
+
+        models: List[Model] = [
+            Model(
+                id=config.name,
+                created=int(time.time()),
+                object="model",
+                owned_by=config.owner or "unknown",
+            )
+            for config in configs
         ]
-        return {"data": models}
+        models_list: List[Dict[str, Any]] = [model.model_dump() for model in models]
+        # return {"data": models_list}
+        # models2 = [
+        #     {"id": config.name, "description": config.description, "created": 1686935002} for config in configs
+        # ]
+        return {"object": "list", "data": models_list}

@@ -21,7 +21,18 @@ class ModelFactory:
         assert chat_model_config is not None
         assert isinstance(chat_model_config, ChatModelConfig)
         model_config: ModelConfig | None = chat_model_config.model
-        assert model_config is not None
+        if model_config is None:
+            # if no model configuration is provided, use the default model
+            default_model_provider: str = os.environ.get(
+                "DEFAULT_MODEL_PROVIDER", "bedrock"
+            )
+            default_model_name: str = os.environ.get(
+                "DEFAULT_MODEL_NAME", "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+            )
+            model_config = ModelConfig(
+                provider=default_model_provider, model=default_model_name
+            )
+
         model_vendor: str = model_config.provider
         model_name: str = model_config.model
 

@@ -7,7 +7,7 @@ from langchain_core.tools import BaseTool
 from langgraph.graph.state import CompiledStateGraph
 from starlette.responses import StreamingResponse, JSONResponse
 
-from language_model_gateway.configs.config_schema import ChatModelConfig, ModelConfig
+from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.converters.langgraph_to_openai_converter import (
     LangGraphToOpenAIConverter,
 )
@@ -48,8 +48,6 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
         headers: Dict[str, str],
         chat_request: ChatRequest
     ) -> StreamingResponse | JSONResponse:
-        model: ModelConfig | None = model_config.model
-        assert model is not None
 
         # noinspection PyArgumentList
         llm: BaseChatModel = self.model_factory.get_model(

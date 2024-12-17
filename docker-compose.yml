@@ -18,9 +18,14 @@ services:
       IMAGE_GENERATION_PATH: "/usr/src/language_model_gateway/image_generation"
 #      IMAGE_GENERATION_PATH: "s3://bwell-dev-data-science-ue1/openwebui/image_generation/"
       IMAGE_GENERATION_URL: "http://localhost:5050/image_generation"
-      CONFIG_PATH: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
-#      CONFIG_PATH: "https://github.com/icanbwell/language-model-gateway-configuration/tree/main/configs/chat_completions"
-      CONFIG_PATH_BACKUP: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
+      MODELS_OFFICIAL_PATH: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions/official"
+      MODELS_TESTING_PATH: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions/testing"
+#      MODELS_ZIP_PATH: "https://github.com/icanbwell/language-model-gateway-configuration/zipball/main/"
+#      MODELS_OFFICIAL_PATH: "configs/chat_completions/official"
+#      MODELS_TESTING_PATH: "configs/chat_completions/testing"
+#      MODELS_OFFICIAL_PATH: "https://github.com/icanbwell/language-model-gateway-configuration/tree/main/configs/chat_completions/official"
+#      MODELS_TESTING_PATH: "https://github.com/icanbwell/language-model-gateway-configuration/tree/main/configs/chat_completions/testing"
+      MODELS_PATH_BACKUP: "/usr/src/language_model_gateway/language_model_gateway/configs/chat_completions"
       CONFIG_CACHE_TIMEOUT_SECONDS: 120
       PROVIDER_SEARCH_API_URL: "https://provider-search.prod.icanbwell.com/graphql"
       # Number of worker process to run
@@ -28,6 +33,8 @@ services:
       AWS_REGION: 'us-east-1'
       HELP_KEYWORDS: "help;/help;aid"
       LOG_INPUT_AND_OUTPUT: 1
+      DEFAULT_MODEL_PROVIDER: "bedrock"
+      DEFAULT_MODEL_NAME: "us.anthropic.claude-3-5-haiku-20241022-v1:0"
     env_file: docker.env
     ports:
       - '5050:5000'

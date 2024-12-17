@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class PromptConfig(BaseModel):
     """Prompt configuration"""
 
-    role: str
+    role: str = "system"
     """The role of the prompt"""
 
     content: str | None = None
@@ -14,6 +14,9 @@ class PromptConfig(BaseModel):
 
     hub_id: str | None = None
     """The hub id of the prompt"""
+
+    cache: bool | None = None
+    """Whether to cache the prompt"""
 
 
 class ModelParameterConfig(BaseModel):
@@ -88,8 +91,11 @@ class ChatModelConfig(BaseModel):
     description: str
     """A description of the model"""
 
-    type: str
+    type: str = "langchain"
     """The type of model"""
+
+    owner: Optional[str] = None
+    """The owner of the model"""
 
     url: str | None = None
     """The URL to access the model"""
@@ -104,9 +110,6 @@ class ChatModelConfig(BaseModel):
 
     model_parameters: List[ModelParameterConfig] | None = None
     """The model parameters"""
-
-    few_shot_examples: List[FewShotExampleConfig] | None = None
-    """The few shot examples"""
 
     headers: List[HeaderConfig] | None = None
     """The headers to pass to url when calling the model"""
