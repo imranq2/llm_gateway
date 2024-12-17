@@ -33,7 +33,7 @@ class GitHubConfigZipDownloader:
         )
         self.max_retries: int = max_retries
         self.base_delay: int = base_delay
-        self.timeout = 3600
+        self.timeout: int = int(os.environ.get("GITHUB_TIMEOUT", 3600))
 
     async def download_zip(
         self, zip_url: str, target_path: Optional[str] = None
