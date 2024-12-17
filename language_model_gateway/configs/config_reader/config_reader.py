@@ -96,7 +96,9 @@ class ConfigReader:
                             )
                             models.extend(models_testing)
             except Exception as e:
-                logger.error(f"Error reading model configurations: {str(e)}")
+                logger.error(
+                    f"Using config backup since got error reading model configurations: {str(e)}"
+                )
                 logger.exception(e, stack_info=True)
                 models = []
 
@@ -123,15 +125,6 @@ class ConfigReader:
             models = await S3ConfigReader().read_model_configs(s3_url=config_path)
             logger.info(
                 f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from S3"
-            )
-        elif UrlParser.is_github_zip_url(config_path):
-            models = await GitHubConfigZipDownloader().read_model_configs(
-                github_url=config_path,
-                models_official_path=os.environ["MODELS_OFFICIAL_PATH"],
-                models_testing_path=os.environ.get("MODELS_TESTING_PATH"),
-            )
-            logger.info(
-                f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub Zip"
             )
         elif UrlParser.is_github_url(config_path):
             models = await GitHubConfigReader().read_model_configs(

@@ -94,6 +94,7 @@ class GitHubConfigZipDownloader:
             # Download ZIP archive
             logger.info(f"Downloading ZIP from: {zip_url}")
             zip_content = await download_with_retry(zip_url)
+            logger.info(f"Downloaded ZIP from {zip_url}")
 
             # Create a temporary file to save the ZIP
             with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
@@ -124,8 +125,9 @@ class GitHubConfigZipDownloader:
             logger.error(f"Error downloading ZIP: {str(e)}")
             raise
 
-    def find_json_configs(
-        self, repo_path: str, config_dir: Optional[str] = None
+    @staticmethod
+    def _find_json_configs(
+        repo_path: str, config_dir: Optional[str] = None
     ) -> List[ChatModelConfig]:
         """
         Find and parse JSON configuration files in the repository
@@ -180,12 +182,12 @@ class GitHubConfigZipDownloader:
             repo_path: str = await self.download_zip(zip_url=github_url)
 
             # Find and parse JSON configs
-            configs: List[ChatModelConfig] = self.find_json_configs(
+            configs: List[ChatModelConfig] = self._find_json_configs(
                 repo_path=repo_path, config_dir=models_official_path
             )
 
             if models_testing_path:
-                test_configs: List[ChatModelConfig] = self.find_json_configs(
+                test_configs: List[ChatModelConfig] = self._find_json_configs(
                     repo_path=repo_path, config_dir="configs/chat_completions/testing"
                 )
 
