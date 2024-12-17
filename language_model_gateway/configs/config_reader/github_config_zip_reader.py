@@ -161,7 +161,13 @@ class GitHubConfigZipDownloader:
 
         return configs
 
-    async def read_model_configs(self, *, github_url: str) -> List[ChatModelConfig]:
+    async def read_model_configs(
+        self,
+        *,
+        github_url: str,
+        models_official_path: str,
+        models_testing_path: Optional[str],
+    ) -> List[ChatModelConfig]:
         """
         Comprehensive method to download ZIP and extract configs
 
@@ -175,22 +181,23 @@ class GitHubConfigZipDownloader:
 
             # Find and parse JSON configs
             configs: List[ChatModelConfig] = self.find_json_configs(
-                repo_path=repo_path, config_dir="configs/chat_completions/official"
+                repo_path=repo_path, config_dir=models_official_path
             )
 
-            test_configs: List[ChatModelConfig] = self.find_json_configs(
-                repo_path=repo_path, config_dir="configs/chat_completions/testing"
-            )
-
-            if test_configs and len(test_configs) > 0:
-                configs.append(
-                    ChatModelConfig(
-                        id="testing",
-                        name="----- Models in Testing -----",
-                        description="",
-                    )
+            if models_testing_path:
+                test_configs: List[ChatModelConfig] = self.find_json_configs(
+                    repo_path=repo_path, config_dir="configs/chat_completions/testing"
                 )
-                configs.extend(test_configs)
+
+                if test_configs and len(test_configs) > 0:
+                    configs.append(
+                        ChatModelConfig(
+                            id="testing",
+                            name="----- Models in Testing -----",
+                            description="",
+                        )
+                    )
+                    configs.extend(test_configs)
 
             return configs
 
