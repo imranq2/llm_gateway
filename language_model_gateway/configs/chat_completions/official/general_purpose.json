@@ -24,12 +24,6 @@
       "value": 1000
     }
   ],
-  "few_shot_examples": [
-    {
-      "input": "You are a tool",
-      "output": "Patient/eEooRVLYdWIW753OhZUd1dgxQRny4KCo6fiH-13lY0043"
-    }
-  ],
   "headers": [
     {
       "key": "Authorization",

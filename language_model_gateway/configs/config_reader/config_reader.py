@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import List
+from typing import List, Optional
 from uuid import UUID, uuid4
 
 from language_model_gateway.configs.config_reader.file_config_reader import (
@@ -9,6 +9,9 @@ from language_model_gateway.configs.config_reader.file_config_reader import (
 )
 from language_model_gateway.configs.config_reader.github_config_reader import (
     GitHubConfigReader,
+)
+from language_model_gateway.configs.config_reader.github_config_zip_reader import (
+    GitHubConfigZipDownloader,
 )
 from language_model_gateway.configs.config_reader.s3_config_reader import S3ConfigReader
 from language_model_gateway.configs.config_schema import ChatModelConfig
@@ -39,6 +42,7 @@ class ConfigReader:
         assert (
             config_path is not None
         ), "MODELS_OFFICIAL_PATH environment variable is not set"
+        models_zip_path: Optional[str] = os.environ.get("MODELS_ZIP_PATH", "")
 
         # Check cache first
         cached_configs: List[ChatModelConfig] | None = await self._cache.get()
@@ -64,23 +68,39 @@ class ConfigReader:
                 f"ConfigReader with id: {self._identifier} reading model configurations from {config_path}"
             )
 
-            models: List[ChatModelConfig] = await self.read_models_from_path_async(
-                config_path
-            )
-            config_testing_path = os.environ.get("MODELS_TESTING_PATH")
-            if config_testing_path:
-                models_testing: List[ChatModelConfig] = (
-                    await self.read_models_from_path_async(config_testing_path)
-                )
-                if models_testing and len(models_testing) > 0:
-                    models.append(
-                        ChatModelConfig(
-                            id="testing",
-                            name="----- Models in Testing -----",
-                            description="",
-                        )
+            try:
+                if models_zip_path:
+                    models = await GitHubConfigZipDownloader().read_model_configs(
+                        github_url=models_zip_path,
+                        models_official_path=config_path,
+                        models_testing_path=os.environ.get("MODELS_TESTING_PATH"),
                     )
-                    models.extend(models_testing)
+                    logger.info(
+                        f"ConfigReader with id:  {self._identifier} loaded {len(models)} model configurations from GitHub Zip"
+                    )
+
+                else:
+                    models = await self.read_models_from_path_async(config_path)
+                    config_testing_path = os.environ.get("MODELS_TESTING_PATH")
+                    if config_testing_path:
+                        models_testing: List[ChatModelConfig] = (
+                            await self.read_models_from_path_async(config_testing_path)
+                        )
+                        if models_testing and len(models_testing) > 0:
+                            models.append(
+                                ChatModelConfig(
+                                    id="testing",
+                                    name="----- Models in Testing -----",
+                                    description="",
+                                )
+                            )
+                            models.extend(models_testing)
+            except Exception as e:
+                logger.error(
+                    f"Using config backup since got error reading model configurations: {str(e)}"
+                )
+                logger.exception(e, stack_info=True)
+                models = []
 
             # if we can't load models another way then try to load them from the file system
             if not models or len(models) == 0:

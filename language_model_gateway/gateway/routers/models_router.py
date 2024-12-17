@@ -37,7 +37,7 @@ class ModelsRouter:
             "/models",
             self.get_models,
             methods=["GET"],
-            response_model=Dict[str, List[Dict[str, str]]],
+            response_model=Dict[str, str | List[Dict[str, str | int]]],
             summary="List available models",
             description="Lists the currently available models",
             response_description="The list of available models",
@@ -49,7 +49,7 @@ class ModelsRouter:
         self,
         request: Request,
         model_manager: Annotated[ModelManager, Depends(get_model_manager)],
-    ) -> Dict[str, List[Dict[str, str]]]:
+    ) -> Dict[str, str | List[Dict[str, str | int]]]:
         """
         Get models endpoint. model_manager is injected by FastAPI.
 
@@ -60,9 +60,10 @@ class ModelsRouter:
         Returns:
             Dictionary containing list of available models
         """
-        return await model_manager.get_models(
-            headers={k: v for k, v in request.headers.items()},
+        models = await model_manager.get_models(
+            headers={k: v for k, v in request.headers.items()}
         )
+        return models
 
     def get_router(self) -> APIRouter:
         """Get the configured router"""
