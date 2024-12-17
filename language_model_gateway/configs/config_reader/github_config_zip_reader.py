@@ -33,6 +33,7 @@ class GitHubConfigZipDownloader:
         )
         self.max_retries: int = max_retries
         self.base_delay: int = base_delay
+        self.timeout = 3600
 
     async def download_zip(
         self, zip_url: str, target_path: Optional[str] = None
@@ -71,11 +72,16 @@ class GitHubConfigZipDownloader:
             for attempt in range(self.max_retries):
                 try:
                     async with httpx.AsyncClient() as client:
-                        response = await client.get(url, headers=headers)
+                        response = await client.get(
+                            url,
+                            headers=headers,
+                            follow_redirects=True,
+                            timeout=httpx.Timeout(self.timeout),
+                        )
                         response.raise_for_status()
                         return response.content
-                except Exception as e:
-                    logger.warning(f"Download attempt {attempt + 1} failed: {str(e)}")
+                except Exception as e1:
+                    logger.warning(f"Download attempt {attempt + 1} failed: {str(e1)}")
 
                     # Exponential backoff
                     await asyncio.sleep(self.base_delay * (2**attempt))
@@ -168,10 +174,23 @@ class GitHubConfigZipDownloader:
             repo_path: str = await self.download_zip(zip_url=github_url)
 
             # Find and parse JSON configs
-            config_dir = None
             configs: List[ChatModelConfig] = self.find_json_configs(
-                repo_path=repo_path, config_dir=config_dir
+                repo_path=repo_path, config_dir="configs/chat_completions/official"
             )
+
+            test_configs: List[ChatModelConfig] = self.find_json_configs(
+                repo_path=repo_path, config_dir="configs/chat_completions/testing"
+            )
+
+            if test_configs and len(test_configs) > 0:
+                configs.append(
+                    ChatModelConfig(
+                        id="testing",
+                        name="----- Models in Testing -----",
+                        description="",
+                    )
+                )
+                configs.extend(test_configs)
 
             return configs
 

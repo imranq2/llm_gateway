@@ -30,7 +30,7 @@ class UrlParser:
         return (
             host is not None
             and (host == "github.com" or host.endswith(".github.com"))
-            and url.endswith(".zip")
+            and "zipball" in url
         )
 
     @staticmethod
