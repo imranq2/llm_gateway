@@ -60,7 +60,7 @@ async def test_chat_openai_image_generator(async_client: httpx.AsyncClient) -> N
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
-                    ToolConfig(name="image_generator"),
+                    ToolConfig(name="image_generator_openai"),
                 ],
             )
         ]
@@ -102,7 +102,7 @@ async def test_chat_openai_image_generator(async_client: httpx.AsyncClient) -> N
     # assert "data:image/png;base64" in content
 
 
-async def test_chat_openai_image_generator_streaming(
+async def test_chat_anthropic_image_generator_streaming(
     async_client: httpx.AsyncClient,
 ) -> None:
     print("")
@@ -138,7 +138,7 @@ async def test_chat_openai_image_generator_streaming(
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
-                    ToolConfig(name="image_generator"),
+                    ToolConfig(name="image_generator_openai"),
                 ],
             )
         ]
