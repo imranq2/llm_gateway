@@ -5,6 +5,9 @@ from language_model_gateway.gateway.image_generation.image_generator import (
 from language_model_gateway.gateway.image_generation.aws_image_generator import (
     AwsImageGenerator,
 )
+from language_model_gateway.gateway.image_generation.openai_image_generator import (
+    OpenAIImageGenerator,
+)
 
 
 class ImageGeneratorFactory:
@@ -19,6 +22,6 @@ class ImageGeneratorFactory:
             case "aws":
                 return AwsImageGenerator(aws_client_factory=self.aws_client_factory)
             case "dall-e-3":
-                return AwsImageGenerator(aws_client_factory=self.aws_client_factory)
+                return OpenAIImageGenerator()
             case _:
                 raise ValueError(f"Unsupported model_name: {model_name}")
