@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
   "id": "chat_gpt",
-  "name": "ChatGPT",
-  "description": "This is a general purpose language model that can be used for a wide variety of tasks.",
+  "name": "ChatGPT (No PHI)",
+  "description": "This is a general purpose language model that can be used for a wide variety of tasks.  No PHI is allowed in this model.",
   "type": "langchain",
   "model": {
     "provider": "openai",

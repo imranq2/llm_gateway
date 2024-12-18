@@ -1,11 +1,9 @@
-import asyncio
 import base64
 import logging
 import os
-from concurrent.futures.thread import ThreadPoolExecutor
 from typing import override, Literal, Optional
 
-import openai
+from openai import AsyncOpenAI
 from openai.types import ImagesResponse
 
 from language_model_gateway.gateway.image_generation.image_generator import (
@@ -17,14 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIImageGenerator(ImageGenerator):
-    def __init__(self) -> None:
-        """
-        Initialize OpenAI Image Generator
-        """
-        self.executor: ThreadPoolExecutor = ThreadPoolExecutor()
 
     @staticmethod
-    def _invoke_model(
+    async def _invoke_model_async(
         prompt: str,
         image_size: Literal[
             "256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"
@@ -37,9 +30,9 @@ class OpenAIImageGenerator(ImageGenerator):
             openai_api_key is not None
         ), "OPENAI_API_KEY environment variable is not set"
 
-        client = openai.OpenAI(api_key=openai_api_key)
+        client = AsyncOpenAI(api_key=openai_api_key)
 
-        response: ImagesResponse = client.images.generate(
+        response: ImagesResponse = await client.images.generate(
             model="dall-e-3",  # You can change to "dall-e-2" if needed
             prompt=prompt,
             size=image_size,
@@ -68,12 +61,9 @@ class OpenAIImageGenerator(ImageGenerator):
             logger.info(f"Generating image for prompt: {prompt}")
 
         try:
-            # Get the current event loop
-            loop = asyncio.get_running_loop()
-
             # Run model invocation in executor
-            image_data = await loop.run_in_executor(
-                self.executor, self._invoke_model, prompt, image_size
+            image_data: bytes = await self._invoke_model_async(
+                prompt=prompt, image_size=image_size
             )
 
             if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
