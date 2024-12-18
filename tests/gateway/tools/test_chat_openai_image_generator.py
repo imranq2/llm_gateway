@@ -30,19 +30,19 @@ async def test_chat_openai_image_generator(async_client: httpx.AsyncClient) -> N
     print("")
     test_container: SimpleContainer = await get_container_async()
 
-    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        test_container.register(
-            ModelFactory,
-            lambda c: MockModelFactory(
-                fn_get_model=lambda chat_model_config: MockChatModel(
-                    fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
-                )
-            ),
-        )
-        test_container.register(
-            ImageGeneratorFactory,
-            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
-        )
+    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+    #     test_container.register(
+    #         ModelFactory,
+    #         lambda c: MockModelFactory(
+    #             fn_get_model=lambda chat_model_config: MockChatModel(
+    #                 fn_get_response=lambda messages: "http://localhost:5050/image_generation/"
+    #             )
+    #         ),
+    #     )
+    #     test_container.register(
+    #         ImageGeneratorFactory,
+    #         lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+    #     )
 
     # set the model configuration for this test
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
