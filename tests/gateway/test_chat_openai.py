@@ -1,15 +1,21 @@
-from typing import Optional
+from typing import Optional, List
 
 import httpx
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 
+from language_model_gateway.configs.config_schema import (
+    ChatModelConfig,
+    ModelConfig,
+    ToolConfig,
+)
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
 from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
+from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
 from tests.gateway.mocks.mock_chat_model import MockChatModel
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
@@ -17,8 +23,8 @@ from tests.gateway.mocks.mock_model_factory import MockModelFactory
 async def test_chat_open_ai(async_client: httpx.AsyncClient) -> None:
     print("")
 
+    test_container: SimpleContainer = await get_container_async()
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        test_container: SimpleContainer = await get_container_async()
         test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
@@ -28,6 +34,27 @@ async def test_chat_open_ai(async_client: httpx.AsyncClient) -> None:
             ),
         )
 
+    # set the model configuration for this test
+    model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
+        test_container.resolve(ExpiringCache)
+    )
+    await model_configuration_cache.set(
+        [
+            ChatModelConfig(
+                id="chat_gpt",
+                name="ChatGPT",
+                description="General Purpose Language Model",
+                type="langchain",
+                model=ModelConfig(
+                    provider="openai",
+                    model="gpt-4o",
+                ),
+                tools=[
+                    ToolConfig(name="image_generator_openai"),
+                ],
+            )
+        ]
+    )
     # Test health endpoint
     # response = await async_client.get("/health")
     # assert response.status_code == 200
@@ -65,9 +92,8 @@ async def test_chat_completions_with_chat_history(
 ) -> None:
     print("")
 
+    test_container: SimpleContainer = await get_container_async()
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        test_container: SimpleContainer = await get_container_async()
-
         test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
@@ -77,9 +103,27 @@ async def test_chat_completions_with_chat_history(
             ),
         )
 
-    # Test health endpoint
-    # response = await async_client.get("/health")
-    # assert response.status_code == 200
+    # set the model configuration for this test
+    model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
+        test_container.resolve(ExpiringCache)
+    )
+    await model_configuration_cache.set(
+        [
+            ChatModelConfig(
+                id="chat_gpt",
+                name="ChatGPT",
+                description="General Purpose Language Model",
+                type="langchain",
+                model=ModelConfig(
+                    provider="openai",
+                    model="gpt-4o",
+                ),
+                tools=[
+                    ToolConfig(name="image_generator_openai"),
+                ],
+            )
+        ]
+    )
 
     # init client and connect to localhost server
     client = AsyncOpenAI(
