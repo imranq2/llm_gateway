@@ -2,7 +2,7 @@ import base64
 import io
 import logging
 import os
-from typing import Type, Literal, Tuple, Optional
+from typing import Type, Literal, Tuple, Optional, Dict
 
 import pypdf
 from langchain.tools import BaseTool
@@ -13,16 +13,15 @@ logger = logging.getLogger(__name__)
 
 class PDFExtractionToolInput(BaseModel):
     """Input model for PDF extraction tool."""
+
     base64_pdf: str = Field(
         description="Base64 encoded PDF content to extract text from"
     )
     start_page: Optional[int] = Field(
-        default=None,
-        description="Optional starting page for extraction (0-indexed)"
+        default=None, description="Optional starting page for extraction (0-indexed)"
     )
     end_page: Optional[int] = Field(
-        default=None,
-        description="Optional ending page for extraction (0-indexed)"
+        default=None, description="Optional ending page for extraction (0-indexed)"
     )
 
 
@@ -30,6 +29,7 @@ class PDFExtractionTool(BaseTool):
     """
     LangChain-compatible tool for extracting text from base64 encoded PDFs using PyPDF.
     """
+
     name: str = "pdf_text_extractor"
     description: str = (
         "Extracts text from a base64 encoded PDF. "
@@ -39,8 +39,12 @@ class PDFExtractionTool(BaseTool):
     args_schema: Type[BaseModel] = PDFExtractionToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    def _run(self, base64_pdf: str, start_page: Optional[int] = None, end_page: Optional[int] = None) -> Tuple[
-        str, str]:
+    def _run(
+        self,
+        base64_pdf: str,
+        start_page: Optional[int] = None,
+        end_page: Optional[int] = None,
+    ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
 
@@ -51,8 +55,12 @@ class PDFExtractionTool(BaseTool):
         """
         raise NotImplementedError("Use async version of this tool")
 
-    async def _arun(self, base64_pdf: str, start_page: Optional[int] = None, end_page: Optional[int] = None) -> Tuple[
-        str, str]:
+    async def _arun(
+        self,
+        base64_pdf: str,
+        start_page: Optional[int] = None,
+        end_page: Optional[int] = None,
+    ) -> Tuple[str, str]:
         """
         Asynchronous version of the tool.
 
@@ -99,7 +107,9 @@ class PDFExtractionTool(BaseTool):
                     if not page_text:
                         page_text = page.extract_text(extraction_mode="layout")
                 except Exception as extract_error:
-                    logger.warning(f"Text extraction failed for page {page_num}: {extract_error}")
+                    logger.warning(
+                        f"Text extraction failed for page {page_num}: {extract_error}"
+                    )
                     page_text = ""
 
                 full_text += page_text + "\n"
@@ -126,7 +136,7 @@ class PDFExtractionTool(BaseTool):
 
             return error_msg, error_artifact
 
-    def extract_metadata(self, base64_pdf: str) -> dict:
+    def extract_metadata(self, base64_pdf: str) -> Dict[str, str]:
         """
         Extract metadata from the PDF.
 
@@ -144,11 +154,12 @@ class PDFExtractionTool(BaseTool):
             pdf_reader = pypdf.PdfReader(pdf_buffer)
 
             # Extract metadata
-            metadata = pdf_reader.metadata or {}
+            metadata: Dict[str, str] = pdf_reader.metadata or {}
 
             # Convert metadata to dictionary
             return {
-                k.replace('/', ''): v for k, v in metadata.items()
+                k.replace("/", ""): v
+                for k, v in metadata.items()
                 if isinstance(k, str) and isinstance(v, str)
             }
 
