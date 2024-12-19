@@ -78,6 +78,6 @@ class LangChainCompletionsProvider(BaseChatCompletionsProvider):
         return await self.lang_graph_to_open_ai_converter.call_agent_with_input(
             request_id=str(request_id),
             compiled_state_graph=compiled_state_graph,
-            request=chat_request,
+            chat_request=chat_request,
             system_messages=[],
         )
