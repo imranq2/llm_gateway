@@ -1,4 +1,4 @@
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 
 import httpx
 from openai import AsyncOpenAI
@@ -175,7 +175,9 @@ class Address(BaseModel):
 
 class DoctorInformation(BaseModel):
     doctor_name: str = Field(description="The full name of the doctor")
-    doctor_address: Address = Field(description="The address of the doctor's practice")
+    doctor_address: List[Address] | None = Field(
+        description="The address of the doctor's practice", default=None
+    )
     doctor_phone: Optional[str] = Field(
         description="The contact phone number for the doctor",
         default=None,
