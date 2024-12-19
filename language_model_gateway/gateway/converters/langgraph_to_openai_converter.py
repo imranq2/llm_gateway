@@ -10,6 +10,7 @@ from typing import (
     Literal,
     cast,
     Optional,
+    Tuple,
 )
 from typing import (
     Dict,
@@ -34,6 +35,7 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
+from openai import NotGiven
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletionChunk,
@@ -44,6 +46,9 @@ from openai.types.chat import (
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion import Choice
 from openai.types.chat.chat_completion_chunk import ChoiceDelta, Choice as ChunkChoice
+from openai.types.chat.completion_create_params import ResponseFormat
+from openai.types.shared_params import ResponseFormatJSONSchema
+from openai.types.shared_params.response_format_json_schema import JSONSchema
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.gateway.converters.my_messages_state import MyMessagesState
@@ -56,6 +61,7 @@ from language_model_gateway.gateway.utilities.chat_message_helpers import (
     langchain_to_chat_message,
     convert_message_content_to_string,
 )
+from language_model_gateway.gateway.utilities.json_extractor import JsonExtractor
 
 logger = logging.getLogger(__file__)
 
@@ -245,7 +251,7 @@ class LangGraphToOpenAIConverter:
     async def call_agent_with_input(
         self,
         *,
-        request: ChatRequest,
+        chat_request: ChatRequest,
         request_id: str,
         compiled_state_graph: CompiledStateGraph,
         system_messages: List[ChatCompletionSystemMessageParam],
@@ -254,7 +260,7 @@ class LangGraphToOpenAIConverter:
         Call the agent with the provided input and return the response.
 
         Args:
-            request: The chat request.
+            chat_request: The chat request.
             request_id: The unique request identifier.
             compiled_state_graph: The compiled state graph.
             system_messages: The list of chat completion message parameters.
@@ -262,13 +268,13 @@ class LangGraphToOpenAIConverter:
         Returns:
             The response as a StreamingResponse or JSONResponse.
         """
-        assert request is not None
-        assert isinstance(request, dict)
+        assert chat_request is not None
+        assert isinstance(chat_request, dict)
 
-        if request.get("stream"):
+        if chat_request.get("stream"):
             return StreamingResponse(
                 await self.get_streaming_response_async(
-                    request=request,
+                    request=chat_request,
                     request_id=request_id,
                     compiled_state_graph=compiled_state_graph,
                     system_messages=system_messages,
@@ -277,9 +283,14 @@ class LangGraphToOpenAIConverter:
             )
         else:
             try:
+                json_output_requested: bool
+                chat_request, json_output_requested = self.add_stem_messages_for_json(
+                    chat_request=chat_request
+                )
+
                 responses: List[AnyMessage] = await self.ainvoke(
                     compiled_state_graph=compiled_state_graph,
-                    request=request,
+                    request=chat_request,
                     system_messages=system_messages,
                 )
                 # add usage metadata from each message into a total usage metadata
@@ -306,13 +317,32 @@ class LangGraphToOpenAIConverter:
                     Choice(index=i, message=m, finish_reason="stop")
                     for i, m in enumerate(output_messages)
                 ]
+
+                choices_text = "\n".join([f"{c.message.content}" for c in choices])
+
+                if json_output_requested:
+                    # extract the json content from response and just return that
+                    json_content_raw: Dict[str, Any] | List[Dict[str, Any]] | str = (
+                        JsonExtractor.extract_structured_output(text=choices_text)
+                    )
+                    json_content: str = json.dumps(json_content_raw)
+                    choices = [
+                        Choice(
+                            index=i,
+                            message=ChatCompletionMessage(
+                                content=json_content, role="assistant"
+                            ),
+                            finish_reason="stop",
+                        )
+                        for i in range(1)
+                    ]
+
                 if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
-                    choices_text = "\n".join([f"{c.message.content}" for c in choices])
                     logger.info(f"Returning content: {choices_text}")
 
                 chat_response: ChatCompletion = ChatCompletion(
                     id=request_id,
-                    model=request["model"],
+                    model=chat_request["model"],
                     choices=choices,
                     usage=total_usage_metadata,
                     created=int(time.time()),
@@ -322,6 +352,40 @@ class LangGraphToOpenAIConverter:
             except Exception as e:
                 logger.exception(e, stack_info=True)
                 raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
+    @staticmethod
+    def add_stem_messages_for_json(
+        *, chat_request: ChatRequest
+    ) -> Tuple[ChatRequest, bool]:
+        json_response_requested: bool = False
+        response_format: ResponseFormat | NotGiven = chat_request["response_format"]
+        if (
+            not isinstance(response_format, NotGiven)
+            and response_format["type"] == "json_schema"
+        ):
+            json_response_requested = True
+            json_response_format: ResponseFormatJSONSchema = cast(
+                ResponseFormatJSONSchema,
+                response_format,
+            )
+            json_schema: JSONSchema = json_response_format["json_schema"]
+            json_system_message: str = f"""                
+            Respond only with a JSON object or array using the provided schema:
+            ```{json_schema}``` 
+
+            Output follows this example format:
+            <json>
+            json  here
+            </json>"""
+            system_message: ChatCompletionSystemMessageParam = (
+                ChatCompletionSystemMessageParam(
+                    role="system", content=json_system_message
+                )
+            )
+            chat_request["messages"] = [r for r in chat_request["messages"]] + [
+                system_message
+            ]
+        return chat_request, json_response_requested
 
     # noinspection PyMethodMayBeStatic
     def convert_usage_meta_data_to_openai(
