@@ -3,7 +3,10 @@ from typing import Optional, Any, Dict
 import httpx
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
-from openai.types.shared_params import ResponseFormatJSONSchema
+from openai.types.shared_params import (
+    ResponseFormatJSONSchema,
+    ResponseFormatJSONObject,
+)
 from openai.types.shared_params.response_format_json_schema import JSONSchema
 from pydantic import BaseModel
 
@@ -12,9 +15,64 @@ from pydantic import BaseModel
 #     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
 #     reason="hits production API",
 # )
-async def test_chat_completions_json_output_production(
+async def test_chat_completions_json__output_production(
     async_client: httpx.AsyncClient,
 ) -> None:
+    """
+    This tests requests JSON output without passing a JSON schema
+
+    :param async_client:
+    :return:
+    """
+    print("")
+
+    # init client and connect to localhost server
+    client = AsyncOpenAI(
+        api_key="fake-api-key",
+        base_url="https://language-model-gateway.services.bwell.zone/api/v1",
+        http_client=async_client,
+    )
+
+    # call API
+    chat_completion: ChatCompletion = await client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": f"""Get the address of Vanessa Paz NP at One Medical.""",
+            }
+        ],
+        model="General Purpose",
+        response_format=ResponseFormatJSONObject(
+            type="json_object",
+        ),
+    )
+
+    # print the top "choice"
+    content: Optional[str] = "\n".join(
+        choice.message.content or "" for choice in chat_completion.choices
+    )
+
+    assert content is not None
+    print("======= JSON Output =======")
+    print(content)
+    print("======= End of JSON Output =======")
+    # assert "Barack" in content
+
+
+# @pytest.mark.skipif(
+#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+#     reason="hits production API",
+# )
+async def test_chat_completions_json_schema_output_production(
+    async_client: httpx.AsyncClient,
+) -> None:
+    """
+    This tests requests JSON output with a JSON schema in the prompt
+
+
+    :param async_client:
+    :return:
+    """
     print("")
 
     # init client and connect to localhost server
@@ -119,6 +177,13 @@ class DoctorInformation(BaseModel):
 async def test_chat_completions_json_classes_output_production(
     async_client: httpx.AsyncClient,
 ) -> None:
+    """
+    This test requests JSON output with a schema by specifying the response_format
+
+
+    :param async_client:
+    :return:
+    """
     print("")
 
     # init client and connect to localhost server

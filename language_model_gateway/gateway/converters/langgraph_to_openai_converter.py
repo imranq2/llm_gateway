@@ -357,34 +357,60 @@ class LangGraphToOpenAIConverter:
     def add_system_messages_for_json(
         *, chat_request: ChatRequest
     ) -> Tuple[ChatRequest, bool]:
+        """
+        If the user is requesting json_object or json_schema output, add system messages to the chat request
+        to generate JSON output.
+
+
+        :param chat_request:
+        :return:
+        """
         json_response_requested: bool = False
         response_format: ResponseFormat | NotGiven = chat_request["response_format"]
-        if (
-            not isinstance(response_format, NotGiven)
-            and response_format["type"] == "json_schema"
-        ):
-            json_response_requested = True
-            json_response_format: ResponseFormatJSONSchema = cast(
-                ResponseFormatJSONSchema,
-                response_format,
-            )
-            json_schema: JSONSchema = json_response_format["json_schema"]
-            json_system_message: str = f"""                
-            Respond only with a JSON object or array using the provided schema:
-            ```{json_schema}``` 
+        if isinstance(response_format, NotGiven):
+            return chat_request, json_response_requested
 
-            Output follows this example format:
-            <json>
-            json  here
-            </json>"""
-            system_message: ChatCompletionSystemMessageParam = (
-                ChatCompletionSystemMessageParam(
-                    role="system", content=json_system_message
+        match response_format["type"]:
+            case "json_object":
+                json_response_requested = True
+                json_object_system_message_text: str = f"""                
+                Respond only with a JSON object or array.
+                
+                Output follows this example format:
+                <json>
+                json  here
+                </json>"""
+                json_object_system_message: ChatCompletionSystemMessageParam = (
+                    ChatCompletionSystemMessageParam(
+                        role="system", content=json_object_system_message_text
+                    )
                 )
-            )
-            chat_request["messages"] = [r for r in chat_request["messages"]] + [
-                system_message
-            ]
+                chat_request["messages"] = [r for r in chat_request["messages"]] + [
+                    json_object_system_message
+                ]
+            case "json_schema":
+                json_response_requested = True
+                json_response_format: ResponseFormatJSONSchema = cast(
+                    ResponseFormatJSONSchema,
+                    response_format,
+                )
+                json_schema: JSONSchema = json_response_format["json_schema"]
+                json_schema_system_message_text: str = f"""                
+                Respond only with a JSON object or array using the provided schema:
+                ```{json_schema}``` 
+    
+                Output follows this example format:
+                <json>
+                json  here
+                </json>"""
+                json_schema_system_message: ChatCompletionSystemMessageParam = (
+                    ChatCompletionSystemMessageParam(
+                        role="system", content=json_schema_system_message_text
+                    )
+                )
+                chat_request["messages"] = [r for r in chat_request["messages"]] + [
+                    json_schema_system_message
+                ]
         return chat_request, json_response_requested
 
     # noinspection PyMethodMayBeStatic
