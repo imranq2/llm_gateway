@@ -35,7 +35,7 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
-from openai import NotGiven
+from openai import NotGiven, NOT_GIVEN
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletionChunk,
@@ -323,7 +323,9 @@ class LangGraphToOpenAIConverter:
                 if json_output_requested:
                     # extract the json content from response and just return that
                     json_content_raw: Dict[str, Any] | List[Dict[str, Any]] | str = (
-                        JsonExtractor.extract_structured_output(text=choices_text)
+                        (JsonExtractor.extract_structured_output(text=choices_text))
+                        if choices_text
+                        else choices_text
                     )
                     json_content: str = json.dumps(json_content_raw)
                     choices = [
@@ -366,11 +368,15 @@ class LangGraphToOpenAIConverter:
         :return:
         """
         json_response_requested: bool = False
-        response_format: ResponseFormat | NotGiven = chat_request["response_format"]
+        response_format: ResponseFormat | NotGiven = chat_request.get(
+            "response_format", NOT_GIVEN
+        )
         if isinstance(response_format, NotGiven):
             return chat_request, json_response_requested
 
-        match response_format["type"]:
+        match response_format.get("type", None):
+            case "text":
+                return chat_request, json_response_requested
             case "json_object":
                 json_response_requested = True
                 json_object_system_message_text: str = f"""                
@@ -394,7 +400,10 @@ class LangGraphToOpenAIConverter:
                     ResponseFormatJSONSchema,
                     response_format,
                 )
-                json_schema: JSONSchema = json_response_format["json_schema"]
+                json_schema: JSONSchema | None = json_response_format.get("json_schema")
+                assert (
+                    json_schema is not None
+                ), "json_schema should be specified in response_format if type is json_schema"
                 json_schema_system_message_text: str = f"""                
                 Respond only with a JSON object or array using the provided schema:
                 ```{json_schema}``` 
@@ -411,6 +420,10 @@ class LangGraphToOpenAIConverter:
                 chat_request["messages"] = [r for r in chat_request["messages"]] + [
                     json_schema_system_message
                 ]
+            case _:
+                assert (
+                    False
+                ), f"Unexpected response format type: {response_format.get('type', None)}"
         return chat_request, json_response_requested
 
     # noinspection PyMethodMayBeStatic
