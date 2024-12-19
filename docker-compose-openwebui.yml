@@ -11,7 +11,7 @@ services:
       - docker.env
     environment:
       # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
-#      WEBUI_AUTH: 0
+      WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
       GLOBAL_LOG_LEVEL: debug
       OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
@@ -35,13 +35,13 @@ services:
       WEBUI_NAME: "b.ai"
       WEBUI_BANNERS: '[{"id": "1", "type":"info", "title":"Welcome to b.well AI", "content":"Welcome to b.well AI! **[Click here for AI Resource Guide](https://icanbwell.atlassian.net/wiki/spaces/BRG/pages/5092442117/AI+Resource+Guide)**", "dismissible": false, "timestamp": 100000},{"id": "2", "type":"info", "title":"Help", "content":"Type \"help\" if you need help.  Reload page if you do not get results.  Use \"Prompt Helper\" model to create better prompts.", "dismissible": false, "timestamp": 100000}]'
       ENABLE_FORWARD_USER_INFO_HEADERS: True
-      OAUTH_CLIENT_ID: "bwell-client-id"
-      OPENID_PROVIDER_URL: "http://keycloak:8080/realms/bwell-realm/.well-known/openid-configuration"
-      OAUTH_CLIENT_SECRET: "bwell-secret"
-      ENABLE_OAUTH_SIGNUP: True
-      OAUTH_PROVIDER_NAME: "Keycloak"
-      OAUTH_SCOPES: "openid email"
-      OAUTH_USERNAME_CLAIM: "email"
+#      OAUTH_CLIENT_ID: "bwell-client-id"
+#      OPENID_PROVIDER_URL: "http://keycloak:8080/realms/bwell-realm/.well-known/openid-configuration"
+#      OAUTH_CLIENT_SECRET: "bwell-secret"
+#      ENABLE_OAUTH_SIGNUP: True
+#      OAUTH_PROVIDER_NAME: "Keycloak"
+#      OAUTH_SCOPES: "openid email"
+#      OAUTH_USERNAME_CLAIM: "email"
   #    volumes:
 #      - ./openwebui/backend/data:/app/backend/data
 #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
