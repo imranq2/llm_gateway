@@ -95,7 +95,7 @@ async def test_chat_completions_structured_production(
                 "content": f"""Get the address of following doctors: {doctor_input_text}.""",
             }
         ],
-        model="General Purpose",
+        model="Provider Search",
         response_format=ResponseFormatJSONSchema(
             type="json_schema",
             json_schema=JSONSchema(
