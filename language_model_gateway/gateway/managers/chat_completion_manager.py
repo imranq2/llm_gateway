@@ -5,6 +5,7 @@ import time
 from typing import Dict, List, cast, AsyncGenerator, Optional
 
 from fastapi import HTTPException
+from openai import NotGiven
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletionSystemMessageParam,
@@ -13,8 +14,11 @@ from openai.types.chat import (
     ChatCompletionMessage,
     ChatCompletionUserMessageParam,
     ChatCompletionChunk,
+    completion_create_params,
 )
 from openai.types.chat.chat_completion import Choice
+from openai.types.shared_params import ResponseFormatJSONSchema
+from openai.types.shared_params.response_format_json_schema import JSONSchema
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
@@ -98,6 +102,36 @@ class ChatCompletionManager:
             chat_request = self.add_system_messages(
                 chat_request=chat_request, system_prompts=model_config.system_prompts
             )
+
+            if chat_request["response_format"] is not None:
+                response_format: completion_create_params.ResponseFormat | NotGiven = (
+                    chat_request["response_format"]
+                )
+                if (
+                    not isinstance(response_format, NotGiven)
+                    and response_format["type"] == "json_schema"
+                ):
+                    json_response_format: ResponseFormatJSONSchema = cast(
+                        ResponseFormatJSONSchema,
+                        response_format,
+                    )
+                    json_schema: JSONSchema = json_response_format["json_schema"]
+                    json_system_message: str = f"""                
+                    Respond only with a JSON object or array using the provided schema:
+                    ```{json_schema}``` 
+                    
+                    Output follows this example format:
+                    <json>
+                    json  here
+                    </json>"""
+                    system_message: ChatCompletionSystemMessageParam = (
+                        ChatCompletionSystemMessageParam(
+                            role="system", content=json_system_message
+                        )
+                    )
+                    chat_request["messages"] = [r for r in chat_request["messages"]] + [
+                        system_message
+                    ]
 
             provider: BaseChatCompletionsProvider
             match model_config.type:

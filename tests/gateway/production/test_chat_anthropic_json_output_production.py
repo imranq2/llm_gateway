@@ -5,6 +5,8 @@ from typing import Optional, Any, Dict, List, cast
 import httpx
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
+from openai.types.shared_params import ResponseFormatJSONSchema
+from openai.types.shared_params.response_format_json_schema import JSONSchema
 from pydantic import BaseModel
 
 
@@ -130,42 +132,34 @@ async def test_chat_completions_json_classes_output_production(
 
     json_schema: Dict[str, Any] = DoctorInformation.model_json_schema()
 
-    example_doctor_information = DoctorInformation(
-        doctor_name="James Ward, MD",
-        doctor_address=Address(
-            line1="1 House Street",
-            line2=None,
-            city="Baltimore",
-            state="MD",
-            zipcode="21723",
-        ),
-        doctor_phone="(408) 418-4350",
-    )
+    # example_doctor_information = DoctorInformation(
+    #     doctor_name="James Ward, MD",
+    #     doctor_address=Address(
+    #         line1="1 House Street",
+    #         line2=None,
+    #         city="Baltimore",
+    #         state="MD",
+    #         zipcode="21723",
+    #     ),
+    #     doctor_phone="(408) 418-4350",
+    # )
 
     # call API
     chat_completion: ChatCompletion = await client.chat.completions.create(
         messages=[
             {
                 "role": "user",
-                "content": f"""Get the address of Vanessa Paz NP at One Medical.    
-                Respond only with a JSON object using the provided schema:
-                ```{json_schema}``` 
-                
-                Output follows this example format:
-                <json>
-                {example_doctor_information.model_dump()}
-                </json>
-                """,
+                "content": f"""Get the address of Vanessa Paz NP at One Medical.""",
             }
         ],
         model="General Purpose",
-        # response_format=ResponseFormatJSONSchema(
-        #     type="json_schema",
-        #     json_schema=JSONSchema(
-        #         name="DoctorInformation",
-        #         schema=json_schema,
-        #     ),
-        # ),
+        response_format=ResponseFormatJSONSchema(
+            type="json_schema",
+            json_schema=JSONSchema(
+                name="DoctorInformation",
+                schema=json_schema,
+            ),
+        ),
     )
 
     # print the top "choice"
