@@ -1,6 +1,7 @@
+import os
 from typing import Optional, Any, Dict, List
 
-import httpx
+import pytest
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.shared_params import (
@@ -11,17 +12,16 @@ from openai.types.shared_params.response_format_json_schema import JSONSchema
 from pydantic import BaseModel, Field
 
 
-# @pytest.mark.skipif(
-#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-#     reason="hits production API",
-# )
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="hits production API",
+)
 async def test_chat_completions_json__output_production(
-    async_client: httpx.AsyncClient,
+    # async_client: httpx.AsyncClient,
 ) -> None:
     """
     This tests requests JSON output without passing a JSON schema
 
-    :param async_client:
     :return:
     """
     print("")
@@ -30,7 +30,7 @@ async def test_chat_completions_json__output_production(
     client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="https://language-model-gateway.services.bwell.zone/api/v1",
-        http_client=async_client,
+        # http_client=async_client,
     )
 
     # call API
@@ -59,18 +59,17 @@ async def test_chat_completions_json__output_production(
     # assert "Barack" in content
 
 
-# @pytest.mark.skipif(
-#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-#     reason="hits production API",
-# )
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="hits production API",
+)
 async def test_chat_completions_json_schema_output_production(
-    async_client: httpx.AsyncClient,
+    # async_client: httpx.AsyncClient,
 ) -> None:
     """
     This tests requests JSON output with a JSON schema in the prompt
 
 
-    :param async_client:
     :return:
     """
     print("")
@@ -79,7 +78,7 @@ async def test_chat_completions_json_schema_output_production(
     client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="https://language-model-gateway.services.bwell.zone/api/v1",
-        http_client=async_client,
+        # http_client=async_client,
     )
 
     json_schema: Dict[str, Any] = {
@@ -180,18 +179,17 @@ class DoctorInformation(BaseModel):
     )
 
 
-# @pytest.mark.skipif(
-#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-#     reason="hits production API",
-# )
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="hits production API",
+)
 async def test_chat_completions_json_classes_output_production(
-    async_client: httpx.AsyncClient,
+    # async_client: httpx.AsyncClient,
 ) -> None:
     """
     This test requests JSON output with a schema by specifying the response_format
 
 
-    :param async_client:
     :return:
     """
     print("")
@@ -200,7 +198,7 @@ async def test_chat_completions_json_classes_output_production(
     client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="https://language-model-gateway.services.bwell.zone/api/v1",
-        http_client=async_client,
+        # http_client=async_client,
     )
 
     json_schema: Dict[str, Any] = DoctorInformation.model_json_schema()

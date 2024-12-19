@@ -1,22 +1,25 @@
+import os
 from typing import Optional
 
-import httpx
+import pytest
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 
-# @pytest.mark.skipif(
-#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-#     reason="hits production API",
-# )
-async def test_chat_completions_production(async_client: httpx.AsyncClient) -> None:
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="hits production API",
+)
+async def test_chat_completions_production(
+    # async_client: httpx.AsyncClient
+) -> None:
     print("")
 
     # init client and connect to localhost server
     client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="https://language-model-gateway.services.bwell.zone/api/v1",
-        http_client=async_client,
+        # http_client=async_client,
     )
 
     # call API
@@ -40,12 +43,12 @@ async def test_chat_completions_production(async_client: httpx.AsyncClient) -> N
     # assert "Barack" in content
 
 
-# @pytest.mark.skipif(
-#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-#     reason="hits production API",
-# )
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="hits production API",
+)
 async def test_chat_completions_streaming_production(
-    async_client: httpx.AsyncClient,
+    # async_client: httpx.AsyncClient,
 ) -> None:
     print("")
 
@@ -53,7 +56,7 @@ async def test_chat_completions_streaming_production(
     client = AsyncOpenAI(
         api_key="fake-api-key",
         base_url="https://language-model-gateway.services.bwell.zone/api/v1",
-        http_client=async_client,
+        # http_client=async_client,
     )
 
     # call API
