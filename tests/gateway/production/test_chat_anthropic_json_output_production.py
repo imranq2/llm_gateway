@@ -1,12 +1,10 @@
 import json
 import re
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List, cast
 
 import httpx
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
-from openai.types.shared_params import ResponseFormatJSONSchema
-from openai.types.shared_params.response_format_json_schema import JSONSchema
 from pydantic import BaseModel
 
 
@@ -118,7 +116,7 @@ class DoctorInformation(BaseModel):
 #     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
 #     reason="hits production API",
 # )
-async def test_chat_completions_json_pydantic_output_production(
+async def test_chat_completions_json_classes_output_production(
     async_client: httpx.AsyncClient,
 ) -> None:
     print("")
@@ -131,6 +129,19 @@ async def test_chat_completions_json_pydantic_output_production(
     )
 
     json_schema: Dict[str, Any] = DoctorInformation.model_json_schema()
+
+    example_doctor_information = DoctorInformation(
+        doctor_name="James Ward, MD",
+        doctor_address=Address(
+            line1="1 House Street",
+            line2=None,
+            city="Baltimore",
+            state="MD",
+            zipcode="21723",
+        ),
+        doctor_phone="(408) 418-4350",
+    )
+
     # call API
     chat_completion: ChatCompletion = await client.chat.completions.create(
         messages=[
@@ -139,17 +150,22 @@ async def test_chat_completions_json_pydantic_output_production(
                 "content": f"""Get the address of Vanessa Paz NP at One Medical.    
                 Respond only with a JSON object using the provided schema:
                 ```{json_schema}``` 
+                
+                Output follows this example format:
+                <json>
+                {example_doctor_information.model_dump()}
+                </json>
                 """,
             }
         ],
         model="General Purpose",
-        response_format=ResponseFormatJSONSchema(
-            type="json_schema",
-            json_schema=JSONSchema(
-                name="DoctorInformation",
-                schema=json_schema,
-            ),
-        ),
+        # response_format=ResponseFormatJSONSchema(
+        #     type="json_schema",
+        #     json_schema=JSONSchema(
+        #         name="DoctorInformation",
+        #         schema=json_schema,
+        #     ),
+        # ),
     )
 
     # print the top "choice"
@@ -164,30 +180,40 @@ async def test_chat_completions_json_pydantic_output_production(
 
     # assert "Barack" in content
 
-    def extract_json_from_text(text: str) -> str:
-        # Use regex to find JSON-like block
-        json_match = re.search(r"```json\n(.*?)```", text, re.DOTALL)
+    def extract_structured_output(text: str) -> Dict[str, Any] | List[Dict[str, Any]]:
+        # Try to find content between <json> tags
+        json_match = re.search(
+            r"<json>(.*?)</json>", text, re.DOTALL | re.IGNORECASE | re.MULTILINE
+        )
 
         if json_match:
             try:
-                # Extract the JSON text
-                json_text = json_match.group(1)
+                # Extract and parse the JSON content
+                json_content1 = json_match.group(1).strip()
+                return cast(
+                    Dict[str, Any] | List[Dict[str, Any]], json.loads(json_content1)
+                )
+            except json.JSONDecodeError as e:
+                print(f"JSON Decode Error: {e}")
+                return {}
 
-                # Validate it's valid JSON
-                json.loads(json_text)
+        # Fallback: try to find any JSON-like structure
+        json_matches = re.findall(r"\{.*?\}", text, re.DOTALL)
 
-                return json_text
+        for match in reversed(json_matches):
+            try:
+                return cast(Dict[str, Any] | List[Dict[str, Any]], json.loads(match))
             except json.JSONDecodeError:
-                return ""
+                continue
 
-        return ""
+        return {}
 
-    json_content = extract_json_from_text(text=content)
+    json_content = extract_structured_output(text=content)
     print("======= Extracted JSON Content =======")
     print(json_content)
     print("======= End of Extracted JSON Content =======")
 
-    doctor_information = DoctorInformation.parse_raw(json_content)
+    doctor_information = DoctorInformation.parse_obj(json_content)
     print("======= Doctor Information =======")
     print(doctor_information)
     print("======= End of Doctor Information =======")
