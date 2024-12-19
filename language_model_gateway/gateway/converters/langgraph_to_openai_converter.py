@@ -284,7 +284,7 @@ class LangGraphToOpenAIConverter:
         else:
             try:
                 json_output_requested: bool
-                chat_request, json_output_requested = self.add_stem_messages_for_json(
+                chat_request, json_output_requested = self.add_system_messages_for_json(
                     chat_request=chat_request
                 )
 
@@ -354,7 +354,7 @@ class LangGraphToOpenAIConverter:
                 raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
     @staticmethod
-    def add_stem_messages_for_json(
+    def add_system_messages_for_json(
         *, chat_request: ChatRequest
     ) -> Tuple[ChatRequest, bool]:
         json_response_requested: bool = False

@@ -172,12 +172,7 @@ async def test_chat_completions_json_classes_output_production(
 
     # assert "Barack" in content
 
-    json_content = content
-    print("======= Extracted JSON Content =======")
-    print(json_content)
-    print("======= End of Extracted JSON Content =======")
-
-    doctor_information = DoctorInformation.parse_obj(json_content)
+    doctor_information = DoctorInformation.parse_raw(content)
     print("======= Doctor Information =======")
     print(doctor_information)
     print("======= End of Doctor Information =======")
