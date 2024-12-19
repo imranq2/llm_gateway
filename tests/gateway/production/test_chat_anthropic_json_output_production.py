@@ -8,7 +8,7 @@ from openai.types.shared_params import (
     ResponseFormatJSONObject,
 )
 from openai.types.shared_params.response_format_json_schema import JSONSchema
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # @pytest.mark.skipif(
@@ -160,17 +160,26 @@ async def test_chat_completions_json_schema_output_production(
 
 # Now use Pydantic to define the schema for the JSON output
 class Address(BaseModel):
-    line1: str
-    line2: Optional[str]
-    city: str
-    state: str
-    zipcode: str
+    line1: str = Field(description="First line of the address (street address)")
+    line2: Optional[str] = Field(
+        description="Second line of the address (apartment, suite, etc.)", default=None
+    )
+    city: str = Field(description="City of the doctor's practice")
+    state: str = Field(
+        description="State of the doctor's practice", min_length=2, max_length=2
+    )
+    zipcode: str = Field(
+        description="Zip code of the doctor's practice", pattern="^\\d{5}(-\\d{4})?$"
+    )
 
 
 class DoctorInformation(BaseModel):
-    doctor_name: str
-    doctor_address: Address
-    doctor_phone: str
+    doctor_name: str = Field(description="The full name of the doctor")
+    doctor_address: Address = Field(description="The address of the doctor's practice")
+    doctor_phone: Optional[str] = Field(
+        description="The contact phone number for the doctor",
+        default=None,
+    )
 
 
 # @pytest.mark.skipif(
