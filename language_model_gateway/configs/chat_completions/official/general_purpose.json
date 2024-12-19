@@ -17,11 +17,7 @@
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0.5
-    },
-    {
-      "key": "max_tokens",
-      "value": 1000
+      "value": 0
     }
   ],
   "headers": [

@@ -165,11 +165,11 @@ class Address(BaseModel):
         description="Second line of the address (apartment, suite, etc.)", default=None
     )
     city: str = Field(description="City of the doctor's practice")
-    state: str = Field(
-        description="State of the doctor's practice", min_length=2, max_length=2
-    )
-    zipcode: str = Field(
-        description="Zip code of the doctor's practice", pattern="^\\d{5}(-\\d{4})?$"
+    state: str = Field(description="State of the doctor's practice")
+    zipcode: str = Field(description="Zip code of the doctor's practice")
+    phone: Optional[str] = Field(
+        description="The contact phone number for the doctor",
+        default=None,
     )
 
 
@@ -177,10 +177,6 @@ class DoctorInformation(BaseModel):
     doctor_name: str = Field(description="The full name of the doctor")
     doctor_address: List[Address] | None = Field(
         description="The address of the doctor's practice", default=None
-    )
-    doctor_phone: Optional[str] = Field(
-        description="The contact phone number for the doctor",
-        default=None,
     )
 
 
