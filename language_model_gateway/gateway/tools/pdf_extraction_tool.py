@@ -4,7 +4,9 @@ import logging
 import os
 from typing import Type, Literal, Tuple, Optional, Dict
 
+import httpx
 import pypdf
+from httpx import Response
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -14,8 +16,13 @@ logger = logging.getLogger(__name__)
 class PDFExtractionToolInput(BaseModel):
     """Input model for PDF extraction tool."""
 
-    base64_pdf: str = Field(
-        description="Base64 encoded PDF content to extract text from"
+    url: Optional[str] = Field(
+        default=None, description="Optional url of the pdf to extract text from"
+    )
+
+    base64_pdf: Optional[str] = Field(
+        default=None,
+        description="Optional Base64 encoded PDF content to extract text from",
     )
     start_page: Optional[int] = Field(
         default=None, description="Optional starting page for extraction (0-indexed)"
@@ -33,7 +40,7 @@ class PDFExtractionTool(BaseTool):
     name: str = "pdf_text_extractor"
     description: str = (
         "Extracts text from a base64 encoded PDF. "
-        "Provide the base64 encoded PDF content. "
+        "Provide the url to the PDF or the base64 encoded PDF content. "
         "Optionally specify start and end pages for partial extraction."
     )
     args_schema: Type[BaseModel] = PDFExtractionToolInput
@@ -41,7 +48,8 @@ class PDFExtractionTool(BaseTool):
 
     def _run(
         self,
-        base64_pdf: str,
+        url: Optional[str] = None,
+        base64_pdf: Optional[str] = None,
         start_page: Optional[int] = None,
         end_page: Optional[int] = None,
     ) -> Tuple[str, str]:
@@ -57,7 +65,8 @@ class PDFExtractionTool(BaseTool):
 
     async def _arun(
         self,
-        base64_pdf: str,
+        url: Optional[str] = None,
+        base64_pdf: Optional[str] = None,
         start_page: Optional[int] = None,
         end_page: Optional[int] = None,
     ) -> Tuple[str, str]:
@@ -69,17 +78,39 @@ class PDFExtractionTool(BaseTool):
         :param end_page: Optional ending page for extraction
         :return: Tuple of extracted text and artifact description
         """
-        logger.info(f"Extracting text from base64 encoded PDF")
+        if url:
+            logger.info(f"Extracting text from PDF at URL: {url}")
+        else:
+            logger.info(f"Extracting text from base64 encoded PDF")
 
-        if not base64_pdf:
-            return "", "PDFExtractionTool: Empty input PDF content"
+        assert base64_pdf or url, "Either base64_pdf or url must be provided"
 
-        try:
+        pdf_bytes: bytes
+        if not base64_pdf and url:
+            # read base64 pdf from url
+            try:
+                async with httpx.AsyncClient() as client:
+                    response: Response = await client.get(url)
+                    response.raise_for_status()
+                    pdf_bytes = response.content
+
+                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                    logger.info(
+                        f"====== PDF Download {url} ======\n{pdf_bytes!r}\n====== End of PDF download ======"
+                    )
+            except Exception as e:
+                return (
+                    f"Failed to fetch or process the URL {url}: {str(e)}",
+                    f"PDFExtractionTool: Failed to fetch or process the URL: <{url}> ",
+                )
+        else:
+            assert base64_pdf is not None, "base64_pdf must be provided"
             # Decode the base64 string to bytes
             pdf_bytes = base64.b64decode(base64_pdf)
 
+        try:
             # Create a bytes buffer to simulate file-like object
-            pdf_buffer = io.BytesIO(pdf_bytes)
+            pdf_buffer: io.BytesIO = io.BytesIO(pdf_bytes)
 
             # Create a PDF reader object
             pdf_reader = pypdf.PdfReader(pdf_buffer)

@@ -12,22 +12,28 @@ from language_model_gateway.configs.config_schema import (
 )
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
+from language_model_gateway.gateway.models.model_factory import ModelFactory
+from language_model_gateway.gateway.utilities.environment_reader import (
+    EnvironmentReader,
+)
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
+from tests.gateway.mocks.mock_chat_model import MockChatModel
+from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
 async def test_chat_anthropic_with_web_scraping_pdf(
     async_client: httpx.AsyncClient,
 ) -> None:
     test_container: SimpleContainer = await get_container_async()
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "3800 Reservoir Road Northwest"
-    #             )
-    #         ),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "USPSTF"
+                )
+            ),
+        )
 
     # set the model configuration for this test
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
@@ -51,10 +57,9 @@ async def test_chat_anthropic_with_web_scraping_pdf(
                     )
                 ],
                 tools=[
-                    ToolConfig(name="google_search"),
-                    ToolConfig(name="get_web_page"),
+                    # ToolConfig(name="google_search"),
+                    # ToolConfig(name="get_web_page"),
                     ToolConfig(name="pdf_text_extractor"),
-                    ToolConfig(name="scraping_bee_web_scraper"),
                 ],
             )
         ]
@@ -72,7 +77,7 @@ async def test_chat_anthropic_with_web_scraping_pdf(
         messages=[
             {
                 "role": "user",
-                "content": "Get the names of authors from https://users.cecs.anu.edu.au/~christen/publications/kdd03-3pages.pdf",
+                "content": "Get the definition of Prevention TaskForce from https://www.uspreventiveservicestaskforce.org/files/preventiontaskforce_data_api_wi_wlink.pdf",
             }
         ],
         model="Parse Web Page",
@@ -85,4 +90,4 @@ async def test_chat_anthropic_with_web_scraping_pdf(
     )
     assert content is not None
     print(content)
-    assert "3800 Reservoir" in content
+    assert "USPSTF" in content

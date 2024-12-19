@@ -32,6 +32,7 @@ services:
       WEBUI_FAVICON_URL: "http://localhost:5050/favicon.png"
       WEBUI_NAME: "b.ai"
       WEBUI_BANNERS: '[{"id": "1", "type":"info", "title":"Welcome to b.well AI", "content":"Welcome to b.well AI! **[Click here for AI Resource Guide](https://icanbwell.atlassian.net/wiki/spaces/BRG/pages/5092442117/AI+Resource+Guide)**", "dismissible": false, "timestamp": 100000},{"id": "2", "type":"info", "title":"Help", "content":"Type \"help\" if you need help.  Reload page if you do not get results.  Use \"Prompt Helper\" model to create better prompts.", "dismissible": false, "timestamp": 100000}]'
+      ENABLE_FORWARD_USER_INFO_HEADERS: True
   #    volumes:
 #      - ./openwebui/backend/data:/app/backend/data
 #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
