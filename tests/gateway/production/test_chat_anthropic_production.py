@@ -1,16 +1,14 @@
-import os
 from typing import Optional
 
 import httpx
-import pytest
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 
-@pytest.mark.skipif(
-    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-    reason="hits production API",
-)
+# @pytest.mark.skipif(
+#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+#     reason="hits production API",
+# )
 async def test_chat_completions_production(async_client: httpx.AsyncClient) -> None:
     print("")
 
@@ -26,7 +24,7 @@ async def test_chat_completions_production(async_client: httpx.AsyncClient) -> N
         messages=[
             {
                 "role": "user",
-                "content": "Get the address of Dr. Meggin A. Sabatino at Medstar",
+                "content": "Get the address of Vanessa Paz NP at One Medical.",
             }
         ],
         model="General Purpose",
@@ -42,10 +40,10 @@ async def test_chat_completions_production(async_client: httpx.AsyncClient) -> N
     # assert "Barack" in content
 
 
-@pytest.mark.skipif(
-    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-    reason="hits production API",
-)
+# @pytest.mark.skipif(
+#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+#     reason="hits production API",
+# )
 async def test_chat_completions_streaming_production(
     async_client: httpx.AsyncClient,
 ) -> None:
@@ -63,7 +61,7 @@ async def test_chat_completions_streaming_production(
         messages=[
             {
                 "role": "user",
-                "content": "Get the address of Dr. Meggin A. Sabatino at Medstar",
+                "content": "Get the address of Vanessa Paz NP at One Medical.",
             }
         ],
         model="General Purpose",

@@ -82,65 +82,68 @@ async def test_chat_completions_json_schema_output_production(
         http_client=async_client,
     )
 
-    json_schema: str = """
-    {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "doctor_name": {
-      "type": "string",
-      "description": "The full name of the doctor"
-    },
-    "doctor_address": {
-      "type": "object",
-      "properties": {
-        "line1": {
-          "type": "string",
-          "description": "First line of the address (street address)"
+    json_schema: Dict[str, Any] = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "doctor_name": {
+                "type": "string",
+                "description": "The full name of the doctor",
+            },
+            "doctor_address": {
+                "type": "object",
+                "properties": {
+                    "line1": {
+                        "type": "string",
+                        "description": "First line of the address (street address)",
+                    },
+                    "line2": {
+                        "type": "string",
+                        "description": "Second line of the address (apartment, suite, etc.)",
+                        "nullable": True,
+                    },
+                    "city": {
+                        "type": "string",
+                        "description": "City of the doctor's practice",
+                    },
+                    "state": {
+                        "type": "string",
+                        "description": "State of the doctor's practice",
+                        "minLength": 2,
+                        "maxLength": 2,
+                    },
+                    "zipcode": {
+                        "type": "string",
+                        "description": "Zip code of the doctor's practice",
+                        "pattern": "^\\d{5}(-\\d{4})?$",
+                    },
+                },
+                "required": ["line1", "city", "state", "zipcode"],
+            },
+            "doctor_phone": {
+                "type": "string",
+                "description": "The contact phone number for the doctor",
+                "pattern": "^\\(\\d{3}\\)\\s?\\d{3}-\\d{4}$",
+            },
         },
-        "line2": {
-          "type": "string",
-          "description": "Second line of the address (apartment, suite, etc.)",
-          "nullable": true
-        },
-        "city": {
-          "type": "string",
-          "description": "City of the doctor's practice"
-        },
-        "state": {
-          "type": "string",
-          "description": "State of the doctor's practice",
-          "minLength": 2,
-          "maxLength": 2
-        },
-        "zipcode": {
-          "type": "string",
-          "description": "Zip code of the doctor's practice",
-          "pattern": "^\\d{5}(-\\d{4})?$"
-        }
-      },
-      "required": ["line1", "city", "state", "zipcode"]
-    },
-    "doctor_phone": {
-      "type": "string",
-      "description": "The contact phone number for the doctor",
-      "pattern": "^\\(\\d{3}\\)\\s?\\d{3}-\\d{4}$"
+        "required": ["doctor_name", "doctor_address", "doctor_phone"],
     }
-  },
-  "required": ["doctor_name", "doctor_address", "doctor_phone"]
-}"""
     # call API
     chat_completion: ChatCompletion = await client.chat.completions.create(
         messages=[
             {
                 "role": "user",
-                "content": f"""Get the address of Vanessa Paz NP at One Medical.    
-                Return the output in JSON format using the following schema: 
-                {json_schema}
-                """,
+                "content": f"""Get the address of Vanessa Paz NP at One Medical.""",
             }
         ],
         model="General Purpose",
+        response_format=ResponseFormatJSONSchema(
+            type="json_schema",
+            json_schema=JSONSchema(
+                name="DoctorInformation",
+                schema=json_schema,
+            ),
+        ),
     )
 
     # print the top "choice"
