@@ -1,5 +1,7 @@
+import os
 from typing import Optional, Any, Dict, List
 
+import pytest
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.shared_params import (
@@ -46,10 +48,10 @@ class Result(BaseModel):
     )
 
 
-# @pytest.mark.skipif(
-#     os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
-#     reason="hits production API",
-# )
+@pytest.mark.skipif(
+    os.getenv("RUN_TESTS_WITH_REAL_LLM") != "1",
+    reason="hits production API",
+)
 async def test_chat_completions_structured_production(
     # async_client: httpx.AsyncClient,
 ) -> None:
