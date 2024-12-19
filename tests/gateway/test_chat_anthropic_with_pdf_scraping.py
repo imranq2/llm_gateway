@@ -21,7 +21,7 @@ from tests.gateway.mocks.mock_chat_model import MockChatModel
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
-async def test_chat_anthropic_with_web_scraping_pdf(
+async def test_chat_anthropic_with_pdf_scraping(
     async_client: httpx.AsyncClient,
 ) -> None:
     test_container: SimpleContainer = await get_container_async()
