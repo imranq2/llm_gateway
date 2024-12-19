@@ -31,6 +31,7 @@ from language_model_gateway.gateway.tools.image_generator_tool import ImageGener
 from language_model_gateway.gateway.tools.network_topology_diagram_tool import (
     NetworkTopologyGeneratorTool,
 )
+from language_model_gateway.gateway.tools.pdf_extraction_tool import PDFExtractionTool
 from language_model_gateway.gateway.tools.provider_search_tool import ProviderSearchTool
 from language_model_gateway.gateway.tools.python_repl_tool import PythonReplTool
 from language_model_gateway.gateway.tools.scraping_bee_web_scraper_tool import (
@@ -101,6 +102,7 @@ class ToolProvider:
                 api_key=environ.get("SCRAPING_BEE_API_KEY")
             ),
             "provider_search": ProviderSearchTool(),
+            "pdf_text_extractor": PDFExtractionTool(),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(
