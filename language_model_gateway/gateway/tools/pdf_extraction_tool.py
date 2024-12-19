@@ -1,15 +1,16 @@
 import base64
 import io
 import logging
-import os
 from typing import Type, Literal, Tuple, Optional, Dict
 
-import boto3
 import httpx
 import pypdf
 from httpx import Response
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
+
+from language_model_gateway.gateway.ocr.ocr_extractor import OCRExtractor
+from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class PDFExtractionTool(BaseTool):
     )
     args_schema: Type[BaseModel] = PDFExtractionToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
+    ocr_extractor_factory: OCRExtractorFactory
 
     def _run(
         self,
@@ -121,7 +123,8 @@ class PDFExtractionTool(BaseTool):
 
             # If text extraction fails and OCR is enabled, use Textract
             if not full_text.strip() and use_ocr:
-                full_text = self._extract_text_with_textract(pdf_bytes)
+                ocr_extractor: OCRExtractor = self.ocr_extractor_factory.get(name="aws")
+                full_text = ocr_extractor.extract_text_with_textract(pdf_bytes)
 
             # Prepare artifact description
             total_pages = len(pypdf.PdfReader(pdf_buffer).pages)
@@ -188,42 +191,6 @@ class PDFExtractionTool(BaseTool):
             full_text += page_text + "\n"
 
         return full_text
-
-    @staticmethod
-    def _extract_text_with_textract(pdf_bytes: bytes) -> str:
-        """
-        Extract text using AWS Textract
-
-        Args:
-            pdf_bytes (bytes): PDF content as bytes
-
-        Returns:
-            str: Extracted text from PDF
-        """
-        try:
-            # Call Textract API
-            region_name: str = os.environ.get("AWS_REGION", "us-east-1")
-            textract_client = boto3.client("textract", region_name=region_name)
-
-            response = textract_client.detect_document_text(
-                Document={"Bytes": pdf_bytes}
-            )
-
-            # Process and extract text
-            current_page_text = []
-
-            for item in response.get("Blocks", []):
-                if item["BlockType"] == "LINE":
-                    current_page_text.append(item["Text"])
-
-            # Join extracted text
-            full_text = " ".join(current_page_text)
-
-            return full_text
-
-        except Exception as e:
-            logger.error(f"Textract OCR failed: {str(e)}")
-            return ""
 
     @staticmethod
     def extract_metadata(base64_pdf: str) -> Dict[str, str]:
