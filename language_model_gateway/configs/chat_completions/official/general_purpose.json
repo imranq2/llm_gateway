@@ -17,7 +17,11 @@
   "model_parameters": [
     {
       "key": "temperature",
-      "value": 0
+      "value": 0.5
+    },
+    {
+      "key": "max_tokens",
+      "value": 1000
     }
   ],
   "headers": [
@@ -49,21 +53,6 @@
       "name": "image_generator"
     },
     {
-      "name": "graph_viz_diagram_generator"
-    },
-    {
-      "name": "sequence_diagram_generator"
-    },
-    {
-      "name": "flow_chart_generator"
-    },
-    {
-      "name": "er_diagram_generator"
-    },
-    {
-      "name": "network_topology_generator"
-    },
-    {
       "name": "provider_search"
     },
     {
@@ -71,6 +60,9 @@
     },
     {
       "name": "scraping_bee_web_scraper"
+    },
+    {
+      "name": "pdf_text_extractor"
     }
   ],
   "example_prompts": [

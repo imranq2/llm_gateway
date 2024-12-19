@@ -57,8 +57,8 @@ async def test_chat_anthropic_with_pdf_scraping(
                     )
                 ],
                 tools=[
-                    # ToolConfig(name="google_search"),
-                    # ToolConfig(name="get_web_page"),
+                    ToolConfig(name="google_search"),
+                    ToolConfig(name="get_web_page"),
                     ToolConfig(name="pdf_text_extractor"),
                 ],
             )
