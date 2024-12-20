@@ -8,6 +8,7 @@ import pypdf
 from httpx import Response
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
+from pypdf import PageObject
 
 from language_model_gateway.gateway.ocr.ocr_extractor import OCRExtractor
 from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
@@ -145,6 +146,48 @@ class PDFExtractionTool(BaseTool):
             return error_msg, error_artifact
 
     @staticmethod
+    def extract_single_page_as_pdf(
+        pdf_reader: pypdf.PdfReader, page_number: int
+    ) -> Optional[bytes]:
+        """
+        Extract a single page from a PDF as a new PDF byte stream.
+
+        Args:
+        pdf_reader: Opened PyPDF PdfReader object
+        page_number: Zero-indexed page number to extract
+
+        Returns:
+        Bytes of the single-page PDF or None if extraction fails
+        """
+
+        try:
+            # Validate page number
+            if page_number < 0 or page_number >= len(pdf_reader.pages):
+                raise ValueError(f"Invalid page number: {page_number}")
+
+            # Create a new PDF writer
+            pdf_writer = pypdf.PdfWriter()
+
+            # Add the specific page to the writer
+            pdf_writer.add_page(pdf_reader.pages[page_number])
+
+            # Create a bytes buffer to store the PDF
+            output_buffer = io.BytesIO()
+
+            # Write the single-page PDF to the buffer
+            pdf_writer.write(output_buffer)
+
+            # Reset buffer to beginning
+            output_buffer.seek(0)
+
+            # Return the bytes of the single-page PDF
+            return output_buffer.getvalue()
+
+        except Exception as e:
+            print(f"Page extraction error: {e}")
+            return None
+
+    @staticmethod
     def _extract_text_with_pypdf(
         pdf_buffer: io.BytesIO,
         start_page: Optional[int] = None,
@@ -174,10 +217,10 @@ class PDFExtractionTool(BaseTool):
 
         full_text = ""
         for page_num in range(start, end + 1):
-            page = pdf_reader.pages[page_num]
+            page: PageObject = pdf_reader.pages[page_num]
             try:
                 # Primary method: extract_text()
-                page_text = page.extract_text()
+                page_text: str = page.extract_text()
 
                 # Fallback: alternative extraction methods
                 if not page_text:
