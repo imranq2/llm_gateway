@@ -82,7 +82,7 @@ class ImageGeneratorTool(BaseTool):
                 folder=image_generation_path_
             )
             file_path: Optional[str] = await file_manager.save_file_async(
-                image_data=image_data,
+                file_data=image_data,
                 folder=image_generation_path_,
                 filename=image_file_name,
             )

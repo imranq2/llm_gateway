@@ -9,7 +9,12 @@ logger = logging.getLogger(__name__)
 class FileManager:
     # noinspection PyMethodMayBeStatic
     async def save_file_async(
-        self, *, image_data: bytes, folder: str, filename: str
+        self,
+        *,
+        file_data: bytes,
+        folder: str,
+        filename: str,
+        content_type: str = "image/png"
     ) -> Optional[str]:
         raise NotImplementedError("Must be implemented in a subclass")
 

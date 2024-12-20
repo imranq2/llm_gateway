@@ -125,7 +125,9 @@ class PDFExtractionTool(BaseTool):
             # If text extraction fails and OCR is enabled, use Textract
             if not full_text.strip() and use_ocr:
                 ocr_extractor: OCRExtractor = self.ocr_extractor_factory.get(name="aws")
-                full_text = ocr_extractor.extract_text_with_textract(pdf_bytes)
+                full_text = await ocr_extractor.extract_text_with_textract_async(
+                    pdf_bytes
+                )
 
             # Prepare artifact description
             total_pages = len(pypdf.PdfReader(pdf_buffer).pages)

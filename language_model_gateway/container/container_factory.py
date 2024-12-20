@@ -82,7 +82,8 @@ class ContainerFactory:
         container.register(
             OCRExtractorFactory,
             lambda c: OCRExtractorFactory(
-                aws_client_factory=c.resolve(AwsClientFactory)
+                aws_client_factory=c.resolve(AwsClientFactory),
+                file_manager_factory=c.resolve(FileManagerFactory),
             ),
         )
         container.register(
