@@ -37,7 +37,28 @@
         "display.on.consent.screen": "true",
         "gui.order": "",
         "consent.screen.text": ""
-      }
+      },
+      "protocolMappers": [
+        {
+          "id": "430497db-e341-4b7a-ab89-2455aac20dc0",
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "aggregate.attrs": "false",
+            "introspection.token.claim": "true",
+            "multivalued": "false",
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "lightweight.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        }
+      ]
     },
     {
       "id": "user-scope-id",
@@ -255,7 +276,9 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "${CLIENT_SECRET}",
-      "redirectUris": ["*"],
+      "redirectUris": [
+        "*"
+      ],
       "webOrigins": [],
       "notBefore": 0,
       "bearerOnly": false,
