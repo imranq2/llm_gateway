@@ -58,6 +58,18 @@ class AwsOCRExtractor(OCRExtractor):
 
             s3_bucket, s3_object_key = UrlParser.parse_s3_uri(file_path)
 
+            # {
+            #    "Document": {
+            #       "Bytes": blob,
+            #       "S3Object": {
+            #          "Bucket": "string",
+            #          "Name": "string",
+            #          "Version": "string"
+            #       }
+            #    }
+            # }
+
+            # https://docs.aws.amazon.com/textract/latest/dg/what-is.html
             response = textract_client.detect_document_text(
                 Document={"S3Object": {"Bucket": s3_bucket, "Name": s3_object_key}}
             )
