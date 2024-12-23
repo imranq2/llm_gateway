@@ -15,7 +15,7 @@ services:
       - docker.env
     environment:
       # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
-      WEBUI_AUTH: 0
+#      WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
       GLOBAL_LOG_LEVEL: debug
       #      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
@@ -49,7 +49,7 @@ services:
       AUDIO_TTS_ENGINE: "openai"
       AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       AUDIO_TTS_VOICE: "alloy"
-      # Authentification settings
+      # Authentication settings
       OAUTH_CLIENT_ID: "bwell-client-id"
       OPENID_PROVIDER_URL: "http://keycloak:8080/realms/bwell-realm/.well-known/openid-configuration"
       OAUTH_CLIENT_SECRET: "bwell-secret"
@@ -112,7 +112,7 @@ services:
       MY_USER_PASSWORD: password
       # These groups get specified as scopes in the token
       MY_USER_GROUPS: user/*.*,access/*.* launch/patient,patient/*.read
-      MY_USER_SCOPE: user/*.* access/*.* launch/patient patient/*.read
+      MY_USER_SCOPE: user/*.* access/*.* launch/patient patient/*.read openid profile email
       MY_USER_TOKEN_USERNAME: tester
       # This is the client setup
       CLIENT_ID: bwell-client-id
@@ -143,8 +143,7 @@ services:
     ports:
       - "8085:80"
     environment:
-      # http://localhost:8085/debug?oidc_client_id=bwell-client-id&oidc_client_secret=bwell-secret&oidc_discovery=http%3A%2F%2Flocalhost%3A8082%2Frealms%bwell-realm%2F.well-known%2Fopenid-configuration&oidc_redirect_uri=http://localhost:8085/callback
-      # http://localhost:8085/debug?oidc_client_id=bwell-client-id&oidc_client_secret=bwell-secret&oidc_discovery=http%3A%2F%keycloak%3A8080%2Frealms%2Fbwell-realm%2F.well-known%2Fopenid-configuration&oidc_redirect_uri=http%3A%2F%2Flocalhost%3A8085%2Fcallback
+      # http://localhost:8085/debug?oidc_client_id=bwell-client-id&oidc_client_secret=bwell-secret&oidc_discovery=http%3A%2F%2Fkeycloak%3A8080%2Frealms%2Fbwell-realm%2F.well-known%2Fopenid-configuration&oidc_redirect_uri=http%3A%2F%2Flocalhost%3A8085%2Fcallback
       # Configure to match your Keycloak OpenID Connect settings
       - ISSUER_URL=http://keycloak:8080/realms/bwell-realm
       - oidc_client_id=bwell-client-id
