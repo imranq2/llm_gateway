@@ -1,12 +1,10 @@
 version: '3'
 services:
   open-webui:
-#    ports:
-#      - '8081:8081'
+    ports:
+      - '3050:8080'
 #    image: ghcr.io/open-webui/open-webui:v0.4.8
     image: openwebui-local:latest
-    # put on host network to be able to access keycloak using localhost
-    network_mode: "host"
 #    build:
 #        context: ../open-webui
 #        dockerfile: Dockerfile
@@ -16,8 +14,6 @@ services:
     env_file:
       - docker.env
     environment:
-      HOST: 0.0.0.0
-      PORT: 8081
       # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
 #      WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
@@ -32,9 +28,8 @@ services:
       ENABLE_MODEL_FILTER: True
       #      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
       WEBUI_SECRET_KEY: ""
-#      WEBUI_DB_HOST: "open-webui-db"
-#      DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
-      DATABASE_URL: "postgresql://myapp_user:myapp_pass@localhost:5431/myapp_db"
+      WEBUI_DB_HOST: "open-webui-db"
+      DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
       ENABLE_OLLAMA_API: False
       #      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
       ENABLE_IMAGE_GENERATION: True
@@ -55,12 +50,15 @@ services:
       AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       AUDIO_TTS_VOICE: "alloy"
       OAUTH_CLIENT_ID: "bwell-client-id"
-      OPENID_PROVIDER_URL: "http://localhost:8082/realms/bwell-realm/.well-known/openid-configuration"
+      OPENID_PROVIDER_URL: "http://keycloak:8082/realms/bwell-realm/.well-known/openid-configuration"
       OAUTH_CLIENT_SECRET: "bwell-secret"
       ENABLE_OAUTH_SIGNUP: True
       OAUTH_PROVIDER_NAME: "Keycloak"
       OAUTH_SCOPES: "openid email"
       OAUTH_USERNAME_CLAIM: "email"
+      SAFE_MODE: True
+      # disable some unneeded stuff like RAG
+      RAG_EMBEDDING_MODEL: ""
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
   #    volumes:
   #      - ./openwebui/backend/data:/app/backend/data
@@ -68,7 +66,6 @@ services:
 
   open-webui-db:
     image: postgres:13
-    network_mode: "host"
     environment:
       - POSTGRES_DB=myapp_db
       - POSTGRES_USER=myapp_user
@@ -94,7 +91,6 @@ services:
     #      context: .
     #    depends_on:
     #      - postgres
-#    network_mode: "host"
     environment:
       KC_HEALTH_ENABLED: true
       KEYCLOAK_ADMIN: admin
@@ -142,17 +138,17 @@ services:
 
   openid-connect-debugger:
     image: leplusorg/openid-connect-provider-debugger:latest
-    network_mode: "host"
+#    network_mode: "host"
     ports:
       - "8085:80"
     environment:
       # http://localhost:8085/debug?oidc_client_id=bwell-client-id&oidc_client_secret=bwell-secret&oidc_discovery=http%3A%2F%2Flocalhost%3A8082%2Frealms%bwell-realm%2F.well-known%2Fopenid-configuration&oidc_redirect_uri=http://localhost:8085/callback
       # http://localhost:8085/debug?oidc_client_id=bwell-client-id&oidc_client_secret=bwell-secret&oidc_discovery=http%3A%2F%2Flocalhost%3A8082%2Frealms%2Fbwell-realm%2F.well-known%2Fopenid-configuration&oidc_redirect_uri=http%3A%2F%2Flocalhost%3A8085%2Fcallback
       # Configure to match your Keycloak OpenID Connect settings
-      - ISSUER_URL=http://localhost:8082/realms/bwell-realm
+      - ISSUER_URL=http://keycloak:8082/realms/bwell-realm
       - oidc_client_id=bwell-client-id
       - oidc_client_secret=bwell-secret
-      - oidc_discovery=http://localhost:8082/realms/bwell-realm/.well-known/openid-configuration
+      - oidc_discovery=http://keycloak:8082/realms/bwell-realm/.well-known/openid-configuration
       - oidc_redirect_uri=http://localhost:8085/callback
       - oidc_scope=openid email
       - oidc_ssl_verify=no
