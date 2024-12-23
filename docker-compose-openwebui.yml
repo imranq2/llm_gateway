@@ -4,9 +4,10 @@ services:
     ports:
       - '3050:8080'
 #    image: ghcr.io/open-webui/open-webui:v0.4.8
-    build:
-        context: ../open-webui
-        dockerfile: Dockerfile
+    image: openwebui-local:latest
+#    build:
+#        context: ../open-webui
+#        dockerfile: Dockerfile
     depends_on:
       - open-webui-db
       - keycloak
@@ -14,7 +15,7 @@ services:
       - docker.env
     environment:
       # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
-      WEBUI_AUTH: 0
+#      WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
       GLOBAL_LOG_LEVEL: debug
       #      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
@@ -48,13 +49,13 @@ services:
       AUDIO_TTS_ENGINE: "openai"
       AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       AUDIO_TTS_VOICE: "alloy"
-  #      OAUTH_CLIENT_ID: "bwell-client-id"
-  #      OPENID_PROVIDER_URL: "http://keycloak:8080/realms/bwell-realm/.well-known/openid-configuration"
-  #      OAUTH_CLIENT_SECRET: "bwell-secret"
-  #      ENABLE_OAUTH_SIGNUP: True
-  #      OAUTH_PROVIDER_NAME: "Keycloak"
-  #      OAUTH_SCOPES: "openid email"
-  #      OAUTH_USERNAME_CLAIM: "email"
+      OAUTH_CLIENT_ID: "bwell-client-id"
+      OPENID_PROVIDER_URL: "http://keycloak:8080/realms/bwell-realm/.well-known/openid-configuration"
+      OAUTH_CLIENT_SECRET: "bwell-secret"
+      ENABLE_OAUTH_SIGNUP: True
+      OAUTH_PROVIDER_NAME: "Keycloak"
+      OAUTH_SCOPES: "openid email"
+      OAUTH_USERNAME_CLAIM: "email"
   #    volumes:
   #      - ./openwebui/backend/data:/app/backend/data
   #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
