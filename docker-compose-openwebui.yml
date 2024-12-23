@@ -145,7 +145,7 @@ services:
     ports:
       - "8085:80"
     environment:
-      - # http://localhost:8080/debug?oidc_client_id=id&oidc_client_secret=secret&oidc_discovery=http%3A%2F%2F192.168.0.1%3A8081%2Frealms%2Fmaster%2F.well-known%2Fopenid-configuration&oidc_redirect_uri=http://localhost:8080/login
+      # http://localhost:8080/debug?oidc_client_id=id&oidc_client_secret=secret&oidc_discovery=http%3A%2F%2F192.168.0.1%3A8081%2Frealms%2Fmaster%2F.well-known%2Fopenid-configuration&oidc_redirect_uri=http://localhost:8080/login
       # Configure to match your Keycloak OpenID Connect settings
       - ISSUER_URL=http://localhost:8082/realms/bwell-realm
       - oidc_client_id=bwell-client-id
