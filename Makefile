@@ -34,7 +34,9 @@ up-open-webui: ## starts docker containers
 	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ] && [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "unhealthy" ] && [ "`docker inspect --format {{.State.Status}} language_model_gateway-open-webui-1`" != "restarting" ]; do printf "." && sleep 2; done && \
 	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; then docker ps && docker logs language_model_gateway-open-webui-1 && printf "========== ERROR: language_model_gateway-open-webui-1 did not start. Run docker logs language_model_gateway-open-webui-1 =========\n" && exit 1; fi && \
 	echo ""
-	@echo OpenWebUI: http://localhost:3050
+	@echo OpenWebUI: http://localhost:8081
+	@echo Keycloak: http://localhost:8082 admin/password
+	@echo OIDC debugger: http://localhost:8085
 
 .PHONY: down
 down: ## stops docker containers
