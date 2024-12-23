@@ -3,7 +3,10 @@ services:
   open-webui:
     ports:
       - '3050:8080'
-    image: ghcr.io/open-webui/open-webui:v0.4.8
+#    image: ghcr.io/open-webui/open-webui:v0.4.8
+    build:
+        context: ../open-webui
+        dockerfile: Dockerfile
     depends_on:
       - open-webui-db
       - keycloak
