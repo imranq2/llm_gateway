@@ -20,6 +20,7 @@ services:
 #      WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
       GLOBAL_LOG_LEVEL: debug
+      SRC_LOG_LEVELS: '{"SOCKET": "DEBUG", "MAIN": "DEBUG"}'
       #      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
       # Supports balanced OpenAI base API URLs, semicolon-separated.
       OPENAI_API_BASE_URLS: 'http://dev:5000/api/v1;http://dev:5000/api/v1'
@@ -130,6 +131,7 @@ services:
       MY_USER_CLIENT_PATIENT_ID: 22aa18af-af51-5799-bc55-367c22c85407
       MY_USER_BWELL_PERSON_ID: 0eb80391-0f61-5ce6-b221-a5428f2f38a7
       MY_USER_BWELL_PATIENT_ID: patient2
+      QUARKUS_HTTP_ACCESS_LOG_PATTERN: "%r\n%{ALL_REQUEST_HEADERS}"
     ports:
       - "8080:8080"
     command: [ "start-dev", "--import-realm", "--verbose" ]
