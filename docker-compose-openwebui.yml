@@ -62,7 +62,7 @@ services:
       OAUTH_PROVIDER_NAME: "keycloak"
       OAUTH_SCOPES: "openid email"
       OAUTH_USERNAME_CLAIM: "email"
-#      SAFE_MODE: True
+      SAFE_MODE: True
       # disable some unneeded stuff like RAG
       RAG_EMBEDDING_MODEL: ""
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
