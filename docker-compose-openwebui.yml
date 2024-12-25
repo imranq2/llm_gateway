@@ -20,7 +20,7 @@ services:
 #      WEBUI_AUTH: 0
       #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
       GLOBAL_LOG_LEVEL: debug
-      SRC_LOG_LEVELS: '{"SOCKET": "DEBUG", "MAIN": "DEBUG", "MODELS": "DEBUG", "OPENAI": "DEBUG"}'
+      SRC_LOG_LEVELS: '{"SOCKET": "DEBUG", "MAIN": "DEBUG", "MODELS": "DEBUG", "OPENAI": "DEBUG", "OAUTH": "DEBUG", "CONFIG": "DEBUG", "DB": "DEBUG"}'
       #      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
       # Supports balanced OpenAI base API URLs, semicolon-separated.
       OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
