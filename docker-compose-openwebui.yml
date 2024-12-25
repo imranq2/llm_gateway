@@ -34,6 +34,7 @@ services:
       WEBUI_DB_HOST: "open-webui-db"
       DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
       ENABLE_OLLAMA_API: False
+      ENABLE_EVALUATION_ARENA_MODELS: False
       #      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
       ENABLE_IMAGE_GENERATION: True
       IMAGE_GENERATION_ENGINE: "openai"
@@ -52,9 +53,10 @@ services:
       AUDIO_TTS_ENGINE: "openai"
       AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       AUDIO_TTS_VOICE: "alloy"
-      # Authentication settings
-      ENABLE_SIGNUP: True
-      ENABLE_LOGIN_FORM: False
+      # Authentication settings (https://docs.openwebui.com/features/sso#oidc)
+#      ENABLE_SIGNUP: True
+#      ENABLE_LOGIN_FORM: True
+      ENABLE_API_KEY: False
       OAUTH_CLIENT_ID: "bwell-client-id"
       OPENID_PROVIDER_URL: "http://keycloak:8080/realms/bwell-realm/.well-known/openid-configuration"
       OAUTH_CLIENT_SECRET: "bwell-secret"
