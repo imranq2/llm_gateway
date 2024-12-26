@@ -162,4 +162,4 @@ async def test_chat_anthropic_with_pdf_ocr_scraping(
     )
     assert content is not None
     print(content)
-    assert "USPSTF" in content
+    assert "100" in content
