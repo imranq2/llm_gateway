@@ -1,16 +1,42 @@
 # language_model_gateway
 
-To run it locally:
+## Overview
 
-```
-git clone
-make devsetup
-make up
-```
+This project is a language model gateway that provides an OpenAI compatible API for language models. It is built using FastAPI and GraphQL.
+## Prerequisites
 
-Then navigate to: http://localhost:5050/graphql
+- Docker
+- Docker Compose
+- Make
 
-1. Simple query
+## Getting Started
+
+To run the project locally, follow these steps:
+
+1. Clone the repository:
+    ```sh
+    git clone <repository-url>
+    cd <repository-directory>
+    ```
+
+2. Set up the development environment:
+    ```sh
+    make devsetup
+    ```
+
+3. Start the Docker containers:
+    ```sh
+    make up
+    ```
+
+4. Navigate to the GraphQL endpoint:
+    ```
+    http://localhost:5050/graphql
+    ```
+
+## Example Query
+
+Here is a simple GraphQL query to get providers:
 
 ```graphql
 query getProviders {
@@ -23,29 +49,3 @@ query getProviders {
         }
     }
 }
-
-```
-
-## Writing end-to-end tests
-
-1. Right-click the "end_to_end" folder in Pycharm and choose New "End to End Test"
-2. Type in name of the test
-3. Create a graphql folder and create a query.gql file in there and paste in the graphql query (You can get this from
-   the PSS graphql testing UI: `https://provider-search.dev.bwell.zone/graphql`)
-4. Create an expected folder and store a .json file in there with what you expect as the result.  (You can start with an
-   existing result from PSS and edit it to be what you expect)
-5. That's it. Now when you run the test, it will create an index, run your graphql query and compare the result with
-   your expected result
-
-You can look at existing end-to-end tests for more info.
-
-#### Multi scenario end to end tests
-
-The test framework supports testing multiple scenarios per end to end test. This is done by adding files to the graphql
-and expected directories that have the same name. This is helpful when you want to test
-multiple test cases. For example testing filtering by distance using multiple values for distance,
-[that example is here](https://github.com/icanbwell/helix.providersearch/tree/main/tests/end_to_end/test_filter_by_distance)
-.
-
-## Correct workflow
-Verify that the workflow under `.github/workflows/docker-publish.yml` under env.IMAGE_NAME matches the container_name in docker-compose.yml. Also, you will need to create an ECR in AWS and copy the URI to the REPOSITORY_URL variable in the same file.
