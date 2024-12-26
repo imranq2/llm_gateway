@@ -5,7 +5,7 @@ from typing import Type, Literal, Tuple, Optional, Dict
 
 import httpx
 import pypdf
-from httpx import Response
+from httpx import Response, Headers
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 from pypdf import PageObject
@@ -101,8 +101,18 @@ class PDFExtractionTool(BaseTool):
         pdf_bytes: bytes
         if not base64_pdf and url:
             # Read PDF from URL
+            headers = Headers(
+                {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                    "Accept": "application/pdf, text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Referer": "/".join(url.split("/")[:3]),  # Add base URL as referer
+                }
+            )
             try:
-                async with httpx.AsyncClient() as client:
+                async with httpx.AsyncClient(
+                    headers=headers, follow_redirects=True
+                ) as client:
                     response: Response = await client.get(url)
                     response.raise_for_status()
                     pdf_bytes = response.content

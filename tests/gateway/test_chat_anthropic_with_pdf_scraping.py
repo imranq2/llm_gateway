@@ -149,7 +149,7 @@ async def test_chat_anthropic_with_pdf_ocr_scraping(
         messages=[
             {
                 "role": "user",
-                "content": "Get the size of the sample bottle from https://raw.githubusercontent.com/fraponyo94/Text-Extraction-Scanned-Pdf/refs/heads/master/sample-scanned-pdfs/PublicWaterMassMailing.pdf",
+                "content": "Get the debt to capitalization rate from https://emma.msrb.org/P21807566.pdf",
             }
         ],
         model="Parse Web Page",
@@ -162,4 +162,4 @@ async def test_chat_anthropic_with_pdf_ocr_scraping(
     )
     assert content is not None
     print(content)
-    assert "100" in content
+    assert "23%" in content
