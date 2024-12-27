@@ -92,3 +92,9 @@ setup-pre-commit:
 .PHONY:run-pre-commit
 run-pre-commit: setup-pre-commit
 	./.git/hooks/pre-commit pre_commit_all_files
+
+.PHONY: clean
+clean: down ## Cleans all the local docker setup
+ifneq ($(shell docker volume ls | grep "language_model_gateway"| awk '{print $$2}'),)
+	docker volume ls | grep "language_model_gateway" | awk '{print $$2}' | xargs docker volume rm
+endif
