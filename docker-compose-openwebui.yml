@@ -1,13 +1,25 @@
-version: '3'
+version: '3.8'
+
 services:
-  open-webui:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
     ports:
-      - '3050:8080'
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./certs:/etc/traefik/certs"
+    restart: always
+
+  open-webui:
     image: ghcr.io/open-webui/open-webui:v0.5.1
-#    image: openwebui-local:latest
-#    build:
-#        context: ../open-webui
-#        dockerfile: Dockerfile
     depends_on:
       - open-webui-db
     env_file:
@@ -29,7 +41,6 @@ services:
       DEFAULT_MODELS: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
       ENABLE_MODEL_FILTER: True
       #      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
-      WEBUI_SECRET_KEY: ""
       WEBUI_DB_HOST: "open-webui-db"
       DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
       ENABLE_OLLAMA_API: False
@@ -56,9 +67,16 @@ services:
       SAFE_MODE: True
       ENABLE_WEBSOCKET_SUPPORT: False
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
-  #    volumes:
-  #      - ./openwebui/backend/data:/app/backend/data
-  #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
+
+      WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.open-webui.rule=Host(`localhost`)"
+      - "traefik.http.routers.open-webui.entrypoints=websecure"
+      - "traefik.http.routers.open-webui.tls=true"
+      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
+    networks:
+      - web
 
   open-webui-db:
     image: postgres:13
@@ -69,15 +87,21 @@ services:
     ports:
       - "5431:5431"
     command: -p 5431
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - web
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U myapp_user -d myapp_db -p 5431" ]
       interval: 3s
       timeout: 5s
       retries: 5
     restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  web:
+    driver: bridge
