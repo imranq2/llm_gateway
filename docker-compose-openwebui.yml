@@ -3,7 +3,7 @@ services:
   open-webui:
     ports:
       - '3050:8080'
-    image: ghcr.io/open-webui/open-webui:v0.4.8
+    image: ghcr.io/open-webui/open-webui:v0.5.1
 #    image: openwebui-local:latest
 #    build:
 #        context: ../open-webui
@@ -54,8 +54,7 @@ services:
       AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       AUDIO_TTS_VOICE: "alloy"
       SAFE_MODE: True
-      # disable some unneeded stuff like RAG
-      RAG_EMBEDDING_MODEL: ""
+      ENABLE_WEBSOCKET_SUPPORT: False
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
   #    volumes:
   #      - ./openwebui/backend/data:/app/backend/data
