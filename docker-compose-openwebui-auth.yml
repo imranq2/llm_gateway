@@ -24,7 +24,7 @@ services:
   open-webui:
     ports:
       - '3050:8080'
-    image: ghcr.io/open-webui/open-webui:v0.4.8
+    image: ghcr.io/open-webui/open-webui:v0.5.1
 #    image: openwebui-local:latest
 #    build:
 #        context: ../open-webui

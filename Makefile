@@ -119,11 +119,15 @@ install-ca:
 
 # Create certificates
 create-certs: install-ca
-	mkdir -p $(CERT_DIR)
-	mkcert open-webui.localhost localhost 127.0.0.1 ::1
-	mv ./open-webui.localhost+3.pem $(CERT_CRT)
-	mv ./open-webui.localhost+3-key.pem $(CERT_KEY)
-	@echo "Certificates generated in $(CERT_DIR)"
+	@if [ ! -f "$(CERT_CRT)" ]; then \
+		mkdir -p $(CERT_DIR); \
+		mkcert open-webui.localhost localhost 127.0.0.1 ::1; \
+		mv ./open-webui.localhost+3.pem $(CERT_CRT); \
+		mv ./open-webui.localhost+3-key.pem $(CERT_KEY); \
+		echo "Certificates generated in $(CERT_DIR)"; \
+	else \
+		echo "Certificates already exist at $(CERT_CRT)"; \
+	fi
 
 clean_certs:
 	rm -rf $(CERT_DIR)
