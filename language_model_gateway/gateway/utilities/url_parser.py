@@ -6,6 +6,13 @@ from urllib.parse import urlparse, ParseResult
 class UrlParser:
     @staticmethod
     def parse_s3_uri(uri: str) -> Tuple[str, str]:
+        """
+        Parses the given S3 URI into a bucket and path
+
+
+        :param uri:
+        :return:
+        """
         parsed = urlparse(uri)
         if parsed.scheme != "s3":
             raise ValueError(f"Invalid S3 URI scheme: {uri}")

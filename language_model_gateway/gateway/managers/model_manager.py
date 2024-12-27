@@ -32,7 +32,7 @@ class ModelManager:
                 id=config.name,
                 created=int(time.time()),
                 object="model",
-                owned_by=config.owner or "unknown",
+                owned_by="openai",
             )
             for config in configs
         ]
