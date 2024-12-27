@@ -97,15 +97,15 @@ async def test_chat_anthropic_with_pdf_ocr_scraping(
     async_client: httpx.AsyncClient,
 ) -> None:
     test_container: SimpleContainer = await get_container_async()
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "USPSTF"
-    #             )
-    #         ),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "23%"
+                )
+            ),
+        )
 
     # set the model configuration for this test
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
