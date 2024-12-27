@@ -19,6 +19,8 @@ services:
       - "./certs/open-webui.localhost.pem:/open-webui.localhost.pem"
       - "./certs/open-webui.localhost-key.pem:/open-webui.localhost-key.pem"
     restart: always
+    networks:
+        - web
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.5.1
