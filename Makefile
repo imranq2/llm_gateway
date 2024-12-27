@@ -44,6 +44,7 @@ up-open-webui-auth: ## starts docker containers
 	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ] && [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "unhealthy" ] && [ "`docker inspect --format {{.State.Status}} language_model_gateway-open-webui-1`" != "restarting" ]; do printf "." && sleep 2; done && \
 	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; then docker ps && docker logs language_model_gateway-open-webui-1 && printf "========== ERROR: language_model_gateway-open-webui-1 did not start. Run docker logs language_model_gateway-open-webui-1 =========\n" && exit 1; fi && \
 	echo ""
+	make insert-admin-user
 	@echo OpenWebUI: http://localhost:3050 tester/password
 	@echo Keycloak: http://keycloak:8080 admin/password
 	@echo OIDC debugger: http://localhost:8085
@@ -98,3 +99,10 @@ clean: down ## Cleans all the local docker setup
 ifneq ($(shell docker volume ls | grep "language_model_gateway"| awk '{print $$2}'),)
 	docker volume ls | grep "language_model_gateway" | awk '{print $$2}' | xargs docker volume rm
 endif
+
+.PHONY: insert-admin-user
+insert-admin-user:
+	docker exec -i language_model_gateway-open-webui-db-1 psql -U myapp_user -d myapp_db -p 5431 -c \
+    "INSERT INTO public.\"user\" (id,name,email,\"role\",profile_image_url,api_key,created_at,updated_at,last_active_at,settings,info,oauth_sub) \
+    SELECT '8d967d73-99b8-40ff-ac3b-c71ac19e1286','User','admin@localhost','admin','/user.png',NULL,1735089600,1735089600,1735089609,'{"ui": {"version": "0.4.8"}}','null',NULL \
+    WHERE NOT EXISTS (SELECT 1 FROM public.\"user\" WHERE id = '8d967d73-99b8-40ff-ac3b-c71ac19e1286');"

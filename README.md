@@ -51,9 +51,15 @@ query getProviders {
 }
 ```
 
-## Development
-There are two things that have to be done on the local developer setup.
+## Running without OAuth
+Just run the following commands to run OpenWebUI without OAuth:
 
+```sh
+make down; make up; make up-open-webui
+```
+
+
+## Running with OAuth
 Since the OpenWebUI uses Keycloak on both server side and browser side, you need to create a host mapping for `keycloak`.
 
 On Macs, this can be done by adding an entry to `/etc/hosts`:
@@ -62,14 +68,7 @@ On Macs, this can be done by adding an entry to `/etc/hosts`:
 127.0.0.1   keycloak
 ```
 
-## Workaround for bug in OpenWebUI for OAuth
-OpenWebUI (at least till v0.5.1) has a bug where it will not create the first user via OAuth.  
-
-So you have to insert the first user into the db manually:
-
-```sql
-INSERT INTO public."user" (id,name,email,"role",profile_image_url,api_key,created_at,updated_at,last_active_at,settings,info,oauth_sub) VALUES
-	 ('8d967d73-99b8-40ff-ac3b-c71ac19e1286','User','admin@localhost','admin','/user.png',NULL,1735089600,1735089600,1735089609,'{"ui": {"version": "0.4.8"}}','null',NULL);
+Then run:
+```shell
+make down; make up; make up-open-webui-auth
 ```
-
-If you don't do this, the UI will just hang on the first page.
