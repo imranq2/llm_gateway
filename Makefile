@@ -34,7 +34,7 @@ up-open-webui: ## starts docker containers
 	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ] && [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "unhealthy" ] && [ "`docker inspect --format {{.State.Status}} language_model_gateway-open-webui-1`" != "restarting" ]; do printf "." && sleep 2; done && \
 	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; then docker ps && docker logs language_model_gateway-open-webui-1 && printf "========== ERROR: language_model_gateway-open-webui-1 did not start. Run docker logs language_model_gateway-open-webui-1 =========\n" && exit 1; fi && \
 	echo ""
-	@echo OpenWebUI: http://localhost:3050
+	@echo OpenWebUI: http://localhost:3050 https://open-webui.localhost
 
 .PHONY: up-open-webui-auth
 up-open-webui-auth: ## starts docker containers
@@ -108,45 +108,22 @@ insert-admin-user:
     WHERE NOT EXISTS (SELECT 1 FROM public.\"user\" WHERE id = '8d967d73-99b8-40ff-ac3b-c71ac19e1286');"
 
 CERT_DIR := certs
-CERT_KEY := $(CERT_DIR)/localhost.key
-CERT_CRT := $(CERT_DIR)/localhost.crt
+CERT_KEY := $(CERT_DIR)/open-webui.localhost-key.pem
+CERT_CRT := $(CERT_DIR)/open-webui.localhost.pem
 
-.PHONY: all clean create-certs
+.PHONY: all install-ca create-certs
 
-all: create-certs
+# Install local Certificate Authority
+install-ca:
+	mkcert -install
 
-# Create certificates directory if it doesn't exist
-$(CERT_DIR):
+# Create certificates
+create-certs: install-ca
 	mkdir -p $(CERT_DIR)
+	mkcert open-webui.localhost localhost 127.0.0.1 ::1
+	mv ./open-webui.localhost+3.pem $(CERT_CRT)
+	mv ./open-webui.localhost+3-key.pem $(CERT_KEY)
+	@echo "Certificates generated in $(CERT_DIR)"
 
-# Generate self-signed certificates for localhost
-create-certs: $(CERT_DIR)
-	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-		-keyout $(CERT_KEY) \
-		-out $(CERT_CRT) \
-		-subj "/CN=localhost" \
-		-addext "subjectAltName = DNS:localhost,IP:127.0.0.1"
-	@echo "Self-signed certificates generated in $(CERT_DIR)"
-	@echo "Key: $(CERT_KEY)"
-	@echo "Certificate: $(CERT_CRT)"
-
-# Optional: Add a target to view certificate details
-show-cert:
-	@if [ -f "$(CERT_CRT)" ]; then \
-		openssl x509 -in $(CERT_CRT) -text -noout; \
-	else \
-		echo "Certificate not found. Run 'make create-certs' first."; \
-	fi
-
-# Optional: Add a target to remove certificates
-clean:
+clean_certs:
 	rm -rf $(CERT_DIR)
-
-# Optional: Add a target to trust the certificate on macOS
-trust-cert-macos:
-	@if [ -f "$(CERT_CRT)" ]; then \
-		sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $(CERT_CRT); \
-		echo "Certificate added to system trust store"; \
-	else \
-		echo "Certificate not found. Run 'make create-certs' first."; \
-	fi
