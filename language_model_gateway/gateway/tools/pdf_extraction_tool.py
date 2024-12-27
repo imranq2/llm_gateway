@@ -33,7 +33,8 @@ class PDFExtractionToolInput(BaseModel):
         default=None, description="Optional ending page for extraction (0-indexed)"
     )
     use_ocr: Optional[bool] = Field(
-        default=False, description="Use AWS Textract for OCR if text extraction fails"
+        default=False,
+        description="Use OCR (Optical Character Recognition) if text extraction fails",
     )
 
 
@@ -51,6 +52,7 @@ class PDFExtractionTool(BaseTool):
     args_schema: Type[BaseModel] = PDFExtractionToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
     ocr_extractor_factory: OCRExtractorFactory
+    ocr_type: Literal["aws"] = "aws"
 
     def _run(
         self,
@@ -134,7 +136,9 @@ class PDFExtractionTool(BaseTool):
 
             # If text extraction fails and OCR is enabled, use Textract
             if not full_text.strip() and use_ocr:
-                ocr_extractor: OCRExtractor = self.ocr_extractor_factory.get(name="aws")
+                ocr_extractor: OCRExtractor = self.ocr_extractor_factory.get(
+                    name=self.ocr_type
+                )
                 full_text = await ocr_extractor.extract_text_with_textract_async(
                     pdf_bytes
                 )
