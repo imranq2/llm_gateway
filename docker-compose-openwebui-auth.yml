@@ -1,5 +1,26 @@
 version: '3'
 services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.filename=/traefik_dynamic_conf.yml"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik_dynamic_conf.yml:/traefik_dynamic_conf.yml"
+      - "./certs/open-webui.localhost.pem:/open-webui.localhost.pem"
+      - "./certs/open-webui.localhost-key.pem:/open-webui.localhost-key.pem"
+    restart: always
+    networks:
+      - web
+
   open-webui:
     ports:
       - '3050:8080'
@@ -30,7 +51,6 @@ services:
       DEFAULT_MODELS: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
       ENABLE_MODEL_FILTER: True
       #      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
-      WEBUI_SECRET_KEY: ""
       WEBUI_DB_HOST: "open-webui-db"
       DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
       ENABLE_OLLAMA_API: False
@@ -66,10 +86,18 @@ services:
       OAUTH_SCOPES: "openid email"
       OAUTH_USERNAME_CLAIM: "email"
       SAFE_MODE: True
-      # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
-  #    volumes:
-  #      - ./openwebui/backend/data:/app/backend/data
-  #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
+      WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.open-webui.rule=Host(`open-webui.localhost`)"
+      - "traefik.http.routers.open-webui.entrypoints=websecure"
+      - "traefik.http.routers.open-webui.tls=true"
+      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
+    volumes:
+      - "./certs/open-webui.localhost.pem:/etc/ssl/certs/open-webui.localhost.crt:ro"
+      - "./certs/open-webui.localhost-key.pem:/etc/ssl/private/open-webui.localhost.key:ro"
+    networks:
+      - web
 
   open-webui-db:
     image: postgres:13
@@ -88,6 +116,8 @@ services:
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - web
 
   keycloak:
     # https://github.com/keycloak/keycloak/releases
@@ -143,6 +173,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - web
 
   openid-connect-debugger:
     image: leplusorg/openid-connect-provider-debugger:latest
@@ -161,7 +193,13 @@ services:
       - oidc_ssl_verify=no
     depends_on:
       - keycloak
+    networks:
+      - web
 
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  web:
+    driver: bridge

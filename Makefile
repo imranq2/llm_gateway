@@ -45,7 +45,7 @@ up-open-webui-auth: ## starts docker containers
 	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; then docker ps && docker logs language_model_gateway-open-webui-1 && printf "========== ERROR: language_model_gateway-open-webui-1 did not start. Run docker logs language_model_gateway-open-webui-1 =========\n" && exit 1; fi && \
 	echo ""
 	make insert-admin-user
-	@echo OpenWebUI: http://localhost:3050 tester/password
+	@echo OpenWebUI: http://localhost:3050  https://open-webui.localhost tester/password
 	@echo Keycloak: http://keycloak:8080 admin/password
 	@echo OIDC debugger: http://localhost:8085
 
