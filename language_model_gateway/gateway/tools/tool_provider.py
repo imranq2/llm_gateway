@@ -14,6 +14,7 @@ from language_model_gateway.gateway.file_managers.file_manager_factory import (
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
+from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
@@ -49,6 +50,7 @@ class ToolProvider:
         *,
         image_generator_factory: ImageGeneratorFactory,
         file_manager_factory: FileManagerFactory,
+        ocr_extractor_factory: OCRExtractorFactory,
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -102,7 +104,9 @@ class ToolProvider:
                 api_key=environ.get("SCRAPING_BEE_API_KEY")
             ),
             "provider_search": ProviderSearchTool(),
-            "pdf_text_extractor": PDFExtractionTool(),
+            "pdf_text_extractor": PDFExtractionTool(
+                ocr_extractor_factory=ocr_extractor_factory
+            ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(

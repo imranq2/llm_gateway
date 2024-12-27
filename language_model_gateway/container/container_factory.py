@@ -22,6 +22,7 @@ from language_model_gateway.gateway.managers.image_generation_manager import (
 )
 from language_model_gateway.gateway.managers.model_manager import ModelManager
 from language_model_gateway.gateway.models.model_factory import ModelFactory
+from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
 from language_model_gateway.gateway.providers.image_generation_provider import (
     ImageGenerationProvider,
 )
@@ -77,11 +78,20 @@ class ContainerFactory:
         container.register(
             LangGraphToOpenAIConverter, lambda c: LangGraphToOpenAIConverter()
         )
+
+        container.register(
+            OCRExtractorFactory,
+            lambda c: OCRExtractorFactory(
+                aws_client_factory=c.resolve(AwsClientFactory),
+                file_manager_factory=c.resolve(FileManagerFactory),
+            ),
+        )
         container.register(
             ToolProvider,
             lambda c: ToolProvider(
                 image_generator_factory=c.resolve(ImageGeneratorFactory),
                 file_manager_factory=c.resolve(FileManagerFactory),
+                ocr_extractor_factory=c.resolve(OCRExtractorFactory),
             ),
         )
         container.register(
