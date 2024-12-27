@@ -66,8 +66,6 @@ services:
       OAUTH_SCOPES: "openid email"
       OAUTH_USERNAME_CLAIM: "email"
       SAFE_MODE: True
-      # disable some unneeded stuff like RAG
-      RAG_EMBEDDING_MODEL: ""
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
   #    volumes:
   #      - ./openwebui/backend/data:/app/backend/data
