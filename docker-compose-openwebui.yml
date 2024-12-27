@@ -1,27 +1,6 @@
 version: '3.8'
 
 services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.file.filename=/traefik_dynamic_conf.yml"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./traefik_dynamic_conf.yml:/traefik_dynamic_conf.yml"
-      - "./certs/open-webui.localhost.pem:/open-webui.localhost.pem"
-      - "./certs/open-webui.localhost-key.pem:/open-webui.localhost-key.pem"
-    restart: always
-    networks:
-        - web
-
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.5.1
     depends_on:
@@ -74,15 +53,6 @@ services:
       ENABLE_WEBSOCKET_SUPPORT: False
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
       WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.open-webui.rule=Host(`open-webui.localhost`)"
-      - "traefik.http.routers.open-webui.entrypoints=websecure"
-      - "traefik.http.routers.open-webui.tls=true"
-      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
-    volumes:
-      - "./certs/open-webui.localhost.pem:/etc/ssl/certs/open-webui.localhost.crt:ro"
-      - "./certs/open-webui.localhost-key.pem:/etc/ssl/private/open-webui.localhost.key:ro"
     networks:
       - web
 

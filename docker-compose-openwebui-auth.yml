@@ -1,81 +1,13 @@
 version: '3'
 services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.file.filename=/traefik_dynamic_conf.yml"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./traefik_dynamic_conf.yml:/traefik_dynamic_conf.yml"
-      - "./certs/open-webui.localhost.pem:/open-webui.localhost.pem"
-      - "./certs/open-webui.localhost-key.pem:/open-webui.localhost-key.pem"
-    restart: always
-    networks:
-      - web
-
   open-webui:
-    ports:
-      - '3050:8080'
-    image: ghcr.io/open-webui/open-webui:v0.5.1
-#    image: openwebui-local:latest
-#    build:
-#        context: ../open-webui
-#        dockerfile: Dockerfile
-    depends_on:
-      - open-webui-db
-      - keycloak
-    env_file:
-      - docker.env
     environment:
       # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
-      BYPASS_MODEL_ACCESS_CONTROL: True
-      DEFAULT_USER_ROLE: user
-#      WEBUI_AUTH: 0
-      #      OPENAI_API_BASE_URL: 'https://api.openai.com/v1'
-      GLOBAL_LOG_LEVEL: debug
-      SRC_LOG_LEVELS: '{"SOCKET": "DEBUG", "MAIN": "DEBUG", "MODELS": "DEBUG", "OPENAI": "DEBUG", "OAUTH": "DEBUG", "CONFIG": "DEBUG", "DB": "DEBUG"}'
-      #      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
-      # Supports balanced OpenAI base API URLs, semicolon-separated.
-      OPENAI_API_BASE_URL: 'http://dev:5000/api/v1'
-      CORS_ALLOW_ORIGIN: '*'
-      OPENAI_API_KEY: 'bedrock'
-      #      DEFAULT_MODELS: "General Purpose"
-      DEFAULT_MODELS: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
-      ENABLE_MODEL_FILTER: True
-      #      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
-      WEBUI_DB_HOST: "open-webui-db"
-      DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
-      ENABLE_OLLAMA_API: False
-      ENABLE_EVALUATION_ARENA_MODELS: False
-      #      TITLE_GENERATION_PROMPT_TEMPLATE: "What do you want to know about your health?"
-      ENABLE_IMAGE_GENERATION: True
-      IMAGE_GENERATION_ENGINE: "openai"
-      IMAGES_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
-      IMAGES_OPENAI_API_KEY: "bedrock"
-      IMAGE_GENERATION_MODEL: "amazon.titan-image-generator-v2:0"
-      LOAD_PROMPT_FROM_LANGCHAIN_HUB: False
-      WEBUI_FAVICON_URL: "http://localhost:5050/favicon.png"
-      WEBUI_NAME: "b.ai"
-      WEBUI_BANNERS: '[{"id": "1", "type":"info", "title":"Welcome to b.well AI", "content":"Welcome to b.well AI! **[Click here for AI Resource Guide](https://icanbwell.atlassian.net/wiki/spaces/BRG/pages/5092442117/AI+Resource+Guide)**", "dismissible": false, "timestamp": 100000},{"id": "2", "type":"info", "title":"Help", "content":"Type \"help\" if you need help.  Reload page if you do not get results.  Use \"Prompt Helper\" model to create better prompts.", "dismissible": false, "timestamp": 100000}]'
+      WEBUI_AUTH: True
       ENABLE_FORWARD_USER_INFO_HEADERS: True
       ENABLE_FORWARD_OAUTH_TOKEN: True
-      # Speech to text settings
-      AUDIO_STT_ENGINE: "openai"
-      AUDIO_STT_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
-      # text to speech settings
-      AUDIO_TTS_ENGINE: "openai"
-      AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
-      AUDIO_TTS_VOICE: "alloy"
       # Authentication settings (https://docs.openwebui.com/features/sso#oidc)
-#      ENABLE_SIGNUP: True
+      ENABLE_SIGNUP: True
 #      ENABLE_LOGIN_FORM: True
       ENABLE_API_KEY: False
       OAUTH_CLIENT_ID: "bwell-client-id"
@@ -85,39 +17,6 @@ services:
       OAUTH_PROVIDER_NAME: "keycloak"
       OAUTH_SCOPES: "openid email"
       OAUTH_USERNAME_CLAIM: "email"
-      SAFE_MODE: True
-      WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.open-webui.rule=Host(`open-webui.localhost`)"
-      - "traefik.http.routers.open-webui.entrypoints=websecure"
-      - "traefik.http.routers.open-webui.tls=true"
-      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
-    volumes:
-      - "./certs/open-webui.localhost.pem:/etc/ssl/certs/open-webui.localhost.crt:ro"
-      - "./certs/open-webui.localhost-key.pem:/etc/ssl/private/open-webui.localhost.key:ro"
-    networks:
-      - web
-
-  open-webui-db:
-    image: postgres:13
-    environment:
-      - POSTGRES_DB=myapp_db
-      - POSTGRES_USER=myapp_user
-      - POSTGRES_PASSWORD=myapp_pass
-    ports:
-      - "5431:5431"
-    command: -p 5431
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U myapp_user -d myapp_db -p 5431" ]
-      interval: 3s
-      timeout: 5s
-      retries: 5
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - web
 
   keycloak:
     # https://github.com/keycloak/keycloak/releases
@@ -195,11 +94,3 @@ services:
       - keycloak
     networks:
       - web
-
-volumes:
-  postgres_data:
-    driver: local
-
-networks:
-  web:
-    driver: bridge
