@@ -3,7 +3,6 @@ import os
 from typing import Type, Literal, Tuple
 
 import httpx
-from httpx import Headers
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -48,16 +47,7 @@ class URLToMarkdownTool(BaseTool):
         """
         logger.info(f"Fetching and converting URL to Markdown: {url}")
         try:
-            headers = Headers(
-                {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                    "Accept": "application/pdf, text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                    "Accept-Language": "en-US,en;q=0.9",
-                }
-            )
-            async with httpx.AsyncClient(
-                headers=headers, follow_redirects=True
-            ) as client:
+            async with httpx.AsyncClient() as client:
                 response = await client.get(url)
                 response.raise_for_status()
                 html_content = response.text

@@ -16,18 +16,13 @@ logger = logging.getLogger(__name__)
 class LocalFileManager(FileManager):
     # noinspection PyMethodMayBeStatic
     async def save_file_async(
-        self,
-        *,
-        file_data: bytes,
-        folder: str,
-        filename: str,
-        content_type: str = "image/png",
+        self, *, image_data: bytes, folder: str, filename: str
     ) -> Optional[str]:
         """Save the generated image to a file"""
         file_path: str = self.get_full_path(filename=filename, folder=folder)
-        if file_data:
+        if image_data:
             with open(file_path, "wb") as f:
-                f.write(file_data)
+                f.write(image_data)
             logger.info(f"Image saved as {file_path}")
             return str(file_path)
         else:

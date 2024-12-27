@@ -190,7 +190,7 @@ class ERDiagramGeneratorTool(BaseTool):
 
             # Attempt to save the file
             file_path: Optional[str] = await file_manager.save_file_async(
-                file_data=image_data,
+                image_data=image_data,
                 folder=image_generation_path_,
                 filename=image_file_name,
             )

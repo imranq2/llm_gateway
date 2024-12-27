@@ -21,20 +21,14 @@ class AwsS3FileManager(FileManager):
 
     @override
     async def save_file_async(
-        self,
-        *,
-        file_data: bytes,
-        folder: str,
-        filename: str,
-        content_type: str = "image/png",
+        self, *, image_data: bytes, folder: str, filename: str
     ) -> Optional[str]:
         """
-        Save the given file to S3
+        Save the generated image to S3
 
-        :param file_data: File bytes to save
+        :param image_data: Image bytes to save
         :param filename: Filename to use in S3
         :param folder: Folder to save the image in
-        :param content_type: Content type of the image
         """
         assert "s3://" in folder, "folder should contain s3://"
         assert "s3://" not in filename, "filename should not contain s3://"
@@ -47,25 +41,24 @@ class AwsS3FileManager(FileManager):
         s3_full_path: str = s3_url.url
 
         s3_client = self.aws_client_factory.create_client(service_name="s3")
-        if not file_data:
-            logger.error("No file to save")
+        if not image_data:
+            logger.error("No image to save")
             return None
 
         try:
             # Upload the image to S3
-
             s3_client.put_object(
                 Bucket=s3_url.bucket,
                 Key=s3_url.key,
-                Body=file_data,
-                ContentType=content_type,  # Adjust content type as needed
+                Body=image_data,
+                ContentType="image/png",  # Adjust content type as needed
             )
 
-            logger.info(f"File saved to S3: {s3_full_path}")
+            logger.info(f"Image saved to S3: {s3_full_path}")
             return s3_full_path
 
         except ClientError as e:
-            logger.error(f"File saving image to S3: {e}")
+            logger.error(f"Error saving image to S3: {e}")
             raise
 
     @override
