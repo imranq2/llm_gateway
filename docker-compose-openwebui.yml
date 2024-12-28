@@ -1,17 +1,14 @@
-version: '3'
+version: '3.8'
+
 services:
   open-webui:
-    ports:
-      - '3050:8080'
     image: ghcr.io/open-webui/open-webui:v0.5.1
-#    image: openwebui-local:latest
-#    build:
-#        context: ../open-webui
-#        dockerfile: Dockerfile
     depends_on:
       - open-webui-db
     env_file:
       - docker.env
+    ports:
+      - "3050:8080"
     environment:
       # https://docs.openwebui.com/getting-started/advanced-topics/env-configuration
       BYPASS_MODEL_ACCESS_CONTROL: True
@@ -29,7 +26,6 @@ services:
       DEFAULT_MODELS: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
       ENABLE_MODEL_FILTER: True
       #      MODEL_FILTER_LIST: "anthropic.claude-3-5-sonnet-20240620-v1:0"
-      WEBUI_SECRET_KEY: ""
       WEBUI_DB_HOST: "open-webui-db"
       DATABASE_URL: "postgresql://myapp_user:myapp_pass@open-webui-db:5431/myapp_db"
       ENABLE_OLLAMA_API: False
@@ -54,11 +50,17 @@ services:
       AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       AUDIO_TTS_VOICE: "alloy"
       SAFE_MODE: True
-      ENABLE_WEBSOCKET_SUPPORT: False
+      ENABLE_WEBSOCKET_SUPPORT: True
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
-  #    volumes:
-  #      - ./openwebui/backend/data:/app/backend/data
-  #      - ./openwebui-config/config.json:/app/backend/data/config.json:cached
+      WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
+    networks:
+      - web
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --silent --fail http://localhost:8080/health | jq -ne 'input.status == true' || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 20
 
   open-webui-db:
     image: postgres:13
@@ -69,15 +71,21 @@ services:
     ports:
       - "5431:5431"
     command: -p 5431
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - web
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U myapp_user -d myapp_db -p 5431" ]
       interval: 3s
       timeout: 5s
       retries: 5
     restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  web:
+    driver: bridge
