@@ -50,11 +50,17 @@ services:
       AUDIO_TTS_OPENAI_API_BASE_URL: "http://localhost:5050/api/v1"
       AUDIO_TTS_VOICE: "alloy"
       SAFE_MODE: True
-      ENABLE_WEBSOCKET_SUPPORT: False
+      ENABLE_WEBSOCKET_SUPPORT: True
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
       WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
     networks:
       - web
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --silent --fail http://localhost:8080/health | jq -ne 'input.status == true' || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 20
 
   open-webui-db:
     image: postgres:13

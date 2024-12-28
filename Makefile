@@ -7,7 +7,7 @@ Pipfile.lock: # Locks Pipfile and updates the Pipfile.lock on the local file sys
 
 .PHONY:devsetup
 devsetup: ## one time setup for devs
-	make update && \
+	brew install mkcert && \
 	make up && \
 	make setup-pre-commit && \
 	make tests && \
@@ -50,10 +50,34 @@ up-open-webui-ssl: clean_database ## starts docker containers
 up-open-webui-auth: clean_database create-certs ## starts docker containers
 	docker compose --progress=plain -f docker-compose-openwebui.yml -f docker-compose-openwebui-ssl.yml -f docker-compose-openwebui-auth.yml up --build -d
 	echo "waiting for open-webui service to become healthy" && \
-	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; do printf "." && sleep 2; done && \
-	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ] && [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "unhealthy" ] && [ "`docker inspect --format {{.State.Status}} language_model_gateway-open-webui-1`" != "restarting" ]; do printf "." && sleep 2; done && \
-	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway-open-webui-1`" != "healthy" ]; then docker ps && docker logs language_model_gateway-open-webui-1 && printf "========== ERROR: language_model_gateway-open-webui-1 did not start. Run docker logs language_model_gateway-open-webui-1 =========\n" && exit 1; fi && \
-	echo ""
+	max_attempts=30 && \
+	attempt=0 && \
+	while [ $$attempt -lt $$max_attempts ]; do \
+		container_status=$$(docker inspect --format '{{.State.Health.Status}}' language_model_gateway-open-webui-1 2>/dev/null) && \
+		container_state=$$(docker inspect --format '{{.State.Status}}' language_model_gateway-open-webui-1 2>/dev/null) && \
+		if [ "$$container_status" = "healthy" ]; then \
+			echo "" && \
+			break; \
+		elif [ "$$container_status" = "unhealthy" ] || [ "$$container_state" = "restarting" ]; then \
+			echo "" && \
+			echo "========== ERROR: Container became unhealthy ==========" && \
+			docker ps && \
+			docker logs language_model_gateway-open-webui-1 && \
+			printf "========== ERROR: language_model_gateway-open-webui-1 is unhealthy. Run docker logs language_model_gateway-open-webui-1 =========\n" && \
+			exit 1; \
+		fi; \
+		printf "." && \
+		sleep 2 && \
+		attempt=$$((attempt + 1)); \
+	done && \
+	if [ $$attempt -ge $$max_attempts ]; then \
+		echo "" && \
+		echo "========== ERROR: Container did not become healthy within timeout ==========" && \
+		docker ps && \
+		docker logs language_model_gateway-open-webui-1 && \
+		printf "========== ERROR: language_model_gateway-open-webui-1 did not start. Run docker logs language_model_gateway-open-webui-1 =========\n" && \
+		exit 1; \
+	fi
 	make insert-admin-user
 	@echo OpenWebUI: http://localhost:3050  https://open-webui.localhost tester/password
 	@echo Keycloak: http://keycloak:8080 admin/password
