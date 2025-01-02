@@ -1,0 +1,18 @@
+tls:
+  certificates:
+    - certFile: /open-webui.localhost.pem
+      keyFile: /open-webui.localhost-key.pem
+
+http:
+  routers:
+    open-webui:
+      rule: "Host(`open-webui.localhost`)"
+      service: open-webui
+      tls: true
+      entrypoints:
+        - websecure
+  services:
+    open-webui:
+      loadBalancer:
+        servers:
+          - url: "http://open-webui:8080"
