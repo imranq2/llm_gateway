@@ -379,7 +379,7 @@ class LangGraphToOpenAIConverter:
                 return chat_request, json_response_requested
             case "json_object":
                 json_response_requested = True
-                json_object_system_message_text: str = f"""                
+                json_object_system_message_text: str = """                
                 Respond only with a JSON object or array.
                 
                 Output follows this example format:

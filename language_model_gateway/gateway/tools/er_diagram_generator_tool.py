@@ -197,8 +197,8 @@ class ERDiagramGeneratorTool(BaseTool):
 
             if file_path is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"ERDiagramGeneratorTool: Failed to save image to disk ",
+                    "Failed to save image to disk",
+                    "ERDiagramGeneratorTool: Failed to save image to disk ",
                 )
 
             # Generate URL for the image
@@ -206,8 +206,8 @@ class ERDiagramGeneratorTool(BaseTool):
 
             if url is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"ERDiagramGeneratorTool: Failed to save image to disk",
+                    "Failed to save image to disk",
+                    "ERDiagramGeneratorTool: Failed to save image to disk",
                 )
 
             artifact: str = (

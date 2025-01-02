@@ -134,16 +134,16 @@ class SequenceDiagramGeneratorTool(BaseTool):
             )
             if file_path is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"SequenceDiagramGeneratorTool: Failed to save image to disk ",
+                    "Failed to save image to disk",
+                    "SequenceDiagramGeneratorTool: Failed to save image to disk ",
                 )
 
             # Generate URL for the image
             url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
             if url is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"SequenceDiagramGeneratorTool: Failed to save image to disk",
+                    "Failed to save image to disk",
+                    "SequenceDiagramGeneratorTool: Failed to save image to disk",
                 )
 
             return (
