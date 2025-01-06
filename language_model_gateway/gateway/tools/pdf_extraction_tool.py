@@ -96,7 +96,7 @@ class PDFExtractionTool(BaseTool):
         if url:
             logger.info(f"Extracting text from PDF at URL: {url}")
         else:
-            logger.info(f"Extracting text from base64 encoded PDF")
+            logger.info("Extracting text from base64 encoded PDF")
 
         assert base64_pdf or url, "Either base64_pdf or url must be provided"
 

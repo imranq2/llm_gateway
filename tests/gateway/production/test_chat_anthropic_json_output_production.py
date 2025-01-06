@@ -38,7 +38,7 @@ async def test_chat_completions_json__output_production(
         messages=[
             {
                 "role": "user",
-                "content": f"""Get the address of Vanessa Paz NP at One Medical.""",
+                "content": """Get the address of Vanessa Paz NP at One Medical.""",
             }
         ],
         model="General Purpose",
@@ -132,7 +132,7 @@ async def test_chat_completions_json_schema_output_production(
         messages=[
             {
                 "role": "user",
-                "content": f"""Get the address of Vanessa Paz NP at One Medical.""",
+                "content": """Get the address of Vanessa Paz NP at One Medical.""",
             }
         ],
         model="General Purpose",
@@ -220,7 +220,7 @@ async def test_chat_completions_json_classes_output_production(
         messages=[
             {
                 "role": "user",
-                "content": f"""Get the address of Vanessa Paz NP at One Medical.""",
+                "content": """Get the address of Vanessa Paz NP at One Medical.""",
             }
         ],
         model="General Purpose",

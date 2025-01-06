@@ -106,14 +106,14 @@ class GraphVizDiagramGeneratorTool(BaseTool):
             )
             if file_path is None:
                 return (
-                    f"Failed to save image to disk",
+                    "Failed to save image to disk",
                     f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
                 )
 
             url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
             if url is None:
                 return (
-                    f"Failed to save image to disk",
+                    "Failed to save image to disk",
                     f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
                 )
 

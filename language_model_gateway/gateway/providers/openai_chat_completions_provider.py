@@ -1,3 +1,4 @@
+from typing import Optional
 import json
 import logging
 import os
@@ -15,8 +16,6 @@ from pydantic_core import ValidationError
 from language_model_gateway.configs.config_schema import ChatModelConfig
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 
-logger = logging.getLogger(__file__)
-from typing import Optional
 
 from starlette.responses import StreamingResponse, JSONResponse
 
@@ -24,6 +23,8 @@ from language_model_gateway.gateway.providers.base_chat_completions_provider imp
     BaseChatCompletionsProvider,
 )
 from language_model_gateway.gateway.schema.openai.completions import ChatRequest
+
+logger = logging.getLogger(__file__)
 
 
 class OpenAiChatCompletionsProvider(BaseChatCompletionsProvider):

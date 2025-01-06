@@ -88,14 +88,14 @@ class ImageGeneratorTool(BaseTool):
             )
             if file_path is None:
                 return (
-                    f"Failed to save image to disk",
+                    "Failed to save image to disk",
                     f"ImageGeneratorTool[{self.model_provider}]: Failed to save image to disk from prompt: {prompt}",
                 )
 
             url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
             if url is None:
                 return (
-                    f"Failed to save image to disk",
+                    "Failed to save image to disk",
                     f"ImageGeneratorTool[{self.model_provider}]: Failed to save image to disk from prompt: {prompt}",
                 )
 
