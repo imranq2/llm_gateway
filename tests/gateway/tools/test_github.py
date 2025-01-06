@@ -23,6 +23,7 @@ def test_github() -> None:
         # Get PR counts with optional parameters
         pr_counts = pr_counter.get_closed_prs_by_engineer(
             max_repos=5,  # Optional: limit repositories
+            max_pull_requests=50,  # Optional: limit PRs
             include_merged=True,  # Include merged PRs
         )
 

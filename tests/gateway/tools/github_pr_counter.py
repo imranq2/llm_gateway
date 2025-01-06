@@ -5,6 +5,7 @@ import time
 import logging
 import backoff
 from github.PaginatedList import PaginatedList
+from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 
@@ -69,13 +70,18 @@ class GitHubPRCounter:
             time.sleep(wait_time)
 
     def get_closed_prs_by_engineer(
-        self, max_repos: Optional[int] = None, include_merged: bool = True
+        self,
+        *,
+        max_repos: Optional[int] = None,
+        max_pull_requests: Optional[int] = None,
+        include_merged: bool = True,
     ) -> Dict[str, int]:
         """
         Retrieve count of closed PRs by engineer across organization repositories.
 
         Args:
             max_repos (Optional[int]): Limit number of repositories to process
+            max_pull_requests (Optional[int]): Limit number of pull requests to process
             include_merged (bool): Include merged PRs in count
 
         Returns:
@@ -113,10 +119,17 @@ class GitHubPRCounter:
                 print(f"\n---------- Processing repository {repo.name} -----------\n")
 
                 # Fetch closed pull requests
-                closed_prs = repo.get_pulls(state="closed")
+                closed_prs: PaginatedList[PullRequest] = repo.get_pulls(
+                    state="closed", sort="updated", direction="desc"
+                )
 
                 # Count PRs by engineer
-                for pr in closed_prs:
+                pr_index: int
+                pr: PullRequest
+                for pr_index, pr in enumerate(closed_prs):
+                    if max_pull_requests and pr_index >= max_pull_requests:
+                        print(f"Max pull requests reached for {repo.name}")
+                        break
                     # Filter PRs based on merge status
                     if (include_merged and pr.merged) or pr.state == "closed":
                         engineer = pr.user.login
@@ -124,7 +137,7 @@ class GitHubPRCounter:
                             engineer_pr_counts.get(engineer, 0) + 1
                         )
                         print(
-                            f"PR by {engineer} title: {pr.title} closed: {pr.closed_at} - {pr.title}.  url: {pr.html_url}"
+                            f"{engineer} | {pr.title} | {pr.closed_at} | {pr.html_url}"
                         )
 
                 processed_repos += 1
