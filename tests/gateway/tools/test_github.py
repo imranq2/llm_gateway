@@ -22,8 +22,8 @@ def test_github() -> None:
     try:
         # Get PR counts with optional parameters
         pr_counts = pr_counter.get_closed_prs_by_engineer(
-            max_repos=5,  # Optional: limit repositories
-            max_pull_requests=50,  # Optional: limit PRs
+            max_repos=100,  # Optional: limit repositories
+            max_pull_requests=100,  # Optional: limit PRs
             min_created_at=datetime(
                 2024, 9, 1, tzinfo=timezone.utc
             ),  # Optional: minimum created date

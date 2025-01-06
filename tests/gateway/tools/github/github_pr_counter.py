@@ -52,8 +52,8 @@ class GithubPullRequestTool:
         remaining = rate_limit.core.remaining
         reset_time = rate_limit.core.reset
 
-        self.logger.info(f"Rate Limit Remaining: {remaining}")
-        self.logger.info(f"Rate Limit Reset Time: {reset_time}")
+        # self.logger.info(f"Rate Limit Remaining: {remaining}")
+        # self.logger.info(f"Rate Limit Reset Time: {reset_time}")
 
         return {"remaining": remaining, "reset_time": int(reset_time.timestamp())}
 
