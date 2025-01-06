@@ -38,7 +38,7 @@ def test_github() -> None:
 
         # Export results
         pr_counter.export_results(
-            pr_counts, output_file="pr_counts.csv"  # Optional CSV export
+            pr_counts, output_file="pr_counts.tsv"  # Optional TSV export
         )
 
     except Exception as e:

@@ -160,7 +160,8 @@ class GithubPullRequestTool:
                             else:
                                 info.pull_request_count += 1
                                 if info.repos:
-                                    info.repos.append(repo.name)
+                                    if repo.name not in info.repos:
+                                        info.repos.append(repo.name)
                                 else:
                                     info.repos = [repo.name]
 
@@ -214,9 +215,12 @@ class GithubPullRequestTool:
         if output_file:
             try:
                 with open(output_file, "w") as f:
-                    f.write("Engineer,PR Count\n")
-                    for engineer, count in pr_counts.items():
-                        f.write(f"{engineer},{count}\n")
+                    f.write("Contributor\tPR Count\tRepos\n")
+                    for engineer, info in pr_counts.items():
+                        repos_text: str = ",".join(info.repos) if info.repos else ""
+                        f.write(
+                            f"{engineer}\t{info.pull_request_count}\t{repos_text}\n"
+                        )
                 self.logger.info(f"Results exported to {output_file}")
             except IOError as e:
                 self.logger.error(f"Failed to export results: {e}")
