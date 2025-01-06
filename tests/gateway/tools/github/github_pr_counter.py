@@ -217,7 +217,7 @@ class GithubPullRequestTool:
                 with open(output_file, "w") as f:
                     f.write("Contributor\tPR Count\tRepos\n")
                     for engineer, info in pr_counts.items():
-                        repos_text: str = ",".join(info.repos) if info.repos else ""
+                        repos_text: str = " | ".join(info.repos) if info.repos else ""
                         f.write(
                             f"{engineer}\t{info.pull_request_count}\t{repos_text}\n"
                         )
