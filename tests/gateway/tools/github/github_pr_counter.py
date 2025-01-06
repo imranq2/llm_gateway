@@ -10,6 +10,10 @@ from github.PaginatedList import PaginatedList
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
+from tests.gateway.tools.github.github_pull_request_per_contributor_info import (
+    GithubPullRequestPerContributorInfo,
+)
+
 
 class GithubPullRequestTool:
     def __init__(self, org_name: str, access_token: str):
@@ -23,6 +27,7 @@ class GithubPullRequestTool:
         self.logger = self._setup_logger()
         self.org_name = org_name
         self.access_token = access_token
+        assert access_token
         self.github_client = Github(access_token)
 
     def _setup_logger(self) -> logging.Logger:
@@ -79,7 +84,7 @@ class GithubPullRequestTool:
         min_created_at: Optional[datetime] = None,
         max_created_at: Optional[datetime] = None,
         include_merged: bool = True,
-    ) -> Dict[str, int]:
+    ) -> Dict[str, GithubPullRequestPerContributorInfo]:
         """
         Retrieve count of closed PRs by engineer across organization repositories.
 
@@ -101,11 +106,11 @@ class GithubPullRequestTool:
             raise
 
         # Initialize tracking variables
-        engineer_pr_counts: Dict[str, int] = {}
+        engineer_pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = {}
         processed_repos = 0
 
         repos: PaginatedList[Repository] = org.get_repos(
-            sort="updated", direction="desc"
+            type="private", sort="updated", direction="desc"
         )
         repo_count: int = repos.totalCount
         self.logger.info(f"====== Processing {repo_count} repositories =======")
@@ -143,9 +148,22 @@ class GithubPullRequestTool:
                         # Filter PRs based on merge status
                         if (include_merged and pr.merged) or pr.state == "closed":
                             engineer = pr.user.login
-                            engineer_pr_counts[engineer] = (
-                                engineer_pr_counts.get(engineer, 0) + 1
-                            )
+                            info = engineer_pr_counts.get(engineer)
+                            if info is None:
+                                engineer_pr_counts[engineer] = (
+                                    GithubPullRequestPerContributorInfo(
+                                        contributor=engineer,
+                                        pull_request_count=1,
+                                        repos=[repo.name],
+                                    )
+                                )
+                            else:
+                                info.pull_request_count += 1
+                                if info.repos:
+                                    info.repos.append(repo.name)
+                                else:
+                                    info.repos = [repo.name]
+
                             print(
                                 f"{engineer} | {pr.title} | {pr.closed_at} | {pr.html_url}"
                             )
@@ -164,12 +182,20 @@ class GithubPullRequestTool:
                 self.logger.error(f"Error processing repository {repo.name}: {e}")
                 continue
 
-        return dict(
-            sorted(engineer_pr_counts.items(), key=lambda x: x[1], reverse=True)
+        # sort engineer_pr_counts by PR count
+        engineer_pr_counts = dict(
+            sorted(
+                engineer_pr_counts.items(),
+                key=lambda item: item[1].pull_request_count,
+                reverse=True,
+            )
         )
+        return engineer_pr_counts
 
     def export_results(
-        self, pr_counts: Dict[str, int], output_file: Optional[str] = None
+        self,
+        pr_counts: Dict[str, GithubPullRequestPerContributorInfo],
+        output_file: Optional[str] = None,
     ) -> None:
         """
         Export PR count results to console and optional file.
@@ -180,8 +206,8 @@ class GithubPullRequestTool:
         """
         # Print results to console
         print("\n------ Closed PRs by Engineer ------\n")
-        for engineer, count in pr_counts.items():
-            print(f"{engineer}: {count} closed PRs")
+        for engineer, info in pr_counts.items():
+            print(f"{engineer} | {info.pull_request_count} | {info.repos}")
         print("\n------------------------------------\n")
 
         # Optional file export

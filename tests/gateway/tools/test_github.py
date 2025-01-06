@@ -1,7 +1,11 @@
 from datetime import datetime, timezone
 import os
+from typing import Dict
 
 from tests.gateway.tools.github.github_pr_counter import GithubPullRequestTool
+from tests.gateway.tools.github.github_pull_request_per_contributor_info import (
+    GithubPullRequestPerContributorInfo,
+)
 
 
 def test_github() -> None:
@@ -21,13 +25,15 @@ def test_github() -> None:
 
     try:
         # Get PR counts with optional parameters
-        pr_counts = pr_counter.get_closed_prs_by_engineer(
-            max_repos=100,  # Optional: limit repositories
-            max_pull_requests=100,  # Optional: limit PRs
-            min_created_at=datetime(
-                2024, 9, 1, tzinfo=timezone.utc
-            ),  # Optional: minimum created date
-            include_merged=True,  # Include merged PRs
+        pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = (
+            pr_counter.get_closed_prs_by_engineer(
+                max_repos=100,  # Optional: limit repositories
+                max_pull_requests=200,  # Optional: limit PRs
+                min_created_at=datetime(
+                    2024, 9, 1, tzinfo=timezone.utc
+                ),  # Optional: minimum created date
+                include_merged=True,  # Include merged PRs
+            )
         )
 
         # Export results
