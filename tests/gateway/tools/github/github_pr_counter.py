@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from github import Github, RateLimitExceededException
 from github.GithubException import GithubException
 from typing import Dict, Optional
@@ -9,7 +11,7 @@ from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 
-class GitHubPRCounter:
+class GithubPullRequestTool:
     def __init__(self, org_name: str, access_token: str):
         """
         Initialize GitHub PR Counter with rate limit handling.
@@ -74,6 +76,8 @@ class GitHubPRCounter:
         *,
         max_repos: Optional[int] = None,
         max_pull_requests: Optional[int] = None,
+        min_created_at: Optional[datetime] = None,
+        max_created_at: Optional[datetime] = None,
         include_merged: bool = True,
     ) -> Dict[str, int]:
         """
@@ -82,6 +86,8 @@ class GitHubPRCounter:
         Args:
             max_repos (Optional[int]): Limit number of repositories to process
             max_pull_requests (Optional[int]): Limit number of pull requests to process
+            min_created_at (Optional[datetime]): Minimum created date for PRs
+            max_created_at (Optional[datetime]): Maximum created date for PRs
             include_merged (bool): Include merged PRs in count
 
         Returns:
@@ -130,15 +136,19 @@ class GitHubPRCounter:
                     if max_pull_requests and pr_index >= max_pull_requests:
                         print(f"Max pull requests reached for {repo.name}")
                         break
-                    # Filter PRs based on merge status
-                    if (include_merged and pr.merged) or pr.state == "closed":
-                        engineer = pr.user.login
-                        engineer_pr_counts[engineer] = (
-                            engineer_pr_counts.get(engineer, 0) + 1
-                        )
-                        print(
-                            f"{engineer} | {pr.title} | {pr.closed_at} | {pr.html_url}"
-                        )
+                    if min_created_at and pr.created_at < min_created_at:
+                        print(f"Min created date reached for {repo.name}")
+                        break
+                    if not max_created_at or pr.created_at <= max_created_at:
+                        # Filter PRs based on merge status
+                        if (include_merged and pr.merged) or pr.state == "closed":
+                            engineer = pr.user.login
+                            engineer_pr_counts[engineer] = (
+                                engineer_pr_counts.get(engineer, 0) + 1
+                            )
+                            print(
+                                f"{engineer} | {pr.title} | {pr.closed_at} | {pr.html_url}"
+                            )
 
                 processed_repos += 1
                 self.logger.info(
@@ -178,6 +188,7 @@ class GitHubPRCounter:
         if output_file:
             try:
                 with open(output_file, "w") as f:
+                    f.write("Engineer,PR Count\n")
                     for engineer, count in pr_counts.items():
                         f.write(f"{engineer},{count}\n")
                 self.logger.info(f"Results exported to {output_file}")

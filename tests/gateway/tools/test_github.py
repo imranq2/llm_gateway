@@ -1,7 +1,7 @@
+from datetime import datetime, timezone
 import os
 
-
-from tests.gateway.tools.github_pr_counter import GitHubPRCounter
+from tests.gateway.tools.github.github_pr_counter import GithubPullRequestTool
 
 
 def test_github() -> None:
@@ -17,13 +17,16 @@ def test_github() -> None:
         raise ValueError("Please set GITHUB_ORG and GITHUB_TOKEN environment variables")
 
     # Initialize PR counter
-    pr_counter = GitHubPRCounter(org_name, access_token)
+    pr_counter = GithubPullRequestTool(org_name, access_token)
 
     try:
         # Get PR counts with optional parameters
         pr_counts = pr_counter.get_closed_prs_by_engineer(
             max_repos=5,  # Optional: limit repositories
             max_pull_requests=50,  # Optional: limit PRs
+            min_created_at=datetime(
+                2024, 9, 1, tzinfo=timezone.utc
+            ),  # Optional: minimum created date
             include_merged=True,  # Include merged PRs
         )
 
