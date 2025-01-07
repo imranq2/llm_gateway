@@ -1,4 +1,5 @@
 from datetime import datetime
+from logging import Logger
 
 from github import Github, RateLimitExceededException
 from github.GithubException import GithubException
@@ -10,8 +11,10 @@ from github.PaginatedList import PaginatedList
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
-from tests.gateway.tools.github.github_pull_request import GithubPullRequest
-from tests.gateway.tools.github.github_pull_request_per_contributor_info import (
+from language_model_gateway.gateway.utilities.github.github_pull_request import (
+    GithubPullRequest,
+)
+from language_model_gateway.gateway.utilities.github.github_pull_request_per_contributor_info import (
     GithubPullRequestPerContributorInfo,
 )
 
@@ -25,24 +28,11 @@ class GithubPullRequestHelper:
             org_name (str): GitHub organization name
             access_token (str): GitHub Personal Access Token
         """
-        self.logger = self._setup_logger()
+        self.logger: Logger = logging.getLogger(__name__)
         self.org_name = org_name
         self.access_token = access_token
         assert access_token
         self.github_client = Github(access_token)
-
-    def _setup_logger(self) -> logging.Logger:
-        """
-        Set up a logger for tracking operations and errors.
-
-        Returns:
-            logging.Logger: Configured logger instance
-        """
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
-        return logging.getLogger(__name__)
 
     @backoff.on_exception(
         backoff.expo, (RateLimitExceededException, GithubException), max_tries=5
@@ -128,7 +118,9 @@ class GithubPullRequestHelper:
                 if rate_info["remaining"] < 10:
                     self._wait_for_rate_limit_reset(rate_info["reset_time"])
 
-                print(f"\n---------- Processing repository {repo.name} -----------\n")
+                self.logger.info(
+                    f"\n---------- Processing repository {repo.name} -----------\n"
+                )
 
                 # Fetch closed pull requests
                 closed_prs: PaginatedList[PullRequest] = repo.get_pulls(
@@ -140,10 +132,10 @@ class GithubPullRequestHelper:
                 pr: PullRequest
                 for pr_index, pr in enumerate(closed_prs):
                     if max_pull_requests and pr_index >= max_pull_requests:
-                        print(f"Max pull requests reached for {repo.name}")
+                        self.logger.info(f"Max pull requests reached for {repo.name}")
                         break
                     if min_created_at and pr.created_at < min_created_at:
-                        print(f"Min created date reached for {repo.name}")
+                        self.logger.info(f"Min created date reached for {repo.name}")
                         break
                     if not max_created_at or pr.created_at <= max_created_at:
                         # Filter PRs based on merge status
@@ -157,7 +149,7 @@ class GithubPullRequestHelper:
                                     user=pr.user.login,
                                 )
                             )
-                            print(
+                            self.logger.debug(
                                 f"{pr.user.login} | {pr.title} | {pr.closed_at} | {pr.html_url}"
                             )
 
@@ -233,10 +225,10 @@ class GithubPullRequestHelper:
             output_file (Optional[str]): Path to output file
         """
         # Print results to console
-        print("\n------ Closed PRs by Engineer ------\n")
+        self.logger.info("\n------ Closed PRs by Engineer ------\n")
         for engineer, info in pr_counts.items():
-            print(f"{engineer} | {info.pull_request_count} | {info.repos}")
-        print("\n------------------------------------\n")
+            self.logger.info(f"{engineer} | {info.pull_request_count} | {info.repos}")
+        self.logger.info("\n------------------------------------\n")
 
         # Optional file export
         if output_file:

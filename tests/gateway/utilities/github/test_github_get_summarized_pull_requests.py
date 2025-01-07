@@ -1,18 +1,29 @@
 from datetime import datetime, timezone
 import os
+from os import makedirs, path
+from pathlib import Path
+from shutil import rmtree
 from typing import Dict, List
 
-from tests.gateway.tools.github.github_pull_request import GithubPullRequest
-from tests.gateway.tools.github.github_pull_request_helper import (
+from language_model_gateway.gateway.utilities.github.github_pull_request import (
+    GithubPullRequest,
+)
+from language_model_gateway.gateway.utilities.github.github_pull_request_helper import (
     GithubPullRequestHelper,
 )
-from tests.gateway.tools.github.github_pull_request_per_contributor_info import (
+from language_model_gateway.gateway.utilities.github.github_pull_request_per_contributor_info import (
     GithubPullRequestPerContributorInfo,
 )
 
 
-def test_github() -> None:
+def test_github_get_summarized_pull_requests() -> None:
     print()
+    data_dir: Path = Path(__file__).parent.joinpath("./")
+    temp_folder = data_dir.joinpath("./temp")
+    if path.isdir(temp_folder):
+        rmtree(temp_folder)
+    makedirs(temp_folder)
+
     # Get credentials from environment variables
     org_name = "icanbwell"  # os.getenv('GITHUB_ORG')
     access_token = os.getenv("GITHUB_TOKEN")
@@ -40,7 +51,10 @@ def test_github() -> None:
 
         # Export results
         pr_counter.export_results(
-            pr_counts, output_file="pr_counts.tsv"  # Optional TSV export
+            pr_counts,
+            output_file=str(
+                temp_folder.joinpath("pr_counts.tsv")
+            ),  # Optional TSV export
         )
 
     except Exception as e:
