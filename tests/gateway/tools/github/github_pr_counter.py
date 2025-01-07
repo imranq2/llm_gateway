@@ -2,7 +2,7 @@ from datetime import datetime
 
 from github import Github, RateLimitExceededException
 from github.GithubException import GithubException
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import time
 import logging
 import backoff
@@ -10,6 +10,7 @@ from github.PaginatedList import PaginatedList
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
+from tests.gateway.tools.github.github_pull_request import GithubPullRequest
 from tests.gateway.tools.github.github_pull_request_per_contributor_info import (
     GithubPullRequestPerContributorInfo,
 )
@@ -76,7 +77,7 @@ class GithubPullRequestTool:
             self.logger.warning(f"Rate limit exceeded. Waiting {wait_time} seconds.")
             time.sleep(wait_time)
 
-    def get_closed_prs_by_engineer(
+    def retrieve_closed_prs(
         self,
         *,
         max_repos: Optional[int] = None,
@@ -84,9 +85,9 @@ class GithubPullRequestTool:
         min_created_at: Optional[datetime] = None,
         max_created_at: Optional[datetime] = None,
         include_merged: bool = True,
-    ) -> Dict[str, GithubPullRequestPerContributorInfo]:
+    ) -> List[GithubPullRequest]:
         """
-        Retrieve count of closed PRs by engineer across organization repositories.
+        Retrieve closed pull requests across organization repositories.
 
         Args:
             max_repos (Optional[int]): Limit number of repositories to process
@@ -96,7 +97,7 @@ class GithubPullRequestTool:
             include_merged (bool): Include merged PRs in count
 
         Returns:
-            Dict[str, int]: Dictionary of engineers and their closed PR counts
+            List[Tuple[PullRequest, Repository]]: List of pull requests with their repositories
         """
         # Validate and get organization
         try:
@@ -106,7 +107,7 @@ class GithubPullRequestTool:
             raise
 
         # Initialize tracking variables
-        engineer_pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = {}
+        closed_prs_list: List[GithubPullRequest] = []
         processed_repos = 0
 
         repos: PaginatedList[Repository] = org.get_repos(
@@ -134,7 +135,7 @@ class GithubPullRequestTool:
                     state="closed", sort="updated", direction="desc"
                 )
 
-                # Count PRs by engineer
+                # Collect PRs by engineer
                 pr_index: int
                 pr: PullRequest
                 for pr_index, pr in enumerate(closed_prs):
@@ -147,26 +148,17 @@ class GithubPullRequestTool:
                     if not max_created_at or pr.created_at <= max_created_at:
                         # Filter PRs based on merge status
                         if (include_merged and pr.merged) or pr.state == "closed":
-                            engineer = pr.user.login
-                            info = engineer_pr_counts.get(engineer)
-                            if info is None:
-                                engineer_pr_counts[engineer] = (
-                                    GithubPullRequestPerContributorInfo(
-                                        contributor=engineer,
-                                        pull_request_count=1,
-                                        repos=[repo.name],
-                                    )
+                            closed_prs_list.append(
+                                GithubPullRequest(
+                                    repo=repo.name,
+                                    title=pr.title,
+                                    closed_at=pr.closed_at,
+                                    html_url=pr.html_url,
+                                    user=pr.user.login,
                                 )
-                            else:
-                                info.pull_request_count += 1
-                                if info.repos:
-                                    if repo.name not in info.repos:
-                                        info.repos.append(repo.name)
-                                else:
-                                    info.repos = [repo.name]
-
+                            )
                             print(
-                                f"{engineer} | {pr.title} | {pr.closed_at} | {pr.html_url}"
+                                f"{pr.user.login} | {pr.title} | {pr.closed_at} | {pr.html_url}"
                             )
 
                 processed_repos += 1
@@ -183,15 +175,50 @@ class GithubPullRequestTool:
                 self.logger.error(f"Error processing repository {repo.name}: {e}")
                 continue
 
-        # sort engineer_pr_counts by PR count
-        engineer_pr_counts = dict(
+        return closed_prs_list
+
+    # noinspection PyMethodMayBeStatic
+    def summarize_prs_by_engineer(
+        self, *, pull_requests: List[GithubPullRequest]
+    ) -> Dict[str, GithubPullRequestPerContributorInfo]:
+        """
+        Summarize pull requests by engineer.
+
+        Args:
+            pull_requests (List[GithubPullRequest]): List of pull requests with their repositories
+
+        Returns:
+            Dict[str, GithubPullRequestPerContributorInfo]: Summary of PRs by engineer
+        """
+        engineer_pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = {}
+
+        pr: GithubPullRequest
+        for pr in pull_requests:
+            engineer = pr.user
+            info = engineer_pr_counts.get(engineer)
+
+            if info is None:
+                engineer_pr_counts[engineer] = GithubPullRequestPerContributorInfo(
+                    contributor=engineer,
+                    pull_request_count=1,
+                    repos=[pr.repo],
+                )
+            else:
+                info.pull_request_count += 1
+                if info.repos:
+                    if pr.repo not in info.repos:
+                        info.repos.append(pr.repo)
+                else:
+                    info.repos = [pr.repo]
+
+        # Sort engineer_pr_counts by PR count
+        return dict(
             sorted(
                 engineer_pr_counts.items(),
                 key=lambda item: item[1].pull_request_count,
                 reverse=True,
             )
         )
-        return engineer_pr_counts
 
     def export_results(
         self,
