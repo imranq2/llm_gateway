@@ -2,8 +2,10 @@ from datetime import datetime, timezone
 import os
 from typing import Dict, List
 
-from tests.gateway.tools.github.github_pr_counter import GithubPullRequestTool
 from tests.gateway.tools.github.github_pull_request import GithubPullRequest
+from tests.gateway.tools.github.github_pull_request_helper import (
+    GithubPullRequestHelper,
+)
 from tests.gateway.tools.github.github_pull_request_per_contributor_info import (
     GithubPullRequestPerContributorInfo,
 )
@@ -19,7 +21,7 @@ def test_github() -> None:
         raise ValueError("Please set GITHUB_ORG and GITHUB_TOKEN environment variables")
 
     # Initialize PR counter
-    pr_counter = GithubPullRequestTool(org_name, access_token)
+    pr_counter = GithubPullRequestHelper(org_name, access_token)
 
     try:
 

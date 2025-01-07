@@ -16,7 +16,7 @@ from tests.gateway.tools.github.github_pull_request_per_contributor_info import 
 )
 
 
-class GithubPullRequestTool:
+class GithubPullRequestHelper:
     def __init__(self, org_name: str, access_token: str):
         """
         Initialize GitHub PR Counter with rate limit handling.
