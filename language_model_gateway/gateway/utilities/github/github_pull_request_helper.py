@@ -101,28 +101,38 @@ class GithubPullRequestHelper:
         # Initialize tracking variables
         closed_prs_list: List[GithubPullRequest] = []
 
-        repos: PaginatedList[Repository] = org.get_repos(
-            type="private", sort="updated", direction="desc"
-        )
-
-        repo_count: int = repos.totalCount
-        self.logger.info(f"====== Processing {repo_count} repositories =======")
-
-        # Iterate through repositories
-        for repo in repos:
-            # Optional repository limit
-            if max_repos and len(closed_prs_list) >= max_repos:
-                break
-
-            closed_prs_list.extend(
-                self.get_pull_requests_from_repo(
-                    include_merged=include_merged,
-                    max_created_at=max_created_at,
-                    max_pull_requests=max_pull_requests,
-                    min_created_at=min_created_at,
-                    repo=repo,
-                )
+        if repo_name is not None:
+            repo: Repository = org.get_repo(name=repo_name)
+            closed_prs_list = self.get_pull_requests_from_repo(
+                include_merged=include_merged,
+                max_created_at=max_created_at,
+                max_pull_requests=max_pull_requests,
+                min_created_at=min_created_at,
+                repo=repo,
             )
+        else:
+            repos: PaginatedList[Repository] = org.get_repos(
+                type="private", sort="updated", direction="desc"
+            )
+
+            repo_count: int = repos.totalCount
+            self.logger.info(f"====== Processing {repo_count} repositories =======")
+
+            # Iterate through repositories
+            for repo in repos:
+                # Optional repository limit
+                if max_repos and len(closed_prs_list) >= max_repos:
+                    break
+
+                closed_prs_list.extend(
+                    self.get_pull_requests_from_repo(
+                        include_merged=include_merged,
+                        max_created_at=max_created_at,
+                        max_pull_requests=max_pull_requests,
+                        min_created_at=min_created_at,
+                        repo=repo,
+                    )
+                )
 
         return closed_prs_list
 
