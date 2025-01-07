@@ -75,6 +75,7 @@ class GithubPullRequestHelper:
         min_created_at: Optional[datetime] = None,
         max_created_at: Optional[datetime] = None,
         include_merged: bool = True,
+        repo_name: Optional[str] = None,
     ) -> List[GithubPullRequest]:
         """
         Retrieve closed pull requests across organization repositories.
@@ -85,6 +86,7 @@ class GithubPullRequestHelper:
             min_created_at (Optional[datetime]): Minimum created date for PRs
             max_created_at (Optional[datetime]): Maximum created date for PRs
             include_merged (bool): Include merged PRs in count
+            repo_name (Optional[str]): filter by repo name
 
         Returns:
             List[Tuple[PullRequest, Repository]]: List of pull requests with their repositories
@@ -98,74 +100,93 @@ class GithubPullRequestHelper:
 
         # Initialize tracking variables
         closed_prs_list: List[GithubPullRequest] = []
-        processed_repos = 0
 
         repos: PaginatedList[Repository] = org.get_repos(
             type="private", sort="updated", direction="desc"
         )
+
         repo_count: int = repos.totalCount
         self.logger.info(f"====== Processing {repo_count} repositories =======")
 
         # Iterate through repositories
         for repo in repos:
             # Optional repository limit
-            if max_repos and processed_repos >= max_repos:
+            if max_repos and len(closed_prs_list) >= max_repos:
                 break
 
-            try:
-                # Check rate limit before processing
-                rate_info: Dict[str, int] = self._get_rate_limit_info()
-                if rate_info["remaining"] < 10:
-                    self._wait_for_rate_limit_reset(rate_info["reset_time"])
-
-                self.logger.info(
-                    f"\n---------- Processing repository {repo.name} -----------\n"
+            closed_prs_list.extend(
+                self.get_pull_requests_from_repo(
+                    include_merged=include_merged,
+                    max_created_at=max_created_at,
+                    max_pull_requests=max_pull_requests,
+                    min_created_at=min_created_at,
+                    repo=repo,
                 )
+            )
 
-                # Fetch closed pull requests
-                closed_prs: PaginatedList[PullRequest] = repo.get_pulls(
-                    state="closed", sort="updated", direction="desc"
-                )
+        return closed_prs_list
 
-                # Collect PRs by engineer
-                pr_index: int
-                pr: PullRequest
-                for pr_index, pr in enumerate(closed_prs):
-                    if max_pull_requests and pr_index >= max_pull_requests:
-                        self.logger.info(f"Max pull requests reached for {repo.name}")
-                        break
-                    if min_created_at and pr.created_at < min_created_at:
-                        self.logger.info(f"Min created date reached for {repo.name}")
-                        break
-                    if not max_created_at or pr.created_at <= max_created_at:
-                        # Filter PRs based on merge status
-                        if (include_merged and pr.merged) or pr.state == "closed":
-                            closed_prs_list.append(
-                                GithubPullRequest(
-                                    repo=repo.name,
-                                    title=pr.title,
-                                    closed_at=pr.closed_at,
-                                    html_url=pr.html_url,
-                                    user=pr.user.login,
-                                )
-                            )
-                            self.logger.debug(
-                                f"{pr.user.login} | {pr.title} | {pr.closed_at} | {pr.html_url}"
-                            )
-
-                processed_repos += 1
-                self.logger.info(
-                    f"\n--------- Finished Processed repository: {repo.name} ----------\n"
-                )
-
-            except RateLimitExceededException:
-                rate_info = self._get_rate_limit_info()
+    def get_pull_requests_from_repo(
+        self,
+        *,
+        max_pull_requests: Optional[int] = None,
+        min_created_at: Optional[datetime] = None,
+        max_created_at: Optional[datetime] = None,
+        include_merged: bool = True,
+        repo: Repository,
+    ) -> List[GithubPullRequest]:
+        closed_prs_list: List[GithubPullRequest] = []
+        try:
+            # Check rate limit before processing
+            rate_info: Dict[str, int] = self._get_rate_limit_info()
+            if rate_info["remaining"] < 10:
                 self._wait_for_rate_limit_reset(rate_info["reset_time"])
-                continue
 
-            except Exception as e:
-                self.logger.error(f"Error processing repository {repo.name}: {e}")
-                continue
+            self.logger.info(
+                f"\n---------- Processing repository {repo.name} -----------\n"
+            )
+
+            # Fetch closed pull requests
+            closed_prs: PaginatedList[PullRequest] = repo.get_pulls(
+                state="closed", sort="updated", direction="desc"
+            )
+
+            # Collect PRs by engineer
+            pr_index: int
+            pr: PullRequest
+            for pr_index, pr in enumerate(closed_prs):
+                if max_pull_requests and pr_index >= max_pull_requests:
+                    self.logger.info(f"Max pull requests reached for {repo.name}")
+                    break
+                if min_created_at and pr.created_at < min_created_at:
+                    self.logger.info(f"Min created date reached for {repo.name}")
+                    break
+                if not max_created_at or pr.created_at <= max_created_at:
+                    # Filter PRs based on merge status
+                    if (include_merged and pr.merged) or pr.state == "closed":
+                        closed_prs_list.append(
+                            GithubPullRequest(
+                                repo=repo.name,
+                                title=pr.title,
+                                closed_at=pr.closed_at,
+                                html_url=pr.html_url,
+                                user=pr.user.login,
+                            )
+                        )
+                        self.logger.debug(
+                            f"{pr.user.login} | {pr.title} | {pr.closed_at} | {pr.html_url}"
+                        )
+
+            self.logger.info(
+                f"\n--------- Finished Processed repository: {repo.name} ----------\n"
+            )
+
+        except RateLimitExceededException:
+            rate_info = self._get_rate_limit_info()
+            self._wait_for_rate_limit_reset(rate_info["reset_time"])
+
+        except Exception as e:
+            self.logger.error(f"Error processing repository {repo.name}: {e}")
 
         return closed_prs_list
 
