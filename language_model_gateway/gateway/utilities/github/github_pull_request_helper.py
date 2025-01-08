@@ -92,7 +92,7 @@ class GithubPullRequestHelper:
                 repos_url = f"{self.base_url}/orgs/{self.org_name}/repos"
                 repos_response = await client.get(
                     repos_url,
-                    params={"type": "private", "sort": "updated", "direction": "desc"},
+                    params={"type": "all", "sort": "updated", "direction": "desc"},
                 )
                 repos_response.raise_for_status()
                 repos = repos_response.json()
