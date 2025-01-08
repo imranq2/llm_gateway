@@ -1,15 +1,19 @@
 from datetime import datetime
 from logging import Logger
+from urllib.parse import urlparse
 
+import requests
+import re
 from github import Github, RateLimitExceededException
 from github.GithubException import GithubException
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, cast
 import time
 import logging
 import backoff
 from github.PaginatedList import PaginatedList
 from github.PullRequest import PullRequest
 from github.Repository import Repository
+from requests import Response
 
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
     GithubPullRequest,
@@ -30,9 +34,9 @@ class GithubPullRequestHelper:
         """
         self.logger: Logger = logging.getLogger(__name__)
         self.org_name = org_name
-        self.access_token = access_token
+        self.github_access_token = access_token
         assert access_token
-        self.github_client = Github(access_token)
+        self.github_client: Github = Github(access_token)
 
     @backoff.on_exception(
         backoff.expo, (RateLimitExceededException, GithubException), max_tries=5
@@ -242,6 +246,134 @@ class GithubPullRequestHelper:
                 reverse=True,
             )
         )
+
+    # noinspection PyMethodMayBeStatic
+    def parse_pr_url(self, pr_url: str) -> dict[str, str | int]:
+        """
+        Parse GitHub PR URL to extract repository and PR details.
+
+        Args:
+            pr_url (str): Full GitHub PR URL
+
+        Returns:
+            Dict containing owner, repo, and PR number
+
+        Raises:
+            ValueError: If URL is not a valid GitHub PR URL
+        """
+        parsed_url = urlparse(pr_url)
+
+        # Support both github.com and GitHub Enterprise URLs
+        if not (
+            parsed_url.netloc in ["github.com", "www.github.com"]
+            or ".githubenterprise.com" in parsed_url.netloc
+        ):
+            raise ValueError("Invalid GitHub URL")
+
+        # Regex to match GitHub PR URL pattern
+        match = re.match(r"/([^/]+)/([^/]+)/pull/(\d+)", parsed_url.path)
+
+        if not match:
+            raise ValueError("Invalid GitHub PR URL format")
+
+        return {
+            "owner": match.group(1),
+            "repo": match.group(2),
+            "pr_number": int(match.group(3)),
+        }
+
+    def get_pr_diff(self, pr_url: str) -> str:
+        """
+        Fetch the diff for a given GitHub PR URL.
+
+        Args:
+            pr_url (str): Full GitHub PR URL
+
+        Returns:
+            str: The diff content of the PR
+
+        Raises:
+            ValueError: For URL parsing errors
+            GithubException: For GitHub API related errors
+        """
+        try:
+            # Parse the PR URL
+            pr_details: Dict[str, str | int] = self.parse_pr_url(pr_url)
+
+            # Get the repository
+            repo = self.github_client.get_repo(
+                f"{pr_details['owner']}/{pr_details['repo']}"
+            )
+
+            # Get the pull request
+            pr_number: int = cast(int, pr_details["pr_number"])
+            pull_request: PullRequest = repo.get_pull(pr_number)
+
+            # Fetch and return the diff
+            return pull_request.diff_url
+
+        except GithubException as e:
+            print(f"GitHub API Error: {e}")
+            raise
+        except Exception as e:
+            print(f"Error fetching PR diff: {e}")
+            raise
+
+    def get_pr_diff_content(self, pr_url: str) -> str:
+        """
+        Fetch the actual diff content for a given GitHub PR URL.
+
+        Args:
+            pr_url (str): Full GitHub PR URL
+
+        Returns:
+            str: The raw diff content of the PR
+        """
+        try:
+            # Parse the PR URL
+            pr_details: Dict[str, str | int] = self.parse_pr_url(pr_url)
+
+            # Get the repository
+            repo = self.github_client.get_repo(
+                f"{pr_details['owner']}/{pr_details['repo']}"
+            )
+
+            # Get the pull request
+            pr_number: int = cast(int, pr_details["pr_number"])
+            pull_request: PullRequest = repo.get_pull(pr_number)
+
+            # Prepare headers for authenticated request
+            headers: Dict[str, str] = {
+                "Accept": "application/vnd.github.v3.diff",
+                "User-Agent": "PyGithub-PR-Diff-Fetcher",
+            }
+
+            # Add authentication if token is available
+            if self.github_access_token:
+                headers["Authorization"] = f"token {self.github_access_token}"
+
+            # Make authenticated request to diff URL
+            diff_response: Response = requests.get(
+                pull_request.diff_url, headers=headers
+            )
+
+            # Raise an exception for bad responses
+            diff_response.raise_for_status()
+
+            return diff_response.text
+
+        except requests.RequestException as e:
+            print(f"Request Error: {e}")
+            # If possible, include response text for debugging
+            if hasattr(e, "response") and e.response:
+                print(f"Response content: {e.response.text}")
+            raise
+        except GithubException as e:
+            print(f"GitHub API Error: {e}")
+            raise
+        except Exception as e:
+            print(f"Error fetching PR diff: {e}")
+            raise
 
     def export_results(
         self,
