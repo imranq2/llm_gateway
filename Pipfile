@@ -63,14 +63,6 @@ tiktoken = "==0.7.0"
 duckduckgo-search = ">=6.3.7"
 # xmltodict is a Python library for working with XML.  It is used by the PubMed tool
 xmltodict = ">=0.14.2"
-# pygithub is a Python library for interacting with the GitHub API
-pygithub = ">=2.5.0"
-# rizaio is a Python library for interacting with the Riza API used to run Python code in an interpeter
-rizaio = ">=0.2.0"
-# tavily-python is a Python library for interacting with the Tavily API used for web searches
-tavily-python = ">=0.5.0"
-# youtube_search is a Python library for searching YouTube videos
-youtube_search = ">=2.1.2"
 # llm-guard is a Python library designed to protect the LLM API from abuse
 #llm-guard= ">=0.3.15"
 langchain_experimental = ">=0.3.3"
