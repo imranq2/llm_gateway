@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 from logging import Logger
-from typing import Dict, Optional, List, Union, cast
+from typing import Dict, Optional, List, Union
 from urllib.parse import urlparse
 
 import httpx
@@ -246,36 +246,6 @@ class GithubPullRequestHelper:
             "repo": match.group(2),
             "pr_number": int(match.group(3)),
         }
-
-    async def get_pr_diff(self, *, pr_url: str) -> str:
-        """
-        Async method to fetch the diff for a given GitHub PR URL.
-
-        Args:
-            pr_url (str): Full GitHub PR URL
-
-        Returns:
-            str: The diff content of the PR
-        """
-        async with httpx.AsyncClient(headers=self.headers) as client:
-            try:
-                # Parse the PR URL
-                pr_details = self.parse_pr_url(pr_url=pr_url)
-
-                # Construct diff URL
-                diff_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
-
-                # Fetch PR details
-                pr_response = await client.get(diff_url, follow_redirects=True)
-                pr_response.raise_for_status()
-                pr_data = pr_response.json()
-
-                # Return diff URL
-                return cast(str, pr_data.get("diff_url", ""))
-
-            except Exception as e:
-                self.logger.error(f"Error fetching PR diff: {e}")
-                raise
 
     async def get_pr_diff_content(self, *, pr_url: str) -> str:
         """
