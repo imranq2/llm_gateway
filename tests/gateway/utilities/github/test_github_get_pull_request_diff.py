@@ -8,7 +8,7 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 )
 
 
-def test_github_get_pull_request_diff() -> None:
+async def test_github_get_pull_request_diff() -> None:
     print()
     data_dir: Path = Path(__file__).parent.joinpath("./")
     temp_folder = data_dir.joinpath("./temp")
@@ -27,7 +27,7 @@ def test_github_get_pull_request_diff() -> None:
     pr_counter = GithubPullRequestHelper(org_name, access_token)
 
     try:
-        diff: str = pr_counter.get_pr_diff_content(
+        diff: str = await pr_counter.get_pr_diff_content(
             pr_url="https://github.com/icanbwell/language-model-gateway-configuration/pull/6/"
         )
         print(diff)

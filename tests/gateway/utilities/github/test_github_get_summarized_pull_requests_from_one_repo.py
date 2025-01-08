@@ -16,7 +16,7 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_per_con
 )
 
 
-def test_github_get_summarized_pull_requests_from_one_repo() -> None:
+async def test_github_get_summarized_pull_requests_from_one_repo() -> None:
     print()
     data_dir: Path = Path(__file__).parent.joinpath("./")
     temp_folder = data_dir.joinpath("./temp")
@@ -37,7 +37,7 @@ def test_github_get_summarized_pull_requests_from_one_repo() -> None:
     try:
 
         # Get PR counts with optional parameters
-        pull_requests: List[GithubPullRequest] = pr_counter.retrieve_closed_prs(
+        pull_requests: List[GithubPullRequest] = await pr_counter.retrieve_closed_prs(
             max_repos=2,  # Optional: limit repositories
             max_pull_requests=200,  # Optional: limit PRs
             min_created_at=datetime(
@@ -52,7 +52,7 @@ def test_github_get_summarized_pull_requests_from_one_repo() -> None:
 
         # Export results
         pr_counter.export_results(
-            pr_counts,
+            pr_counts=pr_counts,
             output_file=str(
                 temp_folder.joinpath("pr_counts.tsv")
             ),  # Optional TSV export

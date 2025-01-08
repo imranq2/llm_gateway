@@ -1,19 +1,12 @@
+import asyncio
+import logging
+import re
 from datetime import datetime
 from logging import Logger
+from typing import Dict, Optional, List, Union, cast
 from urllib.parse import urlparse
 
-import requests
-import re
-from github import Github, RateLimitExceededException
-from github.GithubException import GithubException
-from typing import Dict, Optional, List, cast
-import time
-import logging
-import backoff
-from github.PaginatedList import PaginatedList
-from github.PullRequest import PullRequest
-from github.Repository import Repository
-from requests import Response
+import httpx
 
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
     GithubPullRequest,
@@ -26,7 +19,7 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_per_con
 class GithubPullRequestHelper:
     def __init__(self, org_name: str, access_token: str):
         """
-        Initialize GitHub PR Counter with rate limit handling.
+        Initialize GitHub PR Counter with async rate limit handling.
 
         Args:
             org_name (str): GitHub organization name
@@ -35,43 +28,52 @@ class GithubPullRequestHelper:
         self.logger: Logger = logging.getLogger(__name__)
         self.org_name = org_name
         self.github_access_token = access_token
-        assert access_token
-        self.github_client: Github = Github(access_token)
+        assert access_token, "GitHub access token is required"
 
-    @backoff.on_exception(
-        backoff.expo, (RateLimitExceededException, GithubException), max_tries=5
-    )
-    def _get_rate_limit_info(self) -> Dict[str, int]:
+        self.base_url = "https://api.github.com"
+        self.headers = {
+            "Authorization": f"token {access_token}",
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "AsyncGithubPullRequestHelper",
+        }
+
+    async def _get_rate_limit_info(self, client: httpx.AsyncClient) -> Dict[str, int]:
         """
         Retrieve and log GitHub API rate limit information.
 
         Returns:
             Dict[str, int]: Rate limit details
         """
-        rate_limit = self.github_client.get_rate_limit()
-        remaining = rate_limit.core.remaining
-        reset_time = rate_limit.core.reset
+        try:
+            response = await client.get(
+                f"{self.base_url}/rate_limit", headers=self.headers
+            )
+            response.raise_for_status()
+            rate_limit_data = response.json()
+            core_rate_limit = rate_limit_data["resources"]["core"]
 
-        # self.logger.info(f"Rate Limit Remaining: {remaining}")
-        # self.logger.info(f"Rate Limit Reset Time: {reset_time}")
+            return {
+                "remaining": core_rate_limit["remaining"],
+                "reset_time": core_rate_limit["reset"],
+            }
+        except Exception as e:
+            self.logger.error(f"Rate limit fetch error: {e}")
+            raise
 
-        return {"remaining": remaining, "reset_time": int(reset_time.timestamp())}
-
-    def _wait_for_rate_limit_reset(self, reset_time: int) -> None:
+    async def _wait_for_rate_limit_reset(self, reset_time: int) -> None:
         """
-        Wait until rate limit resets.
+        Async wait until rate limit resets.
 
         Args:
             reset_time (int): Timestamp when rate limit will reset
         """
-        current_time = int(time.time())
+        current_time = int(asyncio.get_event_loop().time())
         wait_time = max(reset_time - current_time + 5, 0)
-
         if wait_time > 0:
             self.logger.warning(f"Rate limit exceeded. Waiting {wait_time} seconds.")
-            time.sleep(wait_time)
+            await asyncio.sleep(wait_time)
 
-    def retrieve_closed_prs(
+    async def retrieve_closed_prs(
         self,
         *,
         max_repos: Optional[int] = None,
@@ -82,127 +84,91 @@ class GithubPullRequestHelper:
         repo_name: Optional[str] = None,
     ) -> List[GithubPullRequest]:
         """
-        Retrieve closed pull requests across organization repositories.
-
-        Args:
-            max_repos (Optional[int]): Limit number of repositories to process
-            max_pull_requests (Optional[int]): Limit number of pull requests to process
-            min_created_at (Optional[datetime]): Minimum created date for PRs
-            max_created_at (Optional[datetime]): Maximum created date for PRs
-            include_merged (bool): Include merged PRs in count
-            repo_name (Optional[str]): filter by repo name
-
-        Returns:
-            List[Tuple[PullRequest, Repository]]: List of pull requests with their repositories
+        Async method to retrieve closed pull requests across organization repositories.
         """
-        # Validate and get organization
-        try:
-            org = self.github_client.get_organization(self.org_name)
-        except Exception as e:
-            self.logger.error(f"Failed to access organization: {e}")
-            raise
-
-        # Initialize tracking variables
-        closed_prs_list: List[GithubPullRequest] = []
-
-        if repo_name is not None:
-            repo: Repository = org.get_repo(name=repo_name)
-            closed_prs_list = self.get_pull_requests_from_repo(
-                include_merged=include_merged,
-                max_created_at=max_created_at,
-                max_pull_requests=max_pull_requests,
-                min_created_at=min_created_at,
-                repo=repo,
-            )
-        else:
-            repos: PaginatedList[Repository] = org.get_repos(
-                type="private", sort="updated", direction="desc"
-            )
-
-            repo_count: int = repos.totalCount
-            self.logger.info(f"====== Processing {repo_count} repositories =======")
-
-            # Iterate through repositories
-            for repo in repos:
-                # Optional repository limit
-                if max_repos and len(closed_prs_list) >= max_repos:
-                    break
-
-                closed_prs_list.extend(
-                    self.get_pull_requests_from_repo(
-                        include_merged=include_merged,
-                        max_created_at=max_created_at,
-                        max_pull_requests=max_pull_requests,
-                        min_created_at=min_created_at,
-                        repo=repo,
-                    )
+        async with httpx.AsyncClient(headers=self.headers, timeout=30.0) as client:
+            try:
+                # Fetch organization repositories
+                repos_url = f"{self.base_url}/orgs/{self.org_name}/repos"
+                repos_response = await client.get(
+                    repos_url,
+                    params={"type": "private", "sort": "updated", "direction": "desc"},
                 )
+                repos_response.raise_for_status()
+                repos = repos_response.json()
 
-        return closed_prs_list
+                # Filter repositories if specific repo is provided
+                if repo_name:
+                    repos = [repo for repo in repos if repo["name"] == repo_name]
 
-    def get_pull_requests_from_repo(
-        self,
-        *,
-        max_pull_requests: Optional[int] = None,
-        min_created_at: Optional[datetime] = None,
-        max_created_at: Optional[datetime] = None,
-        include_merged: bool = True,
-        repo: Repository,
-    ) -> List[GithubPullRequest]:
-        closed_prs_list: List[GithubPullRequest] = []
-        try:
-            # Check rate limit before processing
-            rate_info: Dict[str, int] = self._get_rate_limit_info()
-            if rate_info["remaining"] < 10:
-                self._wait_for_rate_limit_reset(rate_info["reset_time"])
+                # Limit repositories if max_repos is specified
+                repos = repos[:max_repos] if max_repos else repos
 
-            self.logger.info(
-                f"\n---------- Processing repository {repo.name} -----------\n"
-            )
+                closed_prs_list: List[GithubPullRequest] = []
 
-            # Fetch closed pull requests
-            closed_prs: PaginatedList[PullRequest] = repo.get_pulls(
-                state="closed", sort="updated", direction="desc"
-            )
+                for repo in repos:
+                    # Rate limit check
+                    rate_info = await self._get_rate_limit_info(client)
+                    if rate_info["remaining"] < 10:
+                        await self._wait_for_rate_limit_reset(rate_info["reset_time"])
 
-            # Collect PRs by engineer
-            pr_index: int
-            pr: PullRequest
-            for pr_index, pr in enumerate(closed_prs):
-                if max_pull_requests and pr_index >= max_pull_requests:
-                    self.logger.info(f"Max pull requests reached for {repo.name}")
-                    break
-                if min_created_at and pr.created_at < min_created_at:
-                    self.logger.info(f"Min created date reached for {repo.name}")
-                    break
-                if not max_created_at or pr.created_at <= max_created_at:
-                    # Filter PRs based on merge status
-                    if (include_merged and pr.merged) or pr.state == "closed":
-                        closed_prs_list.append(
-                            GithubPullRequest(
-                                repo=repo.name,
-                                title=pr.title,
-                                closed_at=pr.closed_at,
-                                html_url=pr.html_url,
-                                user=pr.user.login,
+                    # Fetch closed PRs for the repository
+                    prs_url = (
+                        f"{self.base_url}/repos/{self.org_name}/{repo['name']}/pulls"
+                    )
+                    prs_response = await client.get(
+                        prs_url,
+                        params={
+                            "state": "closed",
+                            "sort": "updated",
+                            "direction": "desc",
+                        },
+                    )
+                    prs_response.raise_for_status()
+                    prs = prs_response.json()
+
+                    for pr_index, pr in enumerate(prs):
+                        if max_pull_requests and pr_index >= max_pull_requests:
+                            break
+
+                        pr_created_at = datetime.fromisoformat(
+                            pr["created_at"].replace("Z", "+00:00")
+                        )
+
+                        if min_created_at and pr_created_at < min_created_at:
+                            break
+
+                        if not max_created_at or pr_created_at <= max_created_at:
+                            # Check merge status
+                            merged_response = await client.get(
+                                f"{prs_url}/{pr['number']}"
                             )
-                        )
-                        self.logger.debug(
-                            f"{pr.user.login} | {pr.title} | {pr.closed_at} | {pr.html_url}"
-                        )
+                            merged_data = merged_response.json()
 
-            self.logger.info(
-                f"\n--------- Finished Processed repository: {repo.name} ----------\n"
-            )
+                            if (include_merged and merged_data.get("merged")) or pr[
+                                "state"
+                            ] == "closed":
+                                closed_prs_list.append(
+                                    GithubPullRequest(
+                                        repo=repo["name"],
+                                        title=pr["title"],
+                                        closed_at=(
+                                            datetime.fromisoformat(
+                                                pr["closed_at"].replace("Z", "+00:00")
+                                            )
+                                            if pr["closed_at"]
+                                            else None
+                                        ),
+                                        html_url=pr["html_url"],
+                                        user=pr["user"]["login"],
+                                    )
+                                )
 
-        except RateLimitExceededException:
-            rate_info = self._get_rate_limit_info()
-            self._wait_for_rate_limit_reset(rate_info["reset_time"])
+                return closed_prs_list
 
-        except Exception as e:
-            self.logger.error(f"Error processing repository {repo.name}: {e}")
-
-        return closed_prs_list
+            except Exception as e:
+                self.logger.error(f"Error retrieving PRs: {e}")
+                raise
 
     # noinspection PyMethodMayBeStatic
     def summarize_prs_by_engineer(
@@ -212,14 +178,13 @@ class GithubPullRequestHelper:
         Summarize pull requests by engineer.
 
         Args:
-            pull_requests (List[GithubPullRequest]): List of pull requests with their repositories
+            pull_requests (List[GithubPullRequest]): List of pull requests
 
         Returns:
             Dict[str, GithubPullRequestPerContributorInfo]: Summary of PRs by engineer
         """
         engineer_pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = {}
 
-        pr: GithubPullRequest
         for pr in pull_requests:
             engineer = pr.user
             info = engineer_pr_counts.get(engineer)
@@ -248,7 +213,7 @@ class GithubPullRequestHelper:
         )
 
     # noinspection PyMethodMayBeStatic
-    def parse_pr_url(self, pr_url: str) -> dict[str, str | int]:
+    def parse_pr_url(self, *, pr_url: str) -> Dict[str, Union[str, int]]:
         """
         Parse GitHub PR URL to extract repository and PR details.
 
@@ -282,46 +247,39 @@ class GithubPullRequestHelper:
             "pr_number": int(match.group(3)),
         }
 
-    def get_pr_diff(self, pr_url: str) -> str:
+    async def get_pr_diff(self, *, pr_url: str) -> str:
         """
-        Fetch the diff for a given GitHub PR URL.
+        Async method to fetch the diff for a given GitHub PR URL.
 
         Args:
             pr_url (str): Full GitHub PR URL
 
         Returns:
             str: The diff content of the PR
-
-        Raises:
-            ValueError: For URL parsing errors
-            GithubException: For GitHub API related errors
         """
-        try:
-            # Parse the PR URL
-            pr_details: Dict[str, str | int] = self.parse_pr_url(pr_url)
+        async with httpx.AsyncClient(headers=self.headers) as client:
+            try:
+                # Parse the PR URL
+                pr_details = self.parse_pr_url(pr_url=pr_url)
 
-            # Get the repository
-            repo = self.github_client.get_repo(
-                f"{pr_details['owner']}/{pr_details['repo']}"
-            )
+                # Construct diff URL
+                diff_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
 
-            # Get the pull request
-            pr_number: int = cast(int, pr_details["pr_number"])
-            pull_request: PullRequest = repo.get_pull(pr_number)
+                # Fetch PR details
+                pr_response = await client.get(diff_url, follow_redirects=True)
+                pr_response.raise_for_status()
+                pr_data = pr_response.json()
 
-            # Fetch and return the diff
-            return pull_request.diff_url
+                # Return diff URL
+                return cast(str, pr_data.get("diff_url", ""))
 
-        except GithubException as e:
-            print(f"GitHub API Error: {e}")
-            raise
-        except Exception as e:
-            print(f"Error fetching PR diff: {e}")
-            raise
+            except Exception as e:
+                self.logger.error(f"Error fetching PR diff: {e}")
+                raise
 
-    def get_pr_diff_content(self, pr_url: str) -> str:
+    async def get_pr_diff_content(self, *, pr_url: str) -> str:
         """
-        Fetch the actual diff content for a given GitHub PR URL.
+        Async method to fetch the actual diff content for a given GitHub PR URL.
 
         Args:
             pr_url (str): Full GitHub PR URL
@@ -329,54 +287,39 @@ class GithubPullRequestHelper:
         Returns:
             str: The raw diff content of the PR
         """
-        try:
-            # Parse the PR URL
-            pr_details: Dict[str, str | int] = self.parse_pr_url(pr_url)
+        async with httpx.AsyncClient(headers=self.headers) as client:
+            try:
+                # Parse the PR URL
+                pr_details = self.parse_pr_url(pr_url=pr_url)
 
-            # Get the repository
-            repo = self.github_client.get_repo(
-                f"{pr_details['owner']}/{pr_details['repo']}"
-            )
+                # Construct diff URL
+                diff_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
 
-            # Get the pull request
-            pr_number: int = cast(int, pr_details["pr_number"])
-            pull_request: PullRequest = repo.get_pull(pr_number)
+                # Fetch PR details
+                pr_response = await client.get(diff_url, follow_redirects=True)
+                pr_response.raise_for_status()
+                pr_data = pr_response.json()
 
-            # Prepare headers for authenticated request
-            headers: Dict[str, str] = {
-                "Accept": "application/vnd.github.v3.diff",
-                "User-Agent": "PyGithub-PR-Diff-Fetcher",
-            }
+                # Fetch diff content
+                diff_response = await client.get(
+                    pr_data.get("diff_url", ""),
+                    headers={
+                        **self.headers,
+                        "Accept": "application/vnd.github.v3.diff",
+                    },
+                    follow_redirects=True,
+                )
+                diff_response.raise_for_status()
 
-            # Add authentication if token is available
-            if self.github_access_token:
-                headers["Authorization"] = f"token {self.github_access_token}"
+                return diff_response.text
 
-            # Make authenticated request to diff URL
-            diff_response: Response = requests.get(
-                pull_request.diff_url, headers=headers
-            )
-
-            # Raise an exception for bad responses
-            diff_response.raise_for_status()
-
-            return diff_response.text
-
-        except requests.RequestException as e:
-            print(f"Request Error: {e}")
-            # If possible, include response text for debugging
-            if hasattr(e, "response") and e.response:
-                print(f"Response content: {e.response.text}")
-            raise
-        except GithubException as e:
-            print(f"GitHub API Error: {e}")
-            raise
-        except Exception as e:
-            print(f"Error fetching PR diff: {e}")
-            raise
+            except Exception as e:
+                self.logger.error(f"Error fetching PR diff content: {e}")
+                raise
 
     def export_results(
         self,
+        *,
         pr_counts: Dict[str, GithubPullRequestPerContributorInfo],
         output_file: Optional[str] = None,
     ) -> None:
@@ -384,7 +327,7 @@ class GithubPullRequestHelper:
         Export PR count results to console and optional file.
 
         Args:
-            pr_counts (Dict[str, int]): PR counts by engineer
+            pr_counts (Dict[str, GithubPullRequestPerContributorInfo]): PR counts by engineer
             output_file (Optional[str]): Path to output file
         """
         # Print results to console
