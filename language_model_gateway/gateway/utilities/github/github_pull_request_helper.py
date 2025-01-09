@@ -260,28 +260,19 @@ class GithubPullRequestHelper:
 
                 # Construct diff URL
                 pr_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
-
-                # Fetch PR details
-                pr_response: Response = await client.get(pr_url, follow_redirects=True)
-                pr_response.raise_for_status()
-                pr_data: Dict[str, Any] = pr_response.json()
-
-                # Fetch diff content
-                headers: Dict[str, Any] = {
-                    "Authorization": f"token {self.github_access_token}",
-                    "Accept": "application/vnd.github.v3.diff",
+                headers: Dict[str, str] = {
+                    "Authorization": f"Bearer {self.github_access_token}",
+                    "Accept": "application/vnd.github.v3.diff",  # Specific media type for diff
+                    "X-GitHub-Api-Version": "2022-11-28",  # Specify API version
                     "User-Agent": "AsyncGithubPullRequestHelper",
                 }
-                diff_url: Optional[str] = pr_data.get("diff_url", None)
-                assert diff_url, f"PR diff URL not found for {pr_url}"
-                diff_response: Response = await client.get(
-                    diff_url,
-                    headers=headers,
-                    follow_redirects=True,
+                # Fetch PR details
+                pr_response: Response = await client.get(
+                    url=pr_url, headers=headers, follow_redirects=True
                 )
-                diff_response.raise_for_status()
+                pr_response.raise_for_status()
 
-                return diff_response.text
+                return pr_response.text
 
             except Exception as e:
                 self.logger.error(f"Error fetching PR diff content: {e}")
