@@ -33,6 +33,10 @@ class GitHubPullRequestToolInput(BaseModel):
         default=None,
         description="Optional specific contributor name to filter pull requests",
     )
+    include_pull_request_details: Optional[bool] = Field(
+        default=None,
+        description="Include detailed pull request information otherwise we return only counts per contributor",
+    )
 
 
 class GitHubPullRequestAnalyzerTool(BaseTool):
@@ -57,6 +61,7 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
         minimum_created_date: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
+        include_pull_request_details: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -72,6 +77,7 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
         minimum_created_date: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
+        include_pull_request_details: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
@@ -107,18 +113,26 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
                 repo_name=repository_name,
             )
 
-            # Summarize pull requests by engineer
-            pr_summary = gh_helper.summarize_prs_by_engineer(pull_requests=closed_prs)
+            full_text: str
+            if include_pull_request_details:
+                full_text = ""
+                for pr in closed_prs:
+                    full_text += f"PR: {pr.title} by {pr.user} closed on {pr.closed_at} - {pr.html_url}\n"
+            else:
+                # Summarize pull requests by engineer
+                pr_summary = gh_helper.summarize_prs_by_engineer(
+                    pull_requests=closed_prs
+                )
 
-            # Generate detailed text report
-            report_lines = [
-                "Pull Requests by Contributor:",
-            ]
+                # Generate detailed text report
+                report_lines = [
+                    "Pull Requests by Contributor:",
+                ]
 
-            for engineer, info in pr_summary.items():
-                report_lines.append(f"{engineer}: {info.pull_request_count}")
+                for engineer, info in pr_summary.items():
+                    report_lines.append(f"{engineer}: {info.pull_request_count}")
 
-            full_text = "\n".join(report_lines)
+                full_text = "\n".join(report_lines)
 
             # Create artifact description
             artifact = f"GitHubPullRequestTool: Analyzed {len(closed_prs)} closed PRs "
