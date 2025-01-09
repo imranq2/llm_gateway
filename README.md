@@ -18,13 +18,15 @@ To run the project locally, follow these steps:
     git clone <repository-url>
     cd <repository-directory>
     ```
+   
+2. Create `docker.env` file in the root of the project based on the `docker.env.example`.
 
-2. Set up the development environment:
+3. Set up the development environment:
     ```sh
     make devsetup
     ```
 
-3. Start the Docker containers:
+4. Start the Docker containers:
     ```sh
     make up
     ```
