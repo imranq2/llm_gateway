@@ -121,7 +121,7 @@ class PDFExtractionTool(BaseTool):
             except Exception as e:
                 return (
                     f"Failed to fetch or process the URL {url}: {str(e)}",
-                    f"PDFExtractionTool: Failed to fetch or process the URL: <{url}> ",
+                    f"PDFExtractionAgent: Failed to fetch or process the URL: <{url}> ",
                 )
         else:
             assert base64_pdf is not None, "base64_pdf must be provided"
@@ -149,7 +149,7 @@ class PDFExtractionTool(BaseTool):
             end = end_page if end_page is not None else total_pages - 1
 
             artifact = (
-                f"PDFExtractionTool: Extracted text from pages {start} to {end} "
+                f"PDFExtractionAgent: Extracted text from pages {start} to {end} "
                 f"(Total pages: {total_pages}, OCR: {'Yes' if use_ocr else 'No'})"
             )
 
@@ -157,7 +157,7 @@ class PDFExtractionTool(BaseTool):
 
         except Exception as e:
             error_msg = f"Failed to extract PDF contents: {str(e)}"
-            error_artifact = f"PDFExtractionTool: Failed to process PDF: {str(e)}"
+            error_artifact = f"PDFExtractionAgent: Failed to process PDF: {str(e)}"
 
             return error_msg, error_artifact
 

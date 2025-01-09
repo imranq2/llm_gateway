@@ -16,7 +16,7 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 logger = logging.getLogger(__name__)
 
 
-class GitHubPullRequestToolInput(BaseModel):
+class GitHubPullRequestAnalyzerAgentInput(BaseModel):
     """Input model for GitHub Pull Request extraction tool."""
 
     repository_name: Optional[str] = Field(
@@ -50,7 +50,7 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
         "Provides detailed insights into pull request activity."
     )
 
-    args_schema: Type[BaseModel] = GitHubPullRequestToolInput
+    args_schema: Type[BaseModel] = GitHubPullRequestAnalyzerAgentInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
     access_token: Optional[str]
@@ -135,12 +135,12 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
                 full_text = "\n".join(report_lines)
 
             # Create artifact description
-            artifact = f"GitHubPullRequestTool: Analyzed {len(closed_prs)} closed PRs "
+            artifact = f"GitHubPullRequestAnalyzerAgent: Analyzed {len(closed_prs)} closed PRs "
 
             return full_text, artifact
 
         except Exception as e:
             error_msg = f"Error analyzing GitHub pull requests: {str(e)}"
-            error_artifact = "GitHubPullRequestTool: Analysis failed"
+            error_artifact = "GitHubPullRequestAnalyzerAgent: Analysis failed"
             logger.error(error_msg)
             return error_msg, error_artifact
