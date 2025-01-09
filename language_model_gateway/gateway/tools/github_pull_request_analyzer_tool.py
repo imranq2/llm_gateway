@@ -35,7 +35,7 @@ class GitHubPullRequestToolInput(BaseModel):
     )
 
 
-class GitHubPullRequestTool(BaseTool):
+class GitHubPullRequestAnalyzerTool(BaseTool):
     """
     LangChain-compatible tool for extracting and analyzing GitHub pull requests.
     """
@@ -49,15 +49,7 @@ class GitHubPullRequestTool(BaseTool):
     args_schema: Type[BaseModel] = GitHubPullRequestToolInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    def __init__(self, access_token: Optional[str] = None):
-        """
-        Initialize the GitHub Pull Request Tool.
-
-        Args:
-            access_token (Optional[str]): GitHub Personal Access Token
-        """
-        super().__init__()
-        self.access_token = access_token or os.getenv("GITHUB_ACCESS_TOKEN")
+    access_token: Optional[str]
 
     def _run(
         self,
@@ -120,17 +112,11 @@ class GitHubPullRequestTool(BaseTool):
 
             # Generate detailed text report
             report_lines = [
-                "GitHub Pull Request Analysis\n",
-                f"Repository: {repository_name or 'All Repositories'}",
-                f"Total Pull Requests: {len(closed_prs)}\n",
                 "Pull Requests by Contributor:",
             ]
 
             for engineer, info in pr_summary.items():
-                report_lines.append(
-                    f"{engineer}: {info.pull_request_count} PRs "
-                    f"(Repos: {', '.join(info.repos) if info.repos else 'All Repositories'})"
-                )
+                report_lines.append(f"{engineer}: {info.pull_request_count}")
 
             full_text = "\n".join(report_lines)
 

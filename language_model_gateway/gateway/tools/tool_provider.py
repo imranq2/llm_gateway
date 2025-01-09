@@ -24,6 +24,9 @@ from language_model_gateway.gateway.tools.er_diagram_generator_tool import (
 from language_model_gateway.gateway.tools.flow_chart_generator_tool import (
     FlowChartGeneratorTool,
 )
+from language_model_gateway.gateway.tools.github_pull_request_analyzer_tool import (
+    GitHubPullRequestAnalyzerTool,
+)
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
@@ -106,6 +109,9 @@ class ToolProvider:
             "provider_search": ProviderSearchTool(),
             "pdf_text_extractor": PDFExtractionTool(
                 ocr_extractor_factory=ocr_extractor_factory
+            ),
+            "github_pull_request_analyzer": GitHubPullRequestAnalyzerTool(
+                access_token=environ.get("GITHUB_TOKEN")
             ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(

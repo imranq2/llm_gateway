@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 from logging import Logger
-from typing import Dict, Optional, List, Union
+from typing import Dict, Optional, List, Union, Any
 from urllib.parse import urlparse
 
 import httpx
@@ -120,12 +120,12 @@ class GithubPullRequestHelper:
                         prs_url,
                         params={
                             "state": "closed",
-                            "sort": "updated",
+                            "sort": "created",
                             "direction": "desc",
                         },
                     )
                     prs_response.raise_for_status()
-                    prs = prs_response.json()
+                    prs: List[Dict[str, Any]] = prs_response.json()
 
                     for pr_index, pr in enumerate(prs):
                         if max_pull_requests and pr_index >= max_pull_requests:
@@ -139,13 +139,7 @@ class GithubPullRequestHelper:
                             break
 
                         if not max_created_at or pr_created_at <= max_created_at:
-                            # Check merge status
-                            merged_response = await client.get(
-                                f"{prs_url}/{pr['number']}"
-                            )
-                            merged_data = merged_response.json()
-
-                            if (include_merged and merged_data.get("merged")) or pr[
+                            if (include_merged and pr.get("'merge_commit_sha'")) or pr[
                                 "state"
                             ] == "closed":
                                 closed_prs_list.append(
@@ -160,6 +154,7 @@ class GithubPullRequestHelper:
                                             else None
                                         ),
                                         html_url=pr["html_url"],
+                                        diff_url=pr["diff_url"],
                                         user=pr["user"]["login"],
                                     )
                                 )

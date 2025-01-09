@@ -10,3 +10,4 @@ class GithubPullRequest:
     title: str
     closed_at: Optional[datetime]
     html_url: str
+    diff_url: Optional[str]
