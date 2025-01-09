@@ -256,7 +256,7 @@ class GithubPullRequestHelper:
         async with httpx.AsyncClient(headers=self.headers) as client:
             try:
                 # Parse the PR URL
-                pr_details = self.parse_pr_url(pr_url=pr_url)
+                pr_details: Dict[str, Any] = self.parse_pr_url(pr_url=pr_url)
 
                 # Construct diff URL
                 pr_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
@@ -267,7 +267,7 @@ class GithubPullRequestHelper:
                 pr_data: Dict[str, Any] = pr_response.json()
 
                 # Fetch diff content
-                headers = {
+                headers: Dict[str, Any] = {
                     "Authorization": f"token {self.github_access_token}",
                     "Accept": "application/vnd.github.v3.diff",
                     "User-Agent": "AsyncGithubPullRequestHelper",
