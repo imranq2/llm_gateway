@@ -15,7 +15,9 @@ from language_model_gateway.gateway.api_container import get_container_async
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
 
 
-async def test_github_pull_request_tool(async_client: httpx.AsyncClient) -> None:
+async def test_github_pull_request_analyzer_tool(
+    async_client: httpx.AsyncClient,
+) -> None:
     print("")
     test_container: SimpleContainer = await get_container_async()
 
@@ -93,7 +95,7 @@ async def test_github_pull_request_tool(async_client: httpx.AsyncClient) -> None
     assert "helix.pipelines" in content
 
 
-async def test_github_pull_request_full_details_tool(
+async def test_github_pull_request_analyzer_full_details_tool(
     async_client: httpx.AsyncClient,
 ) -> None:
     print("")

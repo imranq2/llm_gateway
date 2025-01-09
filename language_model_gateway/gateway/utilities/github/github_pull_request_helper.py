@@ -7,6 +7,7 @@ from typing import Dict, Optional, List, Union, Any
 from urllib.parse import urlparse
 
 import httpx
+from httpx import Response
 
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
     GithubPullRequest,
@@ -258,20 +259,24 @@ class GithubPullRequestHelper:
                 pr_details = self.parse_pr_url(pr_url=pr_url)
 
                 # Construct diff URL
-                diff_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
+                pr_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
 
                 # Fetch PR details
-                pr_response = await client.get(diff_url, follow_redirects=True)
+                pr_response: Response = await client.get(pr_url, follow_redirects=True)
                 pr_response.raise_for_status()
-                pr_data = pr_response.json()
+                pr_data: Dict[str, Any] = pr_response.json()
 
                 # Fetch diff content
-                diff_response = await client.get(
-                    pr_data.get("diff_url", ""),
-                    headers={
-                        **self.headers,
-                        "Accept": "application/vnd.github.v3.diff",
-                    },
+                headers = {
+                    "Authorization": f"token {self.github_access_token}",
+                    "Accept": "application/vnd.github.v3.diff",
+                    "User-Agent": "AsyncGithubPullRequestHelper",
+                }
+                diff_url: Optional[str] = pr_data.get("diff_url", None)
+                assert diff_url, f"PR diff URL not found for {pr_url}"
+                diff_response: Response = await client.get(
+                    diff_url,
+                    headers=headers,
                     follow_redirects=True,
                 )
                 diff_response.raise_for_status()
