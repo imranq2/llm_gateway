@@ -136,7 +136,10 @@ class LangGraphToOpenAIConverter:
                                 content_text, str
                             ), f"content_text: {content_text} (type: {type(content_text)})"
 
-                            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                            if (
+                                os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1"
+                                and content_text
+                            ):
                                 logger.info(f"Returning content: {content_text}")
 
                             if content_text:
@@ -339,7 +342,7 @@ class LangGraphToOpenAIConverter:
                         for i in range(1)
                     ]
 
-                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1" and choices_text:
                     logger.info(f"Returning content: {choices_text}")
 
                 chat_response: ChatCompletion = ChatCompletion(
