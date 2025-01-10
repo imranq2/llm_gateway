@@ -210,7 +210,10 @@
                   "er_diagram_generator",
                   "network_topology_generator",
                   "scraping_bee_web_scraper",
-                  "provider_search"
+                  "provider_search",
+                  "pdf_text_extractor ",
+                  "github_pull_request_analyzer",
+                  "github_pull_request_diff"
                 ]
               },
               {

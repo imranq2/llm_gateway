@@ -88,6 +88,18 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
 
         assert self.access_token, "GitHub access token is required"
 
+        logger.info(
+            "GitHubPullRequestAnalyzerAgent: "
+            + f", {repository_name=}, {minimum_created_date=}, {maximum_created_date=}"
+            + f", {contributor_name=}, {include_pull_request_details=}"
+        )
+
+        log_prefix: str = (
+            "GitHubPullRequestAnalyzerAgent: "
+            + f", {repository_name=}, {minimum_created_date=}, {maximum_created_date=}"
+            + f", {contributor_name=}, {include_pull_request_details=}"
+        )
+
         try:
             # Initialize GitHub Pull Request Helper
             github_organization = os.environ.get("GITHUB_ORGANIZATION_NAME")
@@ -135,12 +147,12 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
                 full_text = "\n".join(report_lines)
 
             # Create artifact description
-            artifact = f"GitHubPullRequestAnalyzerAgent: Analyzed {len(closed_prs)} closed PRs "
+            artifact = log_prefix + f"Analyzed {len(closed_prs)} closed PRs"
 
             return full_text, artifact
 
         except Exception as e:
             error_msg = f"Error analyzing GitHub pull requests: {str(e)}"
-            error_artifact = "GitHubPullRequestAnalyzerAgent: Analysis failed"
+            error_artifact = log_prefix + " Analysis Failed"
             logger.error(error_msg)
             return error_msg, error_artifact
