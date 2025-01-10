@@ -7,7 +7,7 @@ from langchain_community.tools import (
 )
 from langchain_core.tools import BaseTool
 
-from language_model_gateway.configs.config_schema import ToolConfig
+from language_model_gateway.configs.config_schema import AgentConfig
 from language_model_gateway.gateway.file_managers.file_manager_factory import (
     FileManagerFactory,
 )
@@ -130,10 +130,10 @@ class ToolProvider:
             # ),
         }
 
-    def get_tool_by_name(self, *, tool: ToolConfig) -> BaseTool:
+    def get_tool_by_name(self, *, tool: AgentConfig) -> BaseTool:
         if tool.name in self.tools:
             return self.tools[tool.name]
         raise ValueError(f"Tool with name {tool.name} not found")
 
-    def get_tools(self, *, tools: list[ToolConfig]) -> list[BaseTool]:
+    def get_tools(self, *, tools: list[AgentConfig]) -> list[BaseTool]:
         return [self.get_tool_by_name(tool=tool) for tool in tools]

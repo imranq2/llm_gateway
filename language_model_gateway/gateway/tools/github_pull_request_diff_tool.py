@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class GitHubPullRequestDiffAgentDiffInput(BaseModel):
     """Input model for GitHub Pull Request extraction tool."""
 
-    pull_request_url: str = Field(
+    url: str = Field(
         ...,
         title="Pull Request URL",
         description="URL of the GitHub pull request to analyze",
@@ -37,7 +37,7 @@ class GitHubPullRequestDiffTool(BaseTool):
 
     def _run(
         self,
-        pull_request_url: Optional[str] = None,
+        url: Optional[str] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -49,7 +49,7 @@ class GitHubPullRequestDiffTool(BaseTool):
 
     async def _arun(
         self,
-        pull_request_url: Optional[str] = None,
+        url: Optional[str] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
@@ -60,7 +60,7 @@ class GitHubPullRequestDiffTool(BaseTool):
 
         assert self.access_token, "GitHub access token is required"
 
-        assert pull_request_url, "Pull request URL is required"
+        assert url, "Pull request URL is required"
 
         try:
             # Initialize GitHub Pull Request Helper
@@ -73,13 +73,9 @@ class GitHubPullRequestDiffTool(BaseTool):
                 org_name=github_organization, access_token=self.access_token
             )
 
-            diff_content: str = await gh_helper.get_pr_diff_content(
-                pr_url=pull_request_url
-            )
+            diff_content: str = await gh_helper.get_pr_diff_content(pr_url=url)
             # Create artifact description
-            artifact = (
-                f"GitHubPullRequestDiffAgent: Downloaded diff for {pull_request_url}"
-            )
+            artifact = f"GitHubPullRequestDiffAgent: Downloaded diff for {url}"
 
             return diff_content, artifact
 

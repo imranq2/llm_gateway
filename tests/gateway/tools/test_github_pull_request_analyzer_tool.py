@@ -8,7 +8,7 @@ from openai.types.chat.chat_completion import Choice
 from language_model_gateway.configs.config_schema import (
     ChatModelConfig,
     ModelConfig,
-    ToolConfig,
+    AgentConfig,
 )
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
@@ -62,8 +62,8 @@ async def test_github_pull_request_analyzer_tool(
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
-                    ToolConfig(name="current_date"),
-                    ToolConfig(name="github_pull_request_analyzer"),
+                    AgentConfig(name="current_date"),
+                    AgentConfig(name="github_pull_request_analyzer"),
                 ],
             )
         ]
@@ -142,8 +142,8 @@ async def test_github_pull_request_analyzer_tool_streaming(
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
-                    ToolConfig(name="current_date"),
-                    ToolConfig(name="github_pull_request_analyzer"),
+                    AgentConfig(name="current_date"),
+                    AgentConfig(name="github_pull_request_analyzer"),
                 ],
             )
         ]
@@ -229,8 +229,8 @@ async def test_github_pull_request_analyzer_full_details_tool(
                     model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
                 ),
                 tools=[
-                    ToolConfig(name="current_date"),
-                    ToolConfig(name="github_pull_request_analyzer"),
+                    AgentConfig(name="current_date"),
+                    AgentConfig(name="github_pull_request_analyzer"),
                 ],
             )
         ]
