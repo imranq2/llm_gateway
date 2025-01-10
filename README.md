@@ -19,12 +19,17 @@ To run the project locally, follow these steps:
     cd <repository-directory>
     ```
 
-2. Set up the development environment:
+2. Create `docker.env` file in the root of the project based on the `docker.env.example`. 
+Update the keys for the functionality/providers you're planning on using (`AWS_CREDENTIALS_PROFILE` is the only one that
+is absolutely required to get going). 
+
+
+3. Set up the development environment:
     ```sh
     make devsetup
     ```
 
-3. Start the Docker containers:
+4. Start the Docker containers:
     ```sh
     make up
     ```
