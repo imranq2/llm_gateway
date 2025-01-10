@@ -190,6 +190,9 @@ class LangGraphToOpenAIConverter:
                                 )
                             )
                             yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
+                    case "on_tool_start":
+                        # Handle the start of the tool event
+                        pass
                     case "on_tool_end":
                         # Handle the end of the tool event
                         tool_message: ToolMessage | None = event.get("data", {}).get(

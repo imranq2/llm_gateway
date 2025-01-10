@@ -51,6 +51,7 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
 
     repository_name: Optional[str] = Field(
         default=None,
+        # alias="repositoryName",
         description=(
             "Specific repository name to analyze. "
             "PARSING INSTRUCTION: Extract exact repository name from the query. "
@@ -58,19 +59,25 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
     )
     contributor_name: Optional[str] = Field(
         default=None,
+        # alias="contributorName",
         description=(
             "GitHub username to filter pull requests. "
             "PARSING INSTRUCTION: Extract GitHub username mentioned in the query."
         ),
     )
     minimum_created_date: Optional[datetime] = Field(
-        default=None, description="Earliest date for pull request creation (inclusive)"
+        default=None,
+        # alias="minimumCreatedDate",
+        description="Earliest date for pull request creation (inclusive)",
     )
     maximum_created_date: Optional[datetime] = Field(
-        default=None, description="Latest date for pull request creation (inclusive)"
+        default=None,
+        # alias="maximumCreatedDate",
+        description="Latest date for pull request creation (inclusive)",
     )
     include_pull_request_details: Optional[bool] = Field(
         default=False,
+        # alias="includePullRequestDetails",
         description="Include detailed pull request information or return contributor summary",
     )
 
@@ -126,10 +133,15 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
     def _run(
         self,
         repository_name: Optional[str] = None,
+        repositoryName: Optional[str] = None,
         minimum_created_date: Optional[datetime] = None,
+        minimumCreatedDate: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
+        maximumCreatedDate: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
+        contributorName: Optional[str] = None,
         include_pull_request_details: Optional[bool] = None,
+        includePullRequestDetails: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -142,10 +154,15 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
     async def _arun(
         self,
         repository_name: Optional[str] = None,
+        repositoryName: Optional[str] = None,
         minimum_created_date: Optional[datetime] = None,
+        minimumCreatedDate: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
+        maximumCreatedDate: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
+        contributorName: Optional[str] = None,
         include_pull_request_details: Optional[bool] = None,
+        includePullRequestDetails: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
