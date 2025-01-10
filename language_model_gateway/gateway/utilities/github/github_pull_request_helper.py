@@ -89,18 +89,35 @@ class GithubPullRequestHelper:
         """
         async with httpx.AsyncClient(headers=self.headers, timeout=30.0) as client:
             try:
-                # Fetch organization repositories
-                repos_url = f"{self.base_url}/orgs/{self.org_name}/repos"
-                repos_response = await client.get(
-                    repos_url,
-                    params={"type": "all", "sort": "updated", "direction": "desc"},
-                )
-                repos_response.raise_for_status()
-                repos = repos_response.json()
-
-                # Filter repositories if specific repo is provided
                 if repo_name:
-                    repos = [repo for repo in repos if repo["name"] == repo_name]
+                    repos_url = f"{self.base_url}/repos/{self.org_name}/{repo_name}"
+                    repo_response = await client.get(
+                        repos_url,
+                        headers={
+                            "Accept": "application/vnd.github+json",
+                            **self.headers,
+                        },
+                    )
+                    repo_response.raise_for_status()
+                    repos = [repo_response.json()]
+                else:
+                    # Fetch organization repositories
+                    repos_url = f"{self.base_url}/orgs/{self.org_name}/repos"
+                    repos_response = await client.get(
+                        repos_url,
+                        headers={
+                            "Accept": "application/vnd.github+json",
+                            **self.headers,
+                        },
+                        params={
+                            "type": "all",
+                            "sort": "pushed",
+                            "direction": "desc",
+                            "per_page": 500,
+                        },
+                    )
+                    repos_response.raise_for_status()
+                    repos = repos_response.json()
 
                 # Limit repositories if max_repos is specified
                 repos = repos[:max_repos] if max_repos else repos
