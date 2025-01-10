@@ -32,19 +32,19 @@ async def test_github_pull_request_analyzer_tool(
     print("")
     test_container: SimpleContainer = await get_container_async()
 
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "helix.pipelines"
-    #             )
-    #         ),
-    #     )
-    #     test_container.register(
-    #         ImageGeneratorFactory,
-    #         lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "helix.pipelines"
+                )
+            ),
+        )
+        test_container.register(
+            ImageGeneratorFactory,
+            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+        )
 
     # set the model configuration for this test
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
@@ -112,19 +112,19 @@ async def test_github_pull_request_analyzer_tool_streaming(
     print("")
     test_container: SimpleContainer = await get_container_async()
 
-    # if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-    #     test_container.register(
-    #         ModelFactory,
-    #         lambda c: MockModelFactory(
-    #             fn_get_model=lambda chat_model_config: MockChatModel(
-    #                 fn_get_response=lambda messages: "helix.pipelines"
-    #             )
-    #         ),
-    #     )
-    #     test_container.register(
-    #         ImageGeneratorFactory,
-    #         lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
-    #     )
+    if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        test_container.register(
+            ModelFactory,
+            lambda c: MockModelFactory(
+                fn_get_model=lambda chat_model_config: MockChatModel(
+                    fn_get_response=lambda messages: "helix.pipelines"
+                )
+            ),
+        )
+        test_container.register(
+            ImageGeneratorFactory,
+            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
+        )
 
     # set the model configuration for this test
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
