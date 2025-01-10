@@ -242,9 +242,10 @@ class GithubPullRequestHelper:
         parsed_url = urlparse(pr_url)
 
         # Support both github.com and GitHub Enterprise URLs
+        hostname = parsed_url.hostname
         if not (
-            parsed_url.netloc in ["github.com", "www.github.com"]
-            or ".githubenterprise.com" in parsed_url.netloc
+            hostname in ["github.com", "www.github.com"]
+            or (hostname and hostname.endswith(".githubenterprise.com"))
         ):
             raise ValueError("Invalid GitHub URL")
 
