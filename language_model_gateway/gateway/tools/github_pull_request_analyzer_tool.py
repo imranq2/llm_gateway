@@ -17,37 +17,105 @@ logger = logging.getLogger(__name__)
 
 
 class GitHubPullRequestAnalyzerAgentInput(BaseModel):
-    """Input model for GitHub Pull Request extraction tool."""
+    """
+    Input model for configuring GitHub Pull Request extraction and analysis.
+
+    IMPORTANT LLM PARSING GUIDANCE:
+    - When a query mentions a specific repository, extract the repository name exactly as written
+    - When a query includes a GitHub username, extract it as the contributor_name
+    - Examples of parsing:
+      * "What pull requests from imranq2 in helix.pipelines repo"
+        -> repository_name = "helix.pipelines"
+        -> contributor_name = "imranq2"
+      * "Show pull requests for user johndoe in myorg/myrepo"
+        -> repository_name = "myorg/myrepo"
+        -> contributor_name = "johndoe"
+      * "Pull requests in kubernetes/kubernetes by banzaicloud"
+        -> repository_name = "kubernetes/kubernetes"
+        -> contributor_name = "banzaicloud"
+
+    Attributes:
+        repository_name (Optional[str]):
+            Specific repository name to analyze.
+            PARSING HINT: Directly use the repository name mentioned in the query.
+            Can include organization prefix (e.g., "org/repo").
+            Example: "helix.pipelines", "kubernetes/kubernetes"
+
+        contributor_name (Optional[str]):
+            GitHub username to filter pull requests.
+            PARSING HINT: Extract the GitHub username mentioned in the query.
+            Example: "imranq2", "johndoe"
+
+        # ... (rest of the attributes remain the same)
+    """
 
     repository_name: Optional[str] = Field(
         default=None,
-        description="Optional specific repository name within the organization",
-    )
-    minimum_created_date: Optional[datetime] = Field(
-        default=None, description="Minimum creation date for pull requests"
-    )
-    maximum_created_date: Optional[datetime] = Field(
-        default=None, description="Maximum creation date for pull requests"
+        description=(
+            "Specific repository name to analyze. "
+            "PARSING INSTRUCTION: Extract exact repository name from the query. "
+        ),
     )
     contributor_name: Optional[str] = Field(
         default=None,
-        description="Optional specific contributor name to filter pull requests",
+        description=(
+            "GitHub username to filter pull requests. "
+            "PARSING INSTRUCTION: Extract GitHub username mentioned in the query."
+        ),
+    )
+    minimum_created_date: Optional[datetime] = Field(
+        default=None, description="Earliest date for pull request creation (inclusive)"
+    )
+    maximum_created_date: Optional[datetime] = Field(
+        default=None, description="Latest date for pull request creation (inclusive)"
     )
     include_pull_request_details: Optional[bool] = Field(
-        default=None,
-        description="Include detailed pull request information otherwise we return only counts per contributor",
+        default=False,
+        description="Include detailed pull request information or return contributor summary",
     )
 
 
 class GitHubPullRequestAnalyzerTool(BaseTool):
     """
-    LangChain-compatible tool for extracting and analyzing GitHub pull requests.
+    A LangChain-compatible tool for comprehensive GitHub pull request analysis.
+
+    This tool provides advanced capabilities for extracting and analyzing
+    pull request data from a GitHub organization. It supports:
+    - Filtering pull requests by repository, date range, and contributor
+    - Generating summary reports of pull request activity
+    - Retrieving detailed pull request information
+
+    Key Features:
+    - Asynchronous pull request retrieval
+    - Configurable analysis scope
+    - Detailed or summarized reporting
+    - Error handling and logging
+
+    Requires:
+    - GitHub access token
+    - GITHUB_ORGANIZATION_NAME environment variable
+
+    Example Usage:
+    ```python
+    tool = GitHubPullRequestAnalyzerTool(access_token='your_github_token')
+    results, artifact = await tool._arun(
+        repository_name='my-project',
+        minimum_created_date=datetime(2023, 1, 1),
+        include_pull_request_details=True
+    )
+    ```
     """
 
     name: str = "github_pull_request_analyzer"
     description: str = (
-        "Retrieves and analyzes pull requests from a GitHub organization. "
-        "Provides detailed insights into pull request activity."
+        "Advanced GitHub pull request analysis tool. "
+        "USAGE TIPS: "
+        "- Specify repository with 'in [repo]' "
+        "- Specify contributor with username "
+        "- Example queries: "
+        "'Pull requests in kubernetes/kubernetes', "
+        "'PRs from johndoe in myorg/myrepo', "
+        "'What pull requests from imranq2 in helix.pipelines repo'"
     )
 
     args_schema: Type[BaseModel] = GitHubPullRequestAnalyzerAgentInput
@@ -147,7 +215,7 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
                 full_text = "\n".join(report_lines)
 
             # Create artifact description
-            artifact = log_prefix + f"Analyzed {len(closed_prs)} closed PRs"
+            artifact = log_prefix + f", Analyzed {len(closed_prs)} closed PRs"
 
             return full_text, artifact
 
