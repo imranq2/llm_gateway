@@ -12,17 +12,16 @@ from language_model_gateway.configs.config_schema import (
 )
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
-from language_model_gateway.gateway.image_generation.image_generator_factory import (
-    ImageGeneratorFactory,
-)
 from language_model_gateway.gateway.models.model_factory import ModelFactory
 from language_model_gateway.gateway.utilities.environment_reader import (
     EnvironmentReader,
 )
+from language_model_gateway.gateway.utilities.environment_variables import (
+    EnvironmentVariables,
+)
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
 from tests.gateway.mocks.mock_chat_model import MockChatModel
-from tests.gateway.mocks.mock_image_generator import MockImageGenerator
-from tests.gateway.mocks.mock_image_generator_factory import MockImageGeneratorFactory
+from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
@@ -32,16 +31,16 @@ async def test_github_pull_request_diff_tool(async_client: httpx.AsyncClient) ->
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container.register(
+            EnvironmentVariables, lambda c: MockEnvironmentVariables()
+        )
+
+        test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
                     fn_get_response=lambda messages: "helix.pipelines"
                 )
             ),
-        )
-        test_container.register(
-            ImageGeneratorFactory,
-            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
         )
 
     # set the model configuration for this test
@@ -112,16 +111,15 @@ async def test_github_pull_request_diff_combined_tool(
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         test_container.register(
+            EnvironmentVariables, lambda c: MockEnvironmentVariables()
+        )
+        test_container.register(
             ModelFactory,
             lambda c: MockModelFactory(
                 fn_get_model=lambda chat_model_config: MockChatModel(
                     fn_get_response=lambda messages: "helix.pipelines"
                 )
             ),
-        )
-        test_container.register(
-            ImageGeneratorFactory,
-            lambda c: MockImageGeneratorFactory(image_generator=MockImageGenerator()),
         )
 
     # set the model configuration for this test
