@@ -129,8 +129,7 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
     args_schema: Type[BaseModel] = GitHubPullRequestAnalyzerAgentInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    github_org: Optional[str]
-    access_token: Optional[str]
+    github_pull_request_helper: GithubPullRequestHelper
 
     # noinspection PyPep8Naming
     def _run(
@@ -165,8 +164,6 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
             Tuple of pull request analysis text and artifact description
         """
 
-        assert self.access_token, "GitHub access token is required"
-
         logger.info(
             "GitHubPullRequestAnalyzerAgent:"
             + f" {repositoryName=}, {minimumCreatedDate=}, {maximumCreatedDate=}"
@@ -181,26 +178,20 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
 
         try:
             # Initialize GitHub Pull Request Helper
-            assert (
-                self.github_org
-            ), "GITHUB_ORGANIZATION_NAME environment variable is not set"
-
-            gh_helper = GithubPullRequestHelper(
-                org_name=self.github_org, access_token=self.access_token
-            )
-
             # Retrieve closed pull requests
             max_repos: int = int(os.environ.get("GITHUB_MAXIMUM_REPOS", 100))
             max_pull_requests: int = int(
                 os.environ.get("GITHUB_MAXIMUM_PULL_REQUESTS_PER_REPO", 100)
             )
-            closed_prs: List[GithubPullRequest] = await gh_helper.retrieve_closed_prs(
-                max_repos=max_repos,
-                max_pull_requests=max_pull_requests,
-                min_created_at=minimumCreatedDate,
-                max_created_at=maximumCreatedDate,
-                include_merged=True,
-                repo_name=repositoryName,
+            closed_prs: List[GithubPullRequest] = (
+                await self.github_pull_request_helper.retrieve_closed_prs(
+                    max_repos=max_repos,
+                    max_pull_requests=max_pull_requests,
+                    min_created_at=minimumCreatedDate,
+                    max_created_at=maximumCreatedDate,
+                    include_merged=True,
+                    repo_name=repositoryName,
+                )
             )
 
             full_text: str
@@ -210,7 +201,7 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
                     full_text += f"PR: {pr.title} by {pr.user} closed on {pr.closed_at} - {pr.html_url}\n"
             else:
                 # Summarize pull requests by engineer
-                pr_summary = gh_helper.summarize_prs_by_engineer(
+                pr_summary = self.github_pull_request_helper.summarize_prs_by_engineer(
                     pull_requests=closed_prs
                 )
 

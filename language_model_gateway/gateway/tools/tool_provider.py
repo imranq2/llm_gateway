@@ -51,6 +51,9 @@ from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkd
 from language_model_gateway.gateway.utilities.environment_variables import (
     EnvironmentVariables,
 )
+from language_model_gateway.gateway.utilities.github.github_pull_request_helper import (
+    GithubPullRequestHelper,
+)
 
 
 class ToolProvider:
@@ -61,6 +64,7 @@ class ToolProvider:
         file_manager_factory: FileManagerFactory,
         ocr_extractor_factory: OCRExtractorFactory,
         environment_variables: EnvironmentVariables,
+        github_pull_request_helper: GithubPullRequestHelper,
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -118,12 +122,10 @@ class ToolProvider:
                 ocr_extractor_factory=ocr_extractor_factory
             ),
             "github_pull_request_analyzer": GitHubPullRequestAnalyzerTool(
-                github_org=environment_variables.github_org,
-                access_token=environment_variables.github_token,
+                github_pull_request_helper=github_pull_request_helper
             ),
             "github_pull_request_diff": GitHubPullRequestDiffTool(
-                github_org=environment_variables.github_org,
-                access_token=environment_variables.github_token,
+                github_pull_request_helper=github_pull_request_helper
             ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(

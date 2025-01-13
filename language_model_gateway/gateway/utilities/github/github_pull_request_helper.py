@@ -18,7 +18,7 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_per_con
 
 
 class GithubPullRequestHelper:
-    def __init__(self, org_name: str, access_token: str):
+    def __init__(self, org_name: Optional[str], access_token: Optional[str]):
         """
         Initialize GitHub PR Counter with async rate limit handling.
 
@@ -26,6 +26,9 @@ class GithubPullRequestHelper:
             org_name (str): GitHub organization name
             access_token (str): GitHub Personal Access Token
         """
+        assert org_name, "Organization name is required"
+        assert access_token, "GitHub access token is required"
+
         self.logger: Logger = logging.getLogger(__name__)
         self.org_name = org_name
         self.github_access_token = access_token

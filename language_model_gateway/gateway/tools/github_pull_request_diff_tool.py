@@ -32,8 +32,7 @@ class GitHubPullRequestDiffTool(BaseTool):
     args_schema: Type[BaseModel] = GitHubPullRequestDiffAgentDiffInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
-    github_org: Optional[str]
-    access_token: Optional[str]
+    github_pull_request_helper: GithubPullRequestHelper
 
     def _run(
         self,
@@ -58,21 +57,12 @@ class GitHubPullRequestDiffTool(BaseTool):
             Tuple of pull request analysis text and artifact description
         """
 
-        assert self.access_token, "GitHub access token is required"
-
         assert url, "Pull request URL is required"
 
         try:
-            # Initialize GitHub Pull Request Helper
-            assert (
-                self.github_org
-            ), "GITHUB_ORGANIZATION_NAME environment variable is not set"
-
-            gh_helper = GithubPullRequestHelper(
-                org_name=self.github_org, access_token=self.access_token
+            diff_content: str = (
+                await self.github_pull_request_helper.get_pr_diff_content(pr_url=url)
             )
-
-            diff_content: str = await gh_helper.get_pr_diff_content(pr_url=url)
             # Create artifact description
             artifact = f"GitHubPullRequestDiffAgent: Downloaded diff for {url}"
 
