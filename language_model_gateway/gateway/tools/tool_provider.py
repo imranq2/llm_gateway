@@ -48,6 +48,9 @@ from language_model_gateway.gateway.tools.sequence_diagram_generator_tool import
     SequenceDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
+from language_model_gateway.gateway.utilities.environment_variables import (
+    EnvironmentVariables,
+)
 
 
 class ToolProvider:
@@ -57,6 +60,7 @@ class ToolProvider:
         image_generator_factory: ImageGeneratorFactory,
         file_manager_factory: FileManagerFactory,
         ocr_extractor_factory: OCRExtractorFactory,
+        environment_variables: EnvironmentVariables,
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -114,10 +118,12 @@ class ToolProvider:
                 ocr_extractor_factory=ocr_extractor_factory
             ),
             "github_pull_request_analyzer": GitHubPullRequestAnalyzerTool(
-                access_token=environ.get("GITHUB_TOKEN")
+                github_org=environment_variables.github_org,
+                access_token=environment_variables.github_token,
             ),
             "github_pull_request_diff": GitHubPullRequestDiffTool(
-                access_token=environ.get("GITHUB_TOKEN")
+                github_org=environment_variables.github_org,
+                access_token=environment_variables.github_token,
             ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(

@@ -30,6 +30,7 @@ async def test_github_pull_request_analyzer_tool(
     async_client: httpx.AsyncClient,
 ) -> None:
     print("")
+
     test_container: SimpleContainer = await get_container_async()
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):

@@ -129,6 +129,7 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
     args_schema: Type[BaseModel] = GitHubPullRequestAnalyzerAgentInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
+    github_org: Optional[str]
     access_token: Optional[str]
 
     # noinspection PyPep8Naming
@@ -180,13 +181,12 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
 
         try:
             # Initialize GitHub Pull Request Helper
-            github_organization = os.environ.get("GITHUB_ORGANIZATION_NAME")
             assert (
-                github_organization
+                self.github_org
             ), "GITHUB_ORGANIZATION_NAME environment variable is not set"
 
             gh_helper = GithubPullRequestHelper(
-                org_name=github_organization, access_token=self.access_token
+                org_name=self.github_org, access_token=self.access_token
             )
 
             # Retrieve closed pull requests

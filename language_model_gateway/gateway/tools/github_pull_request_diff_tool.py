@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Type, Optional, Tuple, Literal
 
 from langchain.tools import BaseTool
@@ -33,6 +32,7 @@ class GitHubPullRequestDiffTool(BaseTool):
     args_schema: Type[BaseModel] = GitHubPullRequestDiffAgentDiffInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
 
+    github_org: Optional[str]
     access_token: Optional[str]
 
     def _run(
@@ -64,13 +64,12 @@ class GitHubPullRequestDiffTool(BaseTool):
 
         try:
             # Initialize GitHub Pull Request Helper
-            github_organization = os.environ.get("GITHUB_ORGANIZATION_NAME")
             assert (
-                github_organization
+                self.github_org
             ), "GITHUB_ORGANIZATION_NAME environment variable is not set"
 
             gh_helper = GithubPullRequestHelper(
-                org_name=github_organization, access_token=self.access_token
+                org_name=self.github_org, access_token=self.access_token
             )
 
             diff_content: str = await gh_helper.get_pr_diff_content(pr_url=url)

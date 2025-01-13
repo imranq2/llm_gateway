@@ -34,6 +34,9 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
     OpenAiChatCompletionsProvider,
 )
 from language_model_gateway.gateway.tools.tool_provider import ToolProvider
+from language_model_gateway.gateway.utilities.environment_variables import (
+    EnvironmentVariables,
+)
 from language_model_gateway.gateway.utilities.expiring_cache import ExpiringCache
 
 logger = logging.getLogger(__name__)
@@ -86,12 +89,19 @@ class ContainerFactory:
                 file_manager_factory=c.resolve(FileManagerFactory),
             ),
         )
+
+        container.register(
+            EnvironmentVariables,
+            lambda c: EnvironmentVariables(),
+        )
+
         container.register(
             ToolProvider,
             lambda c: ToolProvider(
                 image_generator_factory=c.resolve(ImageGeneratorFactory),
                 file_manager_factory=c.resolve(FileManagerFactory),
                 ocr_extractor_factory=c.resolve(OCRExtractorFactory),
+                environment_variables=c.resolve(EnvironmentVariables),
             ),
         )
         container.register(
