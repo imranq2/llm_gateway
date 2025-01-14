@@ -50,6 +50,8 @@ async def test_chat_completions_b_well(
             ),
             url="http://host.docker.internal:5055/api/v1/chat/completions",
         )
+    else:
+        return  # this test only works with AI Agent
 
     # set the model configuration for this test
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
