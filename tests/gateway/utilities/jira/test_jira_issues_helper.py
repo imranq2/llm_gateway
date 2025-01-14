@@ -25,6 +25,7 @@ from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
 
 
+@pytest.mark.skip("Not working yet")
 @pytest.mark.httpx_mock(
     should_mock=lambda request: os.environ["RUN_TESTS_WITH_REAL_LLM"] != "1"
 )

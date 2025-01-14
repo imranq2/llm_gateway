@@ -14,7 +14,6 @@ class JiraIssueHelper:
         http_client_factory: HttpClientFactory,
         jira_base_url: str,
         access_token: Optional[str],
-        username: Optional[str] = None,
     ):
         """
         Initialize Jira Issue Helper with async rate limit handling.
@@ -22,13 +21,11 @@ class JiraIssueHelper:
         Args:
             jira_base_url (str): Base URL of the Jira instance
             access_token (str): Jira API token or personal access token
-            username (str, optional): Jira username for authentication
         """
         self.http_client_factory: HttpClientFactory = http_client_factory
         self.logger: Logger = logging.getLogger(__name__)
         self.jira_base_url: str = jira_base_url.rstrip("/")
         self.jira_access_token: Optional[str] = access_token
-        self.username: Optional[str] = username
 
         self.headers = {
             "Authorization": f"Bearer {access_token}",
