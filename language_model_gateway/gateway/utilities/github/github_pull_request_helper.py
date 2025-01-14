@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import httpx
 from httpx import Response
 
+from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
     GithubPullRequest,
 )
@@ -18,7 +19,13 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_per_con
 
 
 class GithubPullRequestHelper:
-    def __init__(self, org_name: Optional[str], access_token: Optional[str]):
+    def __init__(
+        self,
+        *,
+        http_client_factory: HttpClientFactory,
+        org_name: Optional[str],
+        access_token: Optional[str],
+    ):
         """
         Initialize GitHub PR Counter with async rate limit handling.
 
@@ -27,6 +34,7 @@ class GithubPullRequestHelper:
             access_token (str): GitHub Personal Access Token
         """
 
+        self.http_client_factory: HttpClientFactory = http_client_factory
         self.logger: Logger = logging.getLogger(__name__)
         self.org_name: Optional[str] = org_name
         self.github_access_token: Optional[str] = access_token
@@ -46,9 +54,7 @@ class GithubPullRequestHelper:
             Dict[str, int]: Rate limit details
         """
         try:
-            response = await client.get(
-                f"{self.base_url}/rate_limit", headers=self.headers
-            )
+            response = await client.get("/rate_limit", headers=self.headers)
             response.raise_for_status()
             rate_limit_data = response.json()
             core_rate_limit = rate_limit_data["resources"]["core"]
@@ -91,10 +97,12 @@ class GithubPullRequestHelper:
         assert self.org_name, "Organization name is required"
         assert self.github_access_token, "GitHub access token is required"
 
-        async with httpx.AsyncClient(headers=self.headers, timeout=30.0) as client:
+        async with self.http_client_factory.create_http_client(
+            base_url=self.base_url, headers=self.headers, timeout=30.0
+        ) as client:
             try:
                 if repo_name:
-                    repos_url = f"{self.base_url}/repos/{self.org_name}/{repo_name}"
+                    repos_url = f"/repos/{self.org_name}/{repo_name}"
                     repo_response = await client.get(
                         repos_url,
                         headers={
@@ -279,13 +287,15 @@ class GithubPullRequestHelper:
         assert self.org_name, "Organization name is required"
         assert self.github_access_token, "GitHub access token is required"
 
-        async with httpx.AsyncClient(headers=self.headers) as client:
+        async with self.http_client_factory.create_http_client(
+            base_url=self.base_url
+        ) as client:
             try:
                 # Parse the PR URL
                 pr_details: Dict[str, Any] = self.parse_pr_url(pr_url=pr_url)
 
                 # Construct diff URL
-                pr_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
+                pr_url = f"/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
                 headers: Dict[str, str] = {
                     "Authorization": f"Bearer {self.github_access_token}",
                     "Accept": "application/vnd.github.v3.diff",  # Specific media type for diff

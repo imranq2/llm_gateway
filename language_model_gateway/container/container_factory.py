@@ -103,6 +103,7 @@ class ContainerFactory:
             lambda c: GithubPullRequestHelper(
                 org_name=c.resolve(EnvironmentVariables).github_org,
                 access_token=c.resolve(EnvironmentVariables).github_token,
+                http_client_factory=c.resolve(HttpClientFactory),
             ),
         )
 
