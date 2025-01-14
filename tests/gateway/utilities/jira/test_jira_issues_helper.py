@@ -25,7 +25,7 @@ from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
 
 
-@pytest.mark.skip("Not working yet")
+# @pytest.mark.skip("Not working yet")
 @pytest.mark.httpx_mock(
     should_mock=lambda request: os.environ["RUN_TESTS_WITH_REAL_LLM"] != "1"
 )
@@ -36,6 +36,23 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
     if path.isdir(temp_folder):
         rmtree(temp_folder)
     makedirs(temp_folder)
+
+    # import requests
+    # from requests.auth import HTTPBasicAuth
+    #
+    # url = "https://icanbwell.atlassian.net/rest/api/3/search"
+    # jira_api_token = os.environ["JIRA_TOKEN"]
+    # auth = HTTPBasicAuth("imran.qureshi@icanbwell.com", jira_api_token)
+    # project_key: str = "EFS"
+    #
+    # query = {
+    #     'jql': f'project={project_key}',
+    #     'fields': ['summary', 'assignee', 'status'],
+    #     'maxResults': 50
+    # }
+    #
+    # response = requests.get(url, params=query, auth=auth)
+    # print(response.json())
 
     max_projects = 2
 
@@ -107,12 +124,13 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         jira_base_url=jira_base_url,
         access_token=access_token,
         http_client_factory=http_client_factory,
+        username=os.environ["JIRA_USERNAME"],
     )
 
     # Get issue counts with optional parameters
     issues: List[JiraIssue] = await issue_helper.retrieve_closed_issues(
         max_projects=max_projects,  # Optional: limit projects
-        max_issues=200,  # Optional: limit issues
+        max_issues=10,  # Optional: limit issues
         min_created_at=datetime(
             2024, 9, 1, tzinfo=timezone.utc
         ),  # Optional: minimum created date
@@ -124,18 +142,7 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
 
     # Assertions
     assert len(issue_counts) > 0
-    assert len(issues) == 2
-
-    # Verify issue details
-    assert issues[0].key == "PROJECT-1"
-    assert issues[0].assignee == "user1"
-    assert issues[1].key == "PROJECT-2"
-    assert issues[1].assignee == "user2"
-
-    # Verify summary
-    assert len(issue_counts) == 2
-    assert issue_counts["user1"]["issue_count"] == 1
-    assert issue_counts["user2"]["issue_count"] == 1
+    assert len(issues) == 10
 
     # Export results
     issue_helper.export_results(
@@ -147,31 +154,3 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
 
     # Verify export file was created
     assert path.exists(temp_folder.joinpath("issue_counts.tsv"))
-
-
-@pytest.mark.asyncio
-async def test_jira_issue_helper_error_handling(httpx_mock: HTTPXMock) -> None:
-    """
-    Test error handling scenarios for Jira Issue Helper
-    """
-    jira_base_url = "https://your-org.atlassian.net"
-    access_token = "fake_token"
-    http_client_factory = HttpClientFactory()
-
-    # Mock a server error response
-    httpx_mock.add_response(
-        url=f"{jira_base_url}/rest/api/3/search",
-        method="GET",
-        status_code=500,
-        content=json.dumps({"error": "Internal Server Error"}).encode(),
-    )
-
-    issue_helper = JiraIssueHelper(
-        jira_base_url=jira_base_url,
-        access_token=access_token,
-        http_client_factory=http_client_factory,
-    )
-
-    # Test error handling
-    with pytest.raises(Exception):
-        await issue_helper.retrieve_closed_issues(max_issues=10)

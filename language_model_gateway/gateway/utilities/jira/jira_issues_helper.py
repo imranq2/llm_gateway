@@ -1,3 +1,4 @@
+import base64
 import logging
 from datetime import datetime
 from logging import Logger
@@ -14,6 +15,7 @@ class JiraIssueHelper:
         http_client_factory: HttpClientFactory,
         jira_base_url: str,
         access_token: Optional[str],
+        username: str,
     ):
         """
         Initialize Jira Issue Helper with async rate limit handling.
@@ -26,9 +28,12 @@ class JiraIssueHelper:
         self.logger: Logger = logging.getLogger(__name__)
         self.jira_base_url: str = jira_base_url.rstrip("/")
         self.jira_access_token: Optional[str] = access_token
+        self.username: str = username
+
+        credentials = base64.b64encode(f"{username}:{access_token}".encode()).decode()
 
         self.headers = {
-            "Authorization": f"Bearer {access_token}",
+            "Authorization": f"Basic {credentials}",
             "Content-Type": "application/json",
             "Accept": "application/json",
             "User-Agent": "AsyncJiraIssueHelper",
@@ -109,6 +114,14 @@ class JiraIssueHelper:
                     issues_data = response.json()
 
                     for issue in issues_data.get("issues", []):
+                        assignee_object: Optional[Dict[str, Any]] = issue["fields"].get(
+                            "assignee", {}
+                        )
+                        assignee: str = (
+                            assignee_object.get("displayName", "Unassigned")
+                            if assignee_object
+                            else "Unassigned"
+                        )
                         closed_issues_list.append(
                             JiraIssue(
                                 key=issue["key"],
@@ -126,9 +139,7 @@ class JiraIssueHelper:
                                     if issue["fields"].get("resolutiondate")
                                     else None
                                 ),
-                                assignee=issue["fields"]
-                                .get("assignee", {})
-                                .get("displayName", "Unassigned"),
+                                assignee=assignee,
                                 project=issue["fields"].get("project", {}).get("key"),
                             )
                         )
