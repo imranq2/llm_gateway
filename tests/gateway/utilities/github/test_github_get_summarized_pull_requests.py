@@ -1,19 +1,22 @@
 import json
-from datetime import datetime, timezone
 import os
+from datetime import datetime, timezone
 from os import makedirs, path
 from pathlib import Path
 from shutil import rmtree
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
-import httpx
 from pytest_httpx import HTTPXMock
 
 from language_model_gateway.container.simple_container import SimpleContainer
 from language_model_gateway.gateway.api_container import get_container_async
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
-from language_model_gateway.gateway.utilities.environment_reader import EnvironmentReader
-from language_model_gateway.gateway.utilities.environment_variables import EnvironmentVariables
+from language_model_gateway.gateway.utilities.environment_reader import (
+    EnvironmentReader,
+)
+from language_model_gateway.gateway.utilities.environment_variables import (
+    EnvironmentVariables,
+)
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
     GithubPullRequest,
 )
@@ -24,7 +27,6 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_per_con
     GithubPullRequestPerContributorInfo,
 )
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
-from tests.gateway.mocks.mock_http_client_factory import MockHttpClientFactory
 
 
 async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> None:
@@ -46,13 +48,15 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
             EnvironmentVariables, lambda c: MockEnvironmentVariables()
         )
 
-        sample_content: List[Dict[str, str]] = [{
-            "name": "helix.pipelines",
-            "full_name": "icanbwell/helix.pipelines",
-            "private": False,
-            "html_url": "",
-            "description": "Helix Pipelines",
-        }]
+        sample_content: List[Dict[str, Any]] = [
+            {
+                "name": "helix.pipelines",
+                "full_name": "icanbwell/helix.pipelines",
+                "private": False,
+                "html_url": "",
+                "description": "Helix Pipelines",
+            }
+        ]
 
         # org_name = "icanbwell"
         repo_name = "helix.pipelines"
@@ -73,14 +77,10 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
         )
 
         # mock rate limit
-        rate_limit_url = f"https://api.github.com/rate_limit"
+        rate_limit_url = "https://api.github.com/rate_limit"
         rate_limit_content = {
             "resources": {
-                "core": {
-                    "limit": 5000,
-                    "remaining": 4999,
-                    "reset": 1641316800
-                }
+                "core": {"limit": 5000, "remaining": 4999, "reset": 1641316800}
             }
         }
         httpx_mock.add_response(
@@ -95,8 +95,10 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
         )
 
         # mock pull API
-        pull_url: str = f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc"
-        sample_pull_content: List[Dict[str, str]] = [
+        pull_url: str = (
+            f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc"
+        )
+        sample_pull_content: List[Dict[str, Any]] = [
             {
                 "url": "https://api.github.com/repos/icanbwell/helix.pipelines/pulls/1",
                 "html_url": "",
@@ -130,19 +132,15 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
             content=json.dumps(sample_pull_content).encode(),
             status_code=200,
         )
-
-        # this has to be created again to make httpx_mock work
-        my_async_client = httpx.AsyncClient()
-        http_client_factory = MockHttpClientFactory(fn_http_client=lambda: my_async_client)
     else:
         # Get credentials from environment variables
         org_name = "icanbwell"  # os.getenv('GITHUB_ORG')
         access_token = os.getenv("GITHUB_TOKEN")
 
-        http_client_factory = HttpClientFactory()
-
     if not org_name or not access_token:
         raise ValueError("Please set GITHUB_ORG and GITHUB_TOKEN environment variables")
+
+    http_client_factory = HttpClientFactory()
 
     # Initialize PR counter
     pr_counter = GithubPullRequestHelper(
@@ -150,7 +148,6 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
         access_token=access_token,
         http_client_factory=http_client_factory,
     )
-
 
     # Get PR counts with optional parameters
     pull_requests: List[GithubPullRequest] = await pr_counter.retrieve_closed_prs(
@@ -170,7 +167,5 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
     # Export results
     pr_counter.export_results(
         pr_counts=pr_counts,
-        output_file=str(
-            temp_folder.joinpath("pr_counts.tsv")
-        ),  # Optional TSV export
+        output_file=str(temp_folder.joinpath("pr_counts.tsv")),  # Optional TSV export
     )

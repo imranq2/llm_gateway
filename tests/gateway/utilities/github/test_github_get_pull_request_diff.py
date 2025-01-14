@@ -20,7 +20,6 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
     GithubPullRequestHelper,
 )
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
-from tests.gateway.mocks.mock_http_client_factory import MockHttpClientFactory
 
 
 async def test_github_get_pull_request_diff(
@@ -176,10 +175,6 @@ index 0000000..ad46c5c
             content=sample_diff_content.encode(),
             status_code=200,
         )
-
-        # this has to be created again to make httpx_mock work
-        my_async_client = httpx.AsyncClient()
-        http_client_factory = MockHttpClientFactory(fn_http_client=lambda: my_async_client)
     else:
         # Get credentials from environment variables
         org_name = "icanbwell"  # os.getenv('GITHUB_ORG')
@@ -190,7 +185,7 @@ index 0000000..ad46c5c
                 "Please set GITHUB_ORG and GITHUB_TOKEN environment variables"
             )
 
-        http_client_factory = HttpClientFactory()
+    http_client_factory = HttpClientFactory()
 
     # Initialize PR counter
     pr_counter = GithubPullRequestHelper(

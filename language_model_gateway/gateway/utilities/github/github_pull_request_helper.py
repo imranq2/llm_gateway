@@ -185,7 +185,7 @@ class GithubPullRequestHelper:
                                 closed_prs_list.append(
                                     GithubPullRequest(
                                         repo=repo["name"],
-                                        title=pr.get("title"),
+                                        title=pr.get("title") or "No Title",
                                         closed_at=(
                                             datetime.fromisoformat(
                                                 pr["closed_at"].replace("Z", "+00:00")
@@ -193,9 +193,10 @@ class GithubPullRequestHelper:
                                             if pr.get("closed_at")
                                             else None
                                         ),
-                                        html_url=pr.get("html_url"),
-                                        diff_url=pr.get("diff_url"),
-                                        user=pr.get("user",{}).get("login"),
+                                        html_url=pr.get("html_url") or "No URL",
+                                        diff_url=pr.get("diff_url") or "No URL",
+                                        user=pr.get("user", {}).get("login")
+                                        or "No User",
                                     )
                                 )
 
