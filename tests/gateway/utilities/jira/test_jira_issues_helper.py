@@ -37,23 +37,6 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         rmtree(temp_folder)
     makedirs(temp_folder)
 
-    # import requests
-    # from requests.auth import HTTPBasicAuth
-    #
-    # url = "https://icanbwell.atlassian.net/rest/api/3/search"
-    # jira_api_token = os.environ["JIRA_TOKEN"]
-    # auth = HTTPBasicAuth("imran.qureshi@icanbwell.com", jira_api_token)
-    # project_key: str = "EFS"
-    #
-    # query = {
-    #     'jql': f'project={project_key}',
-    #     'fields': ['summary', 'assignee', 'status'],
-    #     'maxResults': 50
-    # }
-    #
-    # response = requests.get(url, params=query, auth=auth)
-    # print(response.json())
-
     max_projects = 2
 
     test_container: SimpleContainer = await get_container_async()
@@ -135,6 +118,11 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
             2024, 9, 1, tzinfo=timezone.utc
         ),  # Optional: minimum created date
     )
+
+    print("========== Issues ========")
+    for issue in issues:
+        print(issue)
+    print("==========================")
 
     issue_counts: Dict[str, Dict[str, Any]] = issue_helper.summarize_issues_by_assignee(
         issues=issues
