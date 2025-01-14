@@ -25,6 +25,9 @@ from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
 
 
+@pytest.mark.httpx_mock(
+    should_mock=lambda request: os.environ["RUN_TESTS_WITH_REAL_LLM"] != "1"
+)
 async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
     print()
     data_dir: Path = Path(__file__).parent.joinpath("./")

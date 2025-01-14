@@ -6,6 +6,7 @@ from pathlib import Path
 from shutil import rmtree
 from typing import Dict, List, Optional, Any
 
+import pytest
 from pytest_httpx import HTTPXMock
 
 from language_model_gateway.container.simple_container import SimpleContainer
@@ -29,6 +30,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_per_con
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
 
 
+@pytest.mark.httpx_mock(
+    should_mock=lambda request: os.environ["RUN_TESTS_WITH_REAL_LLM"] != "1"
+)
 async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> None:
     print()
     data_dir: Path = Path(__file__).parent.joinpath("./")

@@ -5,6 +5,7 @@ from shutil import rmtree
 from typing import Optional
 
 import httpx
+import pytest
 from pytest_httpx import HTTPXMock
 
 from language_model_gateway.container.simple_container import SimpleContainer
@@ -22,6 +23,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
 
 
+@pytest.mark.httpx_mock(
+    should_mock=lambda request: os.environ["RUN_TESTS_WITH_REAL_LLM"] != "1"
+)
 async def test_github_get_pull_request_diff(
     async_client: httpx.AsyncClient, httpx_mock: HTTPXMock
 ) -> None:
