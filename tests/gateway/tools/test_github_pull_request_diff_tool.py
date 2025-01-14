@@ -1,6 +1,8 @@
+import os
 from typing import Optional, List
 
 import httpx
+import pytest
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion import Choice
@@ -25,6 +27,9 @@ from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariab
 from tests.gateway.mocks.mock_model_factory import MockModelFactory
 
 
+@pytest.mark.httpx_mock(
+    should_mock=lambda request: os.environ["RUN_TESTS_WITH_REAL_LLM"] != "1"
+)
 async def test_github_pull_request_diff_tool(async_client: httpx.AsyncClient) -> None:
     print("")
     test_container: SimpleContainer = await get_container_async()
@@ -103,6 +108,9 @@ async def test_github_pull_request_diff_tool(async_client: httpx.AsyncClient) ->
     assert "helix.pipelines" in content
 
 
+@pytest.mark.httpx_mock(
+    should_mock=lambda request: os.environ["RUN_TESTS_WITH_REAL_LLM"] != "1"
+)
 async def test_github_pull_request_diff_combined_tool(
     async_client: httpx.AsyncClient,
 ) -> None:
