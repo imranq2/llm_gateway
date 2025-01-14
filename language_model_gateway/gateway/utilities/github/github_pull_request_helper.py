@@ -102,7 +102,7 @@ class GithubPullRequestHelper:
         ) as client:
             try:
                 if repo_name:
-                    repos_url = f"/repos/{self.org_name}/{repo_name}"
+                    repos_url = f"{self.base_url}/repos/{self.org_name}/{repo_name}"
                     repo_response = await client.get(
                         repos_url,
                         headers={
@@ -295,7 +295,7 @@ class GithubPullRequestHelper:
                 pr_details: Dict[str, Any] = self.parse_pr_url(pr_url=pr_url)
 
                 # Construct diff URL
-                pr_url = f"/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
+                pr_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
                 headers: Dict[str, str] = {
                     "Authorization": f"Bearer {self.github_access_token}",
                     "Accept": "application/vnd.github.v3.diff",  # Specific media type for diff

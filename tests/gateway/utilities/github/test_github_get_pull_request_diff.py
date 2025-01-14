@@ -5,6 +5,7 @@ from shutil import rmtree
 from typing import Optional
 
 import httpx
+from httpx import Response
 from pytest_httpx import HTTPXMock
 
 from language_model_gateway.container.simple_container import SimpleContainer
@@ -53,19 +54,31 @@ async def test_github_get_pull_request_diff(
 
         # Mock the GitHub API responses for PR details and diff
         httpx_mock.add_response(
-            # url=f"http://test/repos/{org_name}/language-model-gateway-configuration/pulls/6",
-            url=f"http://test/repos/icanbwell/language-model-gateway-configuration/pulls/6",
+            url=f"https://api.github.com/repos/{org_name}/language-model-gateway-configuration/pulls/6",
+            # url=f"http://test/repos/icanbwell/language-model-gateway-configuration/pulls/6",
             method="GET",
-            # headers={
-            #     "Authorization": f"Bearer {access_token}",
-            #     "Accept": "application/vnd.github.v3.diff",
-            #     "X-GitHub-Api-Version": "2022-11-28",
-            #     "User-Agent": "AsyncGithubPullRequestHelper",
-            # },
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/vnd.github.v3.diff",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "AsyncGithubPullRequestHelper",
+            },
             content=sample_diff_content.encode(),
             status_code=200,
         )
-        http_client_factory = MockHttpClientFactory(fn_http_client=lambda: async_client)
+        # def foo(request):
+        #     return Response(
+        #         status_code=200,
+        #         headers={"Content-Type": "text/event-stream"},
+        #     )
+        # httpx_mock.add_callback(
+        #     callback=foo,
+        #     url="https://api.github.com/repos/icanbwell/language-model-gateway-configuration/pulls/6",
+        # )
+        # http_client_factory = MockHttpClientFactory(fn_http_client=lambda: async_client)
+        # this has to be created again to make httpx_mock work
+        my_async_client = httpx.AsyncClient()
+        http_client_factory = MockHttpClientFactory(fn_http_client=lambda: my_async_client)
     else:
         # Get credentials from environment variables
         org_name = "icanbwell"  # os.getenv('GITHUB_ORG')
