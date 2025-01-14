@@ -54,7 +54,9 @@ class GithubPullRequestHelper:
             Dict[str, int]: Rate limit details
         """
         try:
-            response = await client.get("/rate_limit", headers=self.headers)
+            response = await client.get(
+                f"{self.base_url}/rate_limit", headers=self.headers
+            )
             response.raise_for_status()
             rate_limit_data = response.json()
             core_rate_limit = rate_limit_data["resources"]["core"]
@@ -115,21 +117,29 @@ class GithubPullRequestHelper:
                 else:
                     # Fetch organization repositories
                     repos_url = f"{self.base_url}/orgs/{self.org_name}/repos"
-                    repos_response = await client.get(
-                        repos_url,
-                        headers={
-                            "Accept": "application/vnd.github+json",
-                            **self.headers,
-                        },
-                        params={
-                            "type": "all",
-                            "sort": "pushed",
-                            "direction": "desc",
-                            "per_page": 500,
-                        },
-                    )
-                    repos_response.raise_for_status()
-                    repos = repos_response.json()
+                    pages_remaining = True
+                    repos = []
+
+                    page_number: int = 1
+                    while pages_remaining:
+                        repos_response = await client.get(
+                            repos_url,
+                            headers={
+                                "Accept": "application/vnd.github+json",
+                                **self.headers,
+                            },
+                            params={
+                                "type": "all",
+                                "sort": "pushed",
+                                "direction": "desc",
+                                "per_page": max_repos or 500,
+                                "page": page_number,
+                            },
+                        )
+                        repos_response.raise_for_status()
+                        repos.extend(repos_response.json())
+                        if len(repos) < (max_repos or 500):
+                            pages_remaining = False
 
                 # Limit repositories if max_repos is specified
                 repos = repos[:max_repos] if max_repos else repos
@@ -175,17 +185,17 @@ class GithubPullRequestHelper:
                                 closed_prs_list.append(
                                     GithubPullRequest(
                                         repo=repo["name"],
-                                        title=pr["title"],
+                                        title=pr.get("title"),
                                         closed_at=(
                                             datetime.fromisoformat(
                                                 pr["closed_at"].replace("Z", "+00:00")
                                             )
-                                            if pr["closed_at"]
+                                            if pr.get("closed_at")
                                             else None
                                         ),
-                                        html_url=pr["html_url"],
-                                        diff_url=pr["diff_url"],
-                                        user=pr["user"]["login"],
+                                        html_url=pr.get("html_url"),
+                                        diff_url=pr.get("diff_url"),
+                                        user=pr.get("user",{}).get("login"),
                                     )
                                 )
 
