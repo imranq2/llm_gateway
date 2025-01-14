@@ -5,6 +5,9 @@ from logging import Logger
 from typing import Dict, Optional, List, Any
 
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
+from language_model_gateway.gateway.utilities.jira.JiraIssuesPerAssigneeInfo import (
+    JiraIssuesPerAssigneeInfo,
+)
 from language_model_gateway.gateway.utilities.jira.jira_issue import JiraIssue
 
 
@@ -91,8 +94,9 @@ class JiraIssueHelper:
                 max_results = max_issues or 100
 
                 closed_issues_list: List[JiraIssue] = []
+                pages_remaining = True
 
-                while True:
+                while pages_remaining:
                     response = await client.get(
                         f"{self.jira_base_url}/rest/api/3/search",
                         params={
@@ -151,7 +155,7 @@ class JiraIssueHelper:
                     if (not issues_data.get("issues")) or (
                         max_issues and len(closed_issues_list) >= max_issues
                     ):
-                        break
+                        pages_remaining = False
 
                     start_at += max_results
 
@@ -164,7 +168,7 @@ class JiraIssueHelper:
     # noinspection PyMethodMayBeStatic
     def summarize_issues_by_assignee(
         self, *, issues: List[JiraIssue]
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> Dict[str, JiraIssuesPerAssigneeInfo]:
         """
         Summarize issues by assignee.
 
@@ -174,29 +178,29 @@ class JiraIssueHelper:
         Returns:
             Dict[str, Dict[str, Any]]: Summary of issues by assignee
         """
-        assignee_issue_counts: Dict[str, Dict[str, Any]] = {}
+        assignee_issue_counts: Dict[str, JiraIssuesPerAssigneeInfo] = {}
 
         for issue in issues:
             assignee = issue.assignee or "Unassigned"
 
             if assignee not in assignee_issue_counts:
-                assignee_issue_counts[assignee] = {
-                    "issue_count": 1,
-                    "projects": [issue.project] if issue.project else [],
-                }
+                assignee_issue_counts[assignee] = JiraIssuesPerAssigneeInfo(
+                    assignee=assignee,
+                    issue_count=1,
+                    projects=[issue.project] if issue.project else [],
+                )
             else:
-                assignee_issue_counts[assignee]["issue_count"] += 1
-                if (
-                    issue.project
-                    and issue.project not in assignee_issue_counts[assignee]["projects"]
-                ):
-                    assignee_issue_counts[assignee]["projects"].append(issue.project)
+                assignee_issue_counts[assignee].issue_count += 1
+                projects = assignee_issue_counts[assignee].projects
+                if projects is not None:
+                    if issue.project is not None and issue.project not in projects:
+                        projects.append(issue.project)
 
         # Sort by issue count
         return dict(
             sorted(
                 assignee_issue_counts.items(),
-                key=lambda item: item[1]["issue_count"],
+                key=lambda item: item[1].issue_count,
                 reverse=True,
             )
         )
@@ -204,7 +208,7 @@ class JiraIssueHelper:
     def export_results(
         self,
         *,
-        issue_counts: Dict[str, Dict[str, Any]],
+        issue_counts: Dict[str, JiraIssuesPerAssigneeInfo],
         output_file: Optional[str] = None,
     ) -> None:
         """
@@ -217,7 +221,7 @@ class JiraIssueHelper:
         # Print results to console
         self.logger.info("\n------ Closed Issues by Assignee ------\n")
         for assignee, info in issue_counts.items():
-            self.logger.info(f"{assignee} | {info['issue_count']} | {info['projects']}")
+            self.logger.info(f"{assignee} | {info.issue_count} | {info.projects}")
         self.logger.info("\n------------------------------------\n")
 
         # Optional file export
@@ -227,9 +231,9 @@ class JiraIssueHelper:
                     f.write("Assignee\tIssue Count\tProjects\n")
                     for assignee, info in issue_counts.items():
                         projects_text: str = (
-                            " | ".join(info["projects"]) if info["projects"] else ""
+                            " | ".join(info.projects) if info.projects else ""
                         )
-                        f.write(f"{assignee}\t{info['issue_count']}\t{projects_text}\n")
+                        f.write(f"{assignee}\t{info.issue_count}\t{projects_text}\n")
                 self.logger.info(f"Results exported to {output_file}")
             except IOError as e:
                 self.logger.error(f"Failed to export results: {e}")

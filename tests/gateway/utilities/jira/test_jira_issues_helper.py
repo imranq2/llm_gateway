@@ -18,6 +18,9 @@ from language_model_gateway.gateway.utilities.environment_reader import (
 from language_model_gateway.gateway.utilities.environment_variables import (
     EnvironmentVariables,
 )
+from language_model_gateway.gateway.utilities.jira.JiraIssuesPerAssigneeInfo import (
+    JiraIssuesPerAssigneeInfo,
+)
 from language_model_gateway.gateway.utilities.jira.jira_issue import JiraIssue
 from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
     JiraIssueHelper,
@@ -42,14 +45,14 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
     test_container: SimpleContainer = await get_container_async()
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
-        jira_base_url: str = "https://your-org.atlassian.net"
+        jira_base_url: str = "https://icanbwell.atlassian.net"
         access_token: Optional[str] = "fake_token"
         test_container.register(
             EnvironmentVariables, lambda c: MockEnvironmentVariables()
         )
 
         # Mock Jira search API response
-        search_url = f"{jira_base_url}/rest/api/3/search"
+        search_url = f"{jira_base_url}/rest/api/3/search?jql=status+%3D+Closed+AND+created+%3E%3D+%272024-09-01%27&startAt=0&maxResults=2&fields=summary&fields=status&fields=created&fields=resolutiondate&fields=assignee&fields=project"
         sample_issues_content: Dict[str, Any] = {
             "total": 2,
             "issues": [
@@ -109,11 +112,12 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         http_client_factory=http_client_factory,
         username=os.environ["JIRA_USERNAME"],
     )
+    max_issues = 2
 
     # Get issue counts with optional parameters
     issues: List[JiraIssue] = await issue_helper.retrieve_closed_issues(
         max_projects=max_projects,  # Optional: limit projects
-        max_issues=10,  # Optional: limit issues
+        max_issues=max_issues,  # Optional: limit issues
         min_created_at=datetime(
             2024, 9, 1, tzinfo=timezone.utc
         ),  # Optional: minimum created date
@@ -124,13 +128,13 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         print(issue)
     print("==========================")
 
-    issue_counts: Dict[str, Dict[str, Any]] = issue_helper.summarize_issues_by_assignee(
-        issues=issues
+    issue_counts: Dict[str, JiraIssuesPerAssigneeInfo] = (
+        issue_helper.summarize_issues_by_assignee(issues=issues)
     )
 
     # Assertions
     assert len(issue_counts) > 0
-    assert len(issues) == 10
+    assert len(issues) == max_issues
 
     # Export results
     issue_helper.export_results(
