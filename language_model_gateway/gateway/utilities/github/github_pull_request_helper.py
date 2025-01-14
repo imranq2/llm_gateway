@@ -26,13 +26,10 @@ class GithubPullRequestHelper:
             org_name (str): GitHub organization name
             access_token (str): GitHub Personal Access Token
         """
-        assert org_name, "Organization name is required"
-        assert access_token, "GitHub access token is required"
 
         self.logger: Logger = logging.getLogger(__name__)
-        self.org_name = org_name
-        self.github_access_token = access_token
-        assert access_token, "GitHub access token is required"
+        self.org_name: Optional[str] = org_name
+        self.github_access_token: Optional[str] = access_token
 
         self.base_url = "https://api.github.com"
         self.headers = {
@@ -90,6 +87,10 @@ class GithubPullRequestHelper:
         """
         Async method to retrieve closed pull requests across organization repositories.
         """
+
+        assert self.org_name, "Organization name is required"
+        assert self.github_access_token, "GitHub access token is required"
+
         async with httpx.AsyncClient(headers=self.headers, timeout=30.0) as client:
             try:
                 if repo_name:
@@ -274,6 +275,10 @@ class GithubPullRequestHelper:
         Returns:
             str: The raw diff content of the PR
         """
+
+        assert self.org_name, "Organization name is required"
+        assert self.github_access_token, "GitHub access token is required"
+
         async with httpx.AsyncClient(headers=self.headers) as client:
             try:
                 # Parse the PR URL
