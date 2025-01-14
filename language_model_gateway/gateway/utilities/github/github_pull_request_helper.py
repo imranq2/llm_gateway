@@ -132,13 +132,15 @@ class GithubPullRequestHelper:
                                 "type": "all",
                                 "sort": "pushed",
                                 "direction": "desc",
-                                "per_page": max_repos or 500,
+                                "per_page": max_repos or 50,
                                 "page": page_number,
                             },
                         )
                         repos_response.raise_for_status()
                         repos.extend(repos_response.json())
-                        if len(repos) < (max_repos or 500):
+                        if max_repos and len(repos) >= max_repos:
+                            pages_remaining = False
+                        elif len(repos_response.json()) == 0:
                             pages_remaining = False
 
                 # Limit repositories if max_repos is specified
