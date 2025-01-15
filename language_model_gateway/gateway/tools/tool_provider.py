@@ -7,7 +7,7 @@ from langchain_community.tools import (
 )
 from langchain_core.tools import BaseTool
 
-from language_model_gateway.configs.config_schema import ToolConfig
+from language_model_gateway.configs.config_schema import AgentConfig
 from language_model_gateway.gateway.file_managers.file_manager_factory import (
     FileManagerFactory,
 )
@@ -24,11 +24,20 @@ from language_model_gateway.gateway.tools.er_diagram_generator_tool import (
 from language_model_gateway.gateway.tools.flow_chart_generator_tool import (
     FlowChartGeneratorTool,
 )
+from language_model_gateway.gateway.tools.github_pull_request_analyzer_tool import (
+    GitHubPullRequestAnalyzerTool,
+)
+from language_model_gateway.gateway.tools.github_pull_request_diff_tool import (
+    GitHubPullRequestDiffTool,
+)
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.image_generator_tool import ImageGeneratorTool
+from language_model_gateway.gateway.tools.jira_issues_analyzer_tool import (
+    JiraIssuesAnalyzerTool,
+)
 from language_model_gateway.gateway.tools.network_topology_diagram_tool import (
     NetworkTopologyGeneratorTool,
 )
@@ -42,6 +51,15 @@ from language_model_gateway.gateway.tools.sequence_diagram_generator_tool import
     SequenceDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
+from language_model_gateway.gateway.utilities.environment_variables import (
+    EnvironmentVariables,
+)
+from language_model_gateway.gateway.utilities.github.github_pull_request_helper import (
+    GithubPullRequestHelper,
+)
+from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
+    JiraIssueHelper,
+)
 
 
 class ToolProvider:
@@ -51,6 +69,9 @@ class ToolProvider:
         image_generator_factory: ImageGeneratorFactory,
         file_manager_factory: FileManagerFactory,
         ocr_extractor_factory: OCRExtractorFactory,
+        environment_variables: EnvironmentVariables,
+        github_pull_request_helper: GithubPullRequestHelper,
+        jira_issues_helper: JiraIssueHelper,
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -107,6 +128,15 @@ class ToolProvider:
             "pdf_text_extractor": PDFExtractionTool(
                 ocr_extractor_factory=ocr_extractor_factory
             ),
+            "github_pull_request_analyzer": GitHubPullRequestAnalyzerTool(
+                github_pull_request_helper=github_pull_request_helper
+            ),
+            "github_pull_request_diff": GitHubPullRequestDiffTool(
+                github_pull_request_helper=github_pull_request_helper
+            ),
+            "jira_issues_analyzer": JiraIssuesAnalyzerTool(
+                jira_issues_helper=jira_issues_helper
+            ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(
@@ -118,10 +148,10 @@ class ToolProvider:
             # ),
         }
 
-    def get_tool_by_name(self, *, tool: ToolConfig) -> BaseTool:
+    def get_tool_by_name(self, *, tool: AgentConfig) -> BaseTool:
         if tool.name in self.tools:
             return self.tools[tool.name]
         raise ValueError(f"Tool with name {tool.name} not found")
 
-    def get_tools(self, *, tools: list[ToolConfig]) -> list[BaseTool]:
+    def get_tools(self, *, tools: list[AgentConfig]) -> list[BaseTool]:
         return [self.get_tool_by_name(tool=tool) for tool in tools]

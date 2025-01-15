@@ -6,12 +6,12 @@ from typing import Type, Literal, Tuple, Optional, Dict
 import httpx
 import pypdf
 from httpx import Response, Headers
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 from pypdf import PageObject
 
 from language_model_gateway.gateway.ocr.ocr_extractor import OCRExtractor
 from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class PDFExtractionToolInput(BaseModel):
     )
 
 
-class PDFExtractionTool(BaseTool):
+class PDFExtractionTool(ResilientBaseTool):
     """
     LangChain-compatible tool for extracting text from PDFs using PyPDF and AWS Textract.
     """
@@ -121,7 +121,7 @@ class PDFExtractionTool(BaseTool):
             except Exception as e:
                 return (
                     f"Failed to fetch or process the URL {url}: {str(e)}",
-                    f"PDFExtractionTool: Failed to fetch or process the URL: <{url}> ",
+                    f"PDFExtractionAgent: Failed to fetch or process the URL: <{url}> ",
                 )
         else:
             assert base64_pdf is not None, "base64_pdf must be provided"
@@ -149,7 +149,7 @@ class PDFExtractionTool(BaseTool):
             end = end_page if end_page is not None else total_pages - 1
 
             artifact = (
-                f"PDFExtractionTool: Extracted text from pages {start} to {end} "
+                f"PDFExtractionAgent: Extracted text from pages {start} to {end} "
                 f"(Total pages: {total_pages}, OCR: {'Yes' if use_ocr else 'No'})"
             )
 
@@ -157,7 +157,7 @@ class PDFExtractionTool(BaseTool):
 
         except Exception as e:
             error_msg = f"Failed to extract PDF contents: {str(e)}"
-            error_artifact = f"PDFExtractionTool: Failed to process PDF: {str(e)}"
+            error_artifact = f"PDFExtractionAgent: Failed to process PDF: {str(e)}"
 
             return error_msg, error_artifact
 

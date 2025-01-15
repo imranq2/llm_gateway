@@ -6,8 +6,9 @@ from os import environ
 from typing import Optional, Dict, Any, List, cast, Type, Literal, Tuple
 
 import httpx
-from langchain_core.tools import BaseTool
 from pydantic import PrivateAttr, Field, BaseModel
+
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 
 logger = logging.getLogger(__file__)
 
@@ -16,7 +17,7 @@ class GoogleSearchToolInput(BaseModel):
     query: str = Field(description="The search query to send to Google Search")
 
 
-class GoogleSearchTool(BaseTool):
+class GoogleSearchTool(ResilientBaseTool):
     """
     2. Enable the Custom Search API
     - Navigate to the APIs & Services→Dashboard panel in Cloud Console.
@@ -137,7 +138,7 @@ class GoogleSearchTool(BaseTool):
             if len(results) == 0:
                 return (
                     "No good Google Search Result was found",
-                    f'GoogleSearchTool: Searched Google for "{query}"',
+                    f'GoogleSearchAgent: Searched Google for "{query}"',
                 )
 
             for result in results:
@@ -147,12 +148,12 @@ class GoogleSearchTool(BaseTool):
             response: str = "\n".join(snippets)
             if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
                 logger.info(f"Google Search results: {response}")
-            return response, f'GoogleSearchTool: Searched Google for "{query}"'
+            return response, f'GoogleSearchAgent: Searched Google for "{query}"'
         except Exception as e:
             logger.exception(e, stack_info=True)
             return (
                 "Ran into an error while running Google Search",
-                f'GoogleSearchTool: Searched Google for "{query}"',
+                f'GoogleSearchAgent: Searched Google for "{query}"',
             )
 
     # noinspection PyPep8Naming,PyShadowingBuiltins

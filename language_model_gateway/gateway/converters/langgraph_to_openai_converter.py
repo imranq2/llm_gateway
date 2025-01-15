@@ -52,6 +52,9 @@ from openai.types.shared_params.response_format_json_schema import JSONSchema
 from starlette.responses import StreamingResponse, JSONResponse
 
 from language_model_gateway.gateway.converters.my_messages_state import MyMessagesState
+from language_model_gateway.gateway.converters.streaming_tool_node import (
+    StreamingToolNode,
+)
 from language_model_gateway.gateway.schema.openai.completions import (
     ChatRequest,
     ROLE_TYPES,
@@ -136,7 +139,10 @@ class LangGraphToOpenAIConverter:
                                 content_text, str
                             ), f"content_text: {content_text} (type: {type(content_text)})"
 
-                            if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                            if (
+                                os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1"
+                                and content_text
+                            ):
                                 logger.info(f"Returning content: {content_text}")
 
                             if content_text:
@@ -187,6 +193,36 @@ class LangGraphToOpenAIConverter:
                                 )
                             )
                             yield f"data: {json.dumps(chat_end_stream_response.model_dump())}\n\n"
+                    case "on_tool_start":
+                        # Handle the start of the tool event
+                        tool_name: Optional[str] = event.get("name", None)
+                        tool_input: Dict[str, Any] | None = event.get("data", {}).get(
+                            "input"
+                        )
+                        if tool_name:
+                            logger.debug(f"on_tool_start: {tool_name} {tool_input}")
+                            chat_stream_response = ChatCompletionChunk(
+                                id=request_id,
+                                created=int(time.time()),
+                                model=request["model"],
+                                choices=[
+                                    ChunkChoice(
+                                        index=0,
+                                        delta=ChoiceDelta(
+                                            role="assistant",
+                                            content=f"\n\n> Running Agent {tool_name}: {tool_input}\n",
+                                        ),
+                                    )
+                                ],
+                                usage=CompletionUsage(
+                                    prompt_tokens=0,
+                                    completion_tokens=0,
+                                    total_tokens=0,
+                                ),
+                                object="chat.completion.chunk",
+                            )
+                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+
                     case "on_tool_end":
                         # Handle the end of the tool event
                         tool_message: ToolMessage | None = event.get("data", {}).get(
@@ -210,7 +246,7 @@ class LangGraphToOpenAIConverter:
                                             index=0,
                                             delta=ChoiceDelta(
                                                 role="assistant",
-                                                content=f"\n[{artifact}]\n",
+                                                content=f"\n> {artifact}\n",
                                             ),
                                         )
                                     ],
@@ -339,7 +375,7 @@ class LangGraphToOpenAIConverter:
                         for i in range(1)
                     ]
 
-                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1" and choices_text:
                     logger.info(f"Returning content: {choices_text}")
 
                 chat_response: ChatCompletion = ChatCompletion(
@@ -670,7 +706,7 @@ class LangGraphToOpenAIConverter:
             BaseMessage,
         ]
         if len(tools) > 0:
-            tool_node = ToolNode(tools)
+            tool_node = StreamingToolNode(tools)
             model_with_tools = llm.bind_tools(tools)
         else:
             model_with_tools = llm

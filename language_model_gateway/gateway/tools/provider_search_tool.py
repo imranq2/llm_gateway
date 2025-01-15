@@ -2,8 +2,9 @@ import os
 from typing import Optional, Dict, Any, List, cast, Type, Literal, Tuple
 
 import httpx
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
+
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 
 
 class ProviderSearchToolInput(BaseModel):
@@ -19,7 +20,7 @@ class ProviderSearchToolInput(BaseModel):
     )
 
 
-class ProviderSearchTool(BaseTool):
+class ProviderSearchTool(ResilientBaseTool):
     name: str = "provider_search"
     description: str = (
         "Search for healthcare providers (e.g., doctors, clinics and hospitals) based on various criteria like name, specialty, location, insurance etc."
@@ -200,7 +201,7 @@ class ProviderSearchTool(BaseTool):
             response = await async_client.post(self.api_url, json=payload, timeout=30.0)
             return (
                 self._handle_response(response),
-                f"ProviderSearchTool: Searched for {search} {variables} ",
+                f"ProviderSearchAgent: Searched for {search} {variables} ",
             )
 
         except httpx.TimeoutException:
