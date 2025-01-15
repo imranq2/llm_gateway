@@ -256,7 +256,7 @@ async def test_jira_issues_analyzer_full_details_tool(
         messages=[
             {
                 "role": "user",
-                "content": "Get details of the jira issues for the EFS project for past 3 months",
+                "content": "Get full details of the jira issues for the EFS project for past 3 months",
             }
         ],
         model="General Purpose",

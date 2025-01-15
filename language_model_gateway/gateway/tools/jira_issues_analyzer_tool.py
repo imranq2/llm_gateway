@@ -17,34 +17,6 @@ logger = logging.getLogger(__name__)
 class JiraIssuesAnalyzerAgentInput(BaseModel):
     """
     Input model for configuring GitHub Pull Request extraction and analysis.
-
-    IMPORTANT LLM PARSING GUIDANCE:
-    - When a query mentions a specific repository, extract the repository name exactly as written
-    - When a query includes a GitHub username, extract it as the assigneeName
-    - Examples of parsing:
-      * "What pull requests from imranq2 in helix.pipelines repo"
-        -> projectName = "helix.pipelines"
-        -> assigneeName = "imranq2"
-      * "Show pull requests for user johndoe in myorg/myrepo"
-        -> projectName = "myorg/myrepo"
-        -> assigneeName = "johndoe"
-      * "Pull requests in kubernetes/kubernetes by banzaicloud"
-        -> projectName = "kubernetes/kubernetes"
-        -> assigneeName = "banzaicloud"
-
-    Attributes:
-        projectName (Optional[str]):
-            Specific repository name to analyze.
-            PARSING HINT: Directly use the repository name mentioned in the query.
-            Can include organization prefix (e.g., "org/repo").
-            Example: "helix.pipelines", "kubernetes/kubernetes"
-
-        assigneeName (Optional[str]):
-            GitHub username to filter pull requests.
-            PARSING HINT: Extract the GitHub username mentioned in the query.
-            Example: "imranq2", "johndoe"
-
-        # ... (rest of the attributes remain the same)
     """
 
     # IMPORTANT: Claude 3.5 Haiku 2024-10-22 has a bug where, when streaming, it changes parameter names to be camelCase
@@ -66,18 +38,15 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
     )
     minimumCreatedDate: Optional[datetime] = Field(
         default=None,
-        # alias="minimumCreatedDate",
         description="Earliest date for issue creation (inclusive)",
     )
     maximumCreatedDate: Optional[datetime] = Field(
         default=None,
-        # alias="maximumCreatedDate",
         description="Latest date for issue creation (inclusive)",
     )
-    includeDetails: Optional[bool] = Field(
+    summaryOnly: Optional[bool] = Field(
         default=False,
-        # alias="includePullRequestDetails",
-        description="Include detailed Jira issue information or return user summary",
+        description="Whether to return just the summary or full issue details",
     )
 
 
@@ -87,7 +56,7 @@ class JiraIssuesAnalyzerTool(BaseTool):
 
     This tool provides advanced capabilities for extracting and analyzing
     pull request data from a GitHub organization. It supports:
-    - Filtering pull requests by repository, date range, and contributor
+    - Filtering issues by project, date range, and contributor
     - Generating summary reports of pull request activity
     - Retrieving detailed pull request information
 
@@ -114,7 +83,7 @@ class JiraIssuesAnalyzerTool(BaseTool):
 
     name: str = "jira_issues_analyzer"
     description: str = (
-        "Advanced Jira Issue analysis tool. "
+        "Advanced Jira Issue analysis tool. Set includeDetails if you want detailed issue information. "
         "USAGE TIPS: "
         "- Specify project with 'in [project]' "
         "- Specify assignee with username "
@@ -136,7 +105,7 @@ class JiraIssuesAnalyzerTool(BaseTool):
         minimumCreatedDate: Optional[datetime] = None,
         maximumCreatedDate: Optional[datetime] = None,
         assigneeName: Optional[str] = None,
-        includeDetails: Optional[bool] = None,
+        summaryOnly: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -153,7 +122,7 @@ class JiraIssuesAnalyzerTool(BaseTool):
         minimumCreatedDate: Optional[datetime] = None,
         maximumCreatedDate: Optional[datetime] = None,
         assigneeName: Optional[str] = None,
-        includeDetails: Optional[bool] = None,
+        summaryOnly: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the Jira Issues analyzer tool.
@@ -165,13 +134,13 @@ class JiraIssuesAnalyzerTool(BaseTool):
         logger.info(
             "JiraIssuesAnalyzerAgent:"
             + f" {projectName=}, {minimumCreatedDate=}, {maximumCreatedDate=}"
-            + f", {assigneeName=}, {includeDetails=}"
+            + f", {assigneeName=}, {summaryOnly=}"
         )
 
         log_prefix: str = (
             "JiraIssuesAnalyzerAgent:"
             + f" {projectName=}, {minimumCreatedDate=}, {maximumCreatedDate=}"
-            + f", {assigneeName=}, {includeDetails=}"
+            + f", {assigneeName=}, {summaryOnly=}"
         )
 
         try:
@@ -191,14 +160,14 @@ class JiraIssuesAnalyzerTool(BaseTool):
             )
 
             full_text: str
-            if includeDetails:
+            if not summaryOnly:
                 full_text = ""
                 for issue in jira_issues:
                     full_text += f"Issue: {issue.summary} status: {issue.status} assigned to {issue.assignee}"
                     f" created on {issue.created_at}\n"
                     f" closed on {issue.closed_at}\n"
             else:
-                # Summarize pull requests by engineer
+                # Summarize issues by engineer
                 pr_summary = self.jira_issues_helper.summarize_issues_by_assignee(
                     issues=jira_issues
                 )
