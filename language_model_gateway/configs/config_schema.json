@@ -213,7 +213,8 @@
                   "provider_search",
                   "pdf_text_extractor ",
                   "github_pull_request_analyzer",
-                  "github_pull_request_diff"
+                  "github_pull_request_diff",
+                  "jira_issues_analyzer"
                 ]
               },
               {
@@ -276,7 +277,8 @@
                   "provider_search",
                   "pdf_text_extractor ",
                   "github_pull_request_analyzer",
-                  "github_pull_request_diff"
+                  "github_pull_request_diff",
+                  "jira_issues_analyzer"
                 ]
               },
               {

@@ -16,9 +16,9 @@ class JiraIssueHelper:
         self,
         *,
         http_client_factory: HttpClientFactory,
-        jira_base_url: str,
+        jira_base_url: Optional[str],
         access_token: Optional[str],
-        username: str,
+        username: Optional[str],
     ):
         """
         Initialize Jira Issue Helper with async rate limit handling.
@@ -29,9 +29,11 @@ class JiraIssueHelper:
         """
         self.http_client_factory: HttpClientFactory = http_client_factory
         self.logger: Logger = logging.getLogger(__name__)
-        self.jira_base_url: str = jira_base_url.rstrip("/")
+        self.jira_base_url: Optional[str] = (
+            jira_base_url.rstrip("/") if jira_base_url else None
+        )
         self.jira_access_token: Optional[str] = access_token
-        self.username: str = username
+        self.username: Optional[str] = username
 
         credentials = base64.b64encode(f"{username}:{access_token}".encode()).decode()
 
@@ -50,6 +52,7 @@ class JiraIssueHelper:
         min_created_at: Optional[datetime] = None,
         max_created_at: Optional[datetime] = None,
         project_key: Optional[str] = None,
+        assignee: Optional[str] = None,
     ) -> List[JiraIssue]:
         """
         Async method to retrieve closed issues across Jira projects.
@@ -60,6 +63,7 @@ class JiraIssueHelper:
             min_created_at (datetime, optional): Minimum creation date
             max_created_at (datetime, optional): Maximum creation date
             project_key (str, optional): Specific project to fetch issues from
+            assignee (str, optional): Specific assignee to filter issues
 
         Returns:
             List[JiraIssue]: List of closed Jira issues
@@ -86,6 +90,9 @@ class JiraIssueHelper:
                     jql_conditions.append(
                         f"created <= '{max_created_at.strftime('%Y-%m-%d')}'"
                     )
+
+                if assignee:
+                    jql_conditions.append(f"assignee = {assignee}")
 
                 jql = " AND ".join(jql_conditions)
 
@@ -121,7 +128,7 @@ class JiraIssueHelper:
                         assignee_object: Optional[Dict[str, Any]] = issue["fields"].get(
                             "assignee", {}
                         )
-                        assignee: str = (
+                        assignee_name: str = (
                             assignee_object.get("displayName", "Unassigned")
                             if assignee_object
                             else "Unassigned"
@@ -143,7 +150,7 @@ class JiraIssueHelper:
                                     if issue["fields"].get("resolutiondate")
                                     else None
                                 ),
-                                assignee=assignee,
+                                assignee=assignee_name,
                                 project=issue["fields"].get("project", {}).get("key"),
                             )
                         )

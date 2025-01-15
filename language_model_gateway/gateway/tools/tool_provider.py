@@ -35,6 +35,9 @@ from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool impor
     GraphVizDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.image_generator_tool import ImageGeneratorTool
+from language_model_gateway.gateway.tools.jira_issues_analyzer_tool import (
+    JiraIssuesAnalyzerTool,
+)
 from language_model_gateway.gateway.tools.network_topology_diagram_tool import (
     NetworkTopologyGeneratorTool,
 )
@@ -54,6 +57,9 @@ from language_model_gateway.gateway.utilities.environment_variables import (
 from language_model_gateway.gateway.utilities.github.github_pull_request_helper import (
     GithubPullRequestHelper,
 )
+from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
+    JiraIssueHelper,
+)
 
 
 class ToolProvider:
@@ -65,6 +71,7 @@ class ToolProvider:
         ocr_extractor_factory: OCRExtractorFactory,
         environment_variables: EnvironmentVariables,
         github_pull_request_helper: GithubPullRequestHelper,
+        jira_issues_helper: JiraIssueHelper,
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -126,6 +133,9 @@ class ToolProvider:
             ),
             "github_pull_request_diff": GitHubPullRequestDiffTool(
                 github_pull_request_helper=github_pull_request_helper
+            ),
+            "jira_issues_analyzer": JiraIssuesAnalyzerTool(
+                jira_issues_helper=jira_issues_helper
             ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(

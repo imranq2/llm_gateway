@@ -112,7 +112,7 @@ class JiraIssuesAnalyzerTool(BaseTool):
     ```
     """
 
-    name: str = "github_pull_request_analyzer"
+    name: str = "jira_issues_analyzer"
     description: str = (
         "Advanced Jira Issue analysis tool. "
         "USAGE TIPS: "
@@ -156,10 +156,10 @@ class JiraIssuesAnalyzerTool(BaseTool):
         includeDetails: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
-        Asynchronous version of the GitHub Pull Request extraction tool.
+        Asynchronous version of the Jira Issues analyzer tool.
 
         Returns:
-            Tuple of pull request analysis text and artifact description
+            Tuple of Jira issue text and artifact description
         """
 
         logger.info(
@@ -175,11 +175,9 @@ class JiraIssuesAnalyzerTool(BaseTool):
         )
 
         try:
-            # Initialize GitHub Pull Request Helper
-            # Retrieve closed pull requests
-            max_projects: int = int(os.environ.get("GITHUB_MAXIMUM_REPOS", 100))
+            max_projects: int = int(os.environ.get("JIRA_MAXIMUM_PROJECTS", 100))
             max_issues: int = int(
-                os.environ.get("GITHUB_MAXIMUM_PULL_REQUESTS_PER_REPO", 100)
+                os.environ.get("JIRA_MAXIMUM_ISSUES_PER_PROJECT", 100)
             )
             jira_issues: List[JiraIssue] = (
                 await self.jira_issues_helper.retrieve_closed_issues(
@@ -188,6 +186,7 @@ class JiraIssuesAnalyzerTool(BaseTool):
                     min_created_at=minimumCreatedDate,
                     max_created_at=maximumCreatedDate,
                     project_key=projectName,
+                    assignee=assigneeName,
                 )
             )
 
@@ -206,7 +205,7 @@ class JiraIssuesAnalyzerTool(BaseTool):
 
                 # Generate detailed text report
                 report_lines = [
-                    "Pull Requests by Contributor:",
+                    "Issues by Assignee:",
                 ]
 
                 for engineer, info in pr_summary.items():
@@ -215,12 +214,12 @@ class JiraIssuesAnalyzerTool(BaseTool):
                 full_text = "\n".join(report_lines)
 
             # Create artifact description
-            artifact = log_prefix + f", Analyzed {len(jira_issues)} closed PRs"
+            artifact = log_prefix + f", Analyzed {len(jira_issues)} closed issues"
 
             return full_text, artifact
 
         except Exception as e:
-            error_msg = f"Error analyzing GitHub pull requests: {str(e)}"
+            error_msg = f"Error analyzing Jira issues: {str(e)}"
             error_artifact = log_prefix + " Analysis Failed"
             logger.error(error_msg)
             return error_msg, error_artifact

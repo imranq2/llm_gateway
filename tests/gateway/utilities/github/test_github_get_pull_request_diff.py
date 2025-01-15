@@ -103,7 +103,6 @@ index 0000000..8c5c589
 +
 +   ]
 +}
-\ No newline at end of file
 diff --git a/configs/chat_completions/testing/searchmining_llama3B.json b/configs/chat_completions/testing/searchmining_llama3B.json
 new file mode 100644
 index 0000000..ad46c5c
@@ -163,7 +162,6 @@ index 0000000..ad46c5c
 +
 +   ]
 +}
-\ No newline at end of file
     """
 
         # Mock the GitHub API responses for PR details and diff
