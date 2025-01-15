@@ -22,26 +22,26 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
 
     IMPORTANT LLM PARSING GUIDANCE:
     - When a query mentions a specific repository, extract the repository name exactly as written
-    - When a query includes a GitHub username, extract it as the contributorName
+    - When a query includes a GitHub username, extract it as the contributor_name
     - Examples of parsing:
       * "What pull requests from imranq2 in helix.pipelines repo"
-        -> repositoryName = "helix.pipelines"
-        -> contributorName = "imranq2"
+        -> repository_name = "helix.pipelines"
+        -> contributor_name = "imranq2"
       * "Show pull requests for user johndoe in myorg/myrepo"
-        -> repositoryName = "myorg/myrepo"
-        -> contributorName = "johndoe"
+        -> repository_name = "myorg/myrepo"
+        -> contributor_name = "johndoe"
       * "Pull requests in kubernetes/kubernetes by banzaicloud"
-        -> repositoryName = "kubernetes/kubernetes"
-        -> contributorName = "banzaicloud"
+        -> repository_name = "kubernetes/kubernetes"
+        -> contributor_name = "banzaicloud"
 
     Attributes:
-        repositoryName (Optional[str]):
+        repository_name (Optional[str]):
             Specific repository name to analyze.
             PARSING HINT: Directly use the repository name mentioned in the query.
             Can include organization prefix (e.g., "org/repo").
             Example: "helix.pipelines", "kubernetes/kubernetes"
 
-        contributorName (Optional[str]):
+        contributor_name (Optional[str]):
             GitHub username to filter pull requests.
             PARSING HINT: Extract the GitHub username mentioned in the query.
             Example: "imranq2", "johndoe"
@@ -52,33 +52,30 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
     # IMPORTANT: Claude 3.5 Haiku 2024-10-22 has a bug where, when streaming, it changes parameter names to be camelCase
     # Hence use camelCase names for all parameters instead of snake_case
 
-    repositoryName: Optional[str] = Field(
+    repository_name: Optional[str] = Field(
         default=None,
         description=(
             "Specific repository name to analyze. "
             "PARSING INSTRUCTION: Extract exact repository name from the query. "
         ),
     )
-    contributorName: Optional[str] = Field(
+    contributor_name: Optional[str] = Field(
         default=None,
         description=(
             "GitHub username to filter pull requests. "
             "PARSING INSTRUCTION: Extract GitHub username mentioned in the query."
         ),
     )
-    minimumCreatedDate: Optional[datetime] = Field(
+    minimum_created_date: Optional[datetime] = Field(
         default=None,
-        # alias="minimumCreatedDate",
         description="Earliest date for pull request creation (inclusive)",
     )
-    maximumCreatedDate: Optional[datetime] = Field(
+    maximum_created_date: Optional[datetime] = Field(
         default=None,
-        # alias="maximumCreatedDate",
         description="Latest date for pull request creation (inclusive)",
     )
-    includeDetails: Optional[bool] = Field(
+    include_details: Optional[bool] = Field(
         default=False,
-        # alias="includePullRequestDetails",
         description="Include detailed pull request information or return contributor summary",
     )
 
@@ -107,9 +104,9 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
     ```python
     tool = GitHubPullRequestAnalyzerTool(access_token='your_github_token')
     results, artifact = await tool._arun(
-        repositoryName='my-project',
-        minimumCreatedDate=datetime(2023, 1, 1),
-        includeDetails=True
+        repository_name='my-project',
+        minimum_created_date=datetime(2023, 1, 1),
+        include_details=True
     )
     ```
     """
@@ -136,11 +133,11 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
     # noinspection PyPep8Naming
     def _run(
         self,
-        repositoryName: Optional[str] = None,
-        minimumCreatedDate: Optional[datetime] = None,
-        maximumCreatedDate: Optional[datetime] = None,
-        contributorName: Optional[str] = None,
-        includeDetails: Optional[bool] = None,
+        repository_name: Optional[str] = None,
+        minimum_created_date: Optional[datetime] = None,
+        maximum_created_date: Optional[datetime] = None,
+        contributor_name: Optional[str] = None,
+        include_details: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -156,25 +153,31 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
         # somehow the LLMs can mess up camelCase vs snake_case parameter names
         # so we need to handle both cases
         if isinstance(tool_input, dict):
-            # convert snake_case to camelCase
-            # use a function to convert snake_case to camelCase
-            def snake_to_camel(name: str) -> str:
-                components = name.split("_")
-                return components[0] + "".join(x.title() for x in components[1:])
 
+            def camel_to_snake(name: str) -> str:
+                return "".join(
+                    [f"_{c.lower()}" if c.isupper() else c for c in name]
+                ).lstrip("_")
+
+            # find keys that are not present in GitHubPullRequestAnalyzerAgentInput
+            # and convert them to snake_case
+
+            # noinspection PyUnresolvedReferences
+            input_fields: List[str] = [c for c in self.args_schema.model_fields.keys()]
             tool_input = {
-                snake_to_camel(key): value for key, value in tool_input.items()
+                (camel_to_snake(key) if key not in input_fields else key): value
+                for key, value in tool_input.items()
             }
         return super()._parse_input(tool_input, tool_call_id)
 
     # noinspection PyPep8Naming
     async def _arun(
         self,
-        repositoryName: Optional[str] = None,
-        minimumCreatedDate: Optional[datetime] = None,
-        maximumCreatedDate: Optional[datetime] = None,
-        contributorName: Optional[str] = None,
-        includeDetails: Optional[bool] = None,
+        repository_name: Optional[str] = None,
+        minimum_created_date: Optional[datetime] = None,
+        maximum_created_date: Optional[datetime] = None,
+        contributor_name: Optional[str] = None,
+        include_details: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
@@ -185,14 +188,14 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
 
         logger.info(
             "GitHubPullRequestAnalyzerAgent:"
-            + f" {repositoryName=}, {minimumCreatedDate=}, {maximumCreatedDate=}"
-            + f", {contributorName=}, {includeDetails=}"
+            + f" {repository_name=}, {minimum_created_date=}, {maximum_created_date=}"
+            + f", {contributor_name=}, {include_details=}"
         )
 
         log_prefix: str = (
             "GitHubPullRequestAnalyzerAgent:"
-            + f" {repositoryName=}, {minimumCreatedDate=}, {maximumCreatedDate=}"
-            + f", {contributorName=}, {includeDetails=}"
+            + f" {repository_name=}, {minimum_created_date=}, {maximum_created_date=}"
+            + f", {contributor_name=}, {include_details=}"
         )
 
         try:
@@ -206,15 +209,15 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
                 await self.github_pull_request_helper.retrieve_closed_prs(
                     max_repos=max_repos,
                     max_pull_requests=max_pull_requests,
-                    min_created_at=minimumCreatedDate,
-                    max_created_at=maximumCreatedDate,
+                    min_created_at=minimum_created_date,
+                    max_created_at=maximum_created_date,
                     include_merged=True,
-                    repo_name=repositoryName,
+                    repo_name=repository_name,
                 )
             )
 
             full_text: str
-            if includeDetails:
+            if include_details:
                 full_text = ""
                 for pr in closed_prs:
                     full_text += f"PR: {pr.title} by {pr.user} closed on {pr.closed_at} - {pr.html_url}\n"
