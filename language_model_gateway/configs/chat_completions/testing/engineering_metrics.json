@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
-  "id": "github",
-  "name": "Github Analyzer",
-  "description": "This model allows searching pull requests across repos and getting git diff.",
+  "id": "engineering_metrics",
+  "name": "Engineering Metrics",
+  "description": "This model allows searching pull requests across repos and getting git diff and getting issues from Jira.",
   "owner": "Imran Qureshi",
   "system_prompts": [
     {
@@ -25,6 +25,9 @@
     },
     {
       "name": "github_pull_request_diff"
+    },
+    {
+      "name": "jira_issues_analyzer"
     }
   ]
 }
