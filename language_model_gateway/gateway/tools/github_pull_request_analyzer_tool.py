@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime
-from typing import Type, Optional, List, Tuple, Literal
+from typing import Type, Optional, List, Tuple, Literal, Union, Any, Dict
 
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -120,6 +120,8 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
         "USAGE TIPS: "
         "- Specify repository with 'in [repo]' "
         "- Specify contributor with username "
+        "- If querying for a specific date range, include 'from [date] to [date]' "
+        "- Include 'details' for detailed pull request information "
         "- Example queries: "
         "'Pull requests in kubernetes/kubernetes', "
         "'PRs from johndoe in myorg/myrepo', "
@@ -147,6 +149,23 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
             NotImplementedError: Always raises to enforce async usage
         """
         raise NotImplementedError("Use async version of this tool")
+
+    def _parse_input(
+        self, tool_input: Union[str, Dict[str, Any]], tool_call_id: Optional[str]
+    ) -> Union[str, dict[str, Any]]:
+        # somehow the LLMs can mess up camelCase vs snake_case parameter names
+        # so we need to handle both cases
+        if isinstance(tool_input, dict):
+            # convert snake_case to camelCase
+            # use a function to convert snake_case to camelCase
+            def snake_to_camel(name: str) -> str:
+                components = name.split("_")
+                return components[0] + "".join(x.title() for x in components[1:])
+
+            tool_input = {
+                snake_to_camel(key): value for key, value in tool_input.items()
+            }
+        return super()._parse_input(tool_input, tool_call_id)
 
     # noinspection PyPep8Naming
     async def _arun(
