@@ -149,11 +149,6 @@ class GithubPullRequestHelper:
                 closed_prs_list: List[GithubPullRequest] = []
 
                 for repo in repos:
-                    # Rate limit check
-                    rate_info = await self._get_rate_limit_info(client)
-                    if rate_info["remaining"] < 10:
-                        await self._wait_for_rate_limit_reset(rate_info["reset_time"])
-
                     # Fetch closed PRs for the repository
                     prs_url = (
                         f"{self.base_url}/repos/{self.org_name}/{repo['name']}/pulls"

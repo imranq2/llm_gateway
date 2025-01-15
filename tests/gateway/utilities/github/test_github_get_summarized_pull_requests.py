@@ -59,7 +59,14 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
                 "private": False,
                 "html_url": "",
                 "description": "Helix Pipelines",
-            }
+            },
+            {
+                "name": "foo",
+                "full_name": "icanbwell/foo",
+                "private": False,
+                "html_url": "",
+                "description": "Foo",
+            },
         ]
 
         # org_name = "icanbwell"
@@ -77,24 +84,6 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
                 "User-Agent": "AsyncGithubPullRequestHelper",
             },
             content=json.dumps(sample_content).encode(),
-            status_code=200,
-        )
-
-        # mock rate limit
-        rate_limit_url = "https://api.github.com/rate_limit"
-        rate_limit_content = {
-            "resources": {
-                "core": {"limit": 5000, "remaining": 4999, "reset": 1641316800}
-            }
-        }
-        httpx_mock.add_response(
-            url=rate_limit_url,
-            method="GET",
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/vnd.github+json",
-            },
-            content=json.dumps(rate_limit_content).encode(),
             status_code=200,
         )
 
@@ -126,6 +115,18 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
                 "merged_at": "2024-09-02T00:00:00Z",
             },
         ]
+        httpx_mock.add_response(
+            url=pull_url,
+            method="GET",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/vnd.github+json",
+            },
+            content=json.dumps(sample_pull_content).encode(),
+            status_code=200,
+        )
+        pull_url = f"https://api.github.com/repos/{org_name}/foo/pulls?state=closed&sort=created&direction=desc"
+        sample_pull_content = []
         httpx_mock.add_response(
             url=pull_url,
             method="GET",
