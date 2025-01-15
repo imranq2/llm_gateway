@@ -210,7 +210,7 @@ class LangGraphToOpenAIConverter:
                                         index=0,
                                         delta=ChoiceDelta(
                                             role="assistant",
-                                            content=f"\n> [Running Agent {tool_name}: {tool_input}]\n",
+                                            content=f"\n\n> Running Agent {tool_name}: {tool_input}\n",
                                         ),
                                     )
                                 ],
@@ -246,7 +246,7 @@ class LangGraphToOpenAIConverter:
                                             index=0,
                                             delta=ChoiceDelta(
                                                 role="assistant",
-                                                content=f"\n> [{artifact}]\n",
+                                                content=f"\n> {artifact}\n",
                                             ),
                                         )
                                     ],
