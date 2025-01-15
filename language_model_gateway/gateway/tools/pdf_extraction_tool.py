@@ -6,12 +6,12 @@ from typing import Type, Literal, Tuple, Optional, Dict
 import httpx
 import pypdf
 from httpx import Response, Headers
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 from pypdf import PageObject
 
 from language_model_gateway.gateway.ocr.ocr_extractor import OCRExtractor
 from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -22,23 +22,23 @@ class PDFExtractionToolInput(BaseModel):
     url: Optional[str] = Field(
         default=None, description="Optional url of the pdf to extract text from"
     )
-    base64Pdf: Optional[str] = Field(
+    base64_pdf: Optional[str] = Field(
         default=None,
         description="Optional Base64 encoded PDF content to extract text from",
     )
-    startPage: Optional[int] = Field(
+    start_page: Optional[int] = Field(
         default=None, description="Optional starting page for extraction (0-indexed)"
     )
-    endPage: Optional[int] = Field(
+    end_page: Optional[int] = Field(
         default=None, description="Optional ending page for extraction (0-indexed)"
     )
-    useOCR: Optional[bool] = Field(
+    use_ocr: Optional[bool] = Field(
         default=False,
         description="Use OCR (Optical Character Recognition) if text extraction fails",
     )
 
 
-class PDFExtractionTool(BaseTool):
+class PDFExtractionTool(ResilientBaseTool):
     """
     LangChain-compatible tool for extracting text from PDFs using PyPDF and AWS Textract.
     """
@@ -57,17 +57,17 @@ class PDFExtractionTool(BaseTool):
     def _run(
         self,
         url: Optional[str] = None,
-        base64Pdf: Optional[str] = None,
-        startPage: Optional[int] = None,
-        endPage: Optional[int] = None,
-        useOCR: bool = False,
+        base64_pdf: Optional[str] = None,
+        start_page: Optional[int] = None,
+        end_page: Optional[int] = None,
+        use_ocr: bool = False,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
 
-        :param base64Pdf: Base64 encoded PDF content
-        :param startPage: Optional starting page for extraction
-        :param endPage: Optional ending page for extraction
+        :param base64_pdf: Base64 encoded PDF content
+        :param start_page: Optional starting page for extraction
+        :param end_page: Optional ending page for extraction
         :return: Tuple of extracted text and artifact description
         """
         raise NotImplementedError("Use async version of this tool")
@@ -75,20 +75,20 @@ class PDFExtractionTool(BaseTool):
     async def _arun(
         self,
         url: Optional[str] = None,
-        base64Pdf: Optional[str] = None,
-        startPage: Optional[int] = None,
-        endPage: Optional[int] = None,
-        useOCR: bool = False,
+        base64_pdf: Optional[str] = None,
+        start_page: Optional[int] = None,
+        end_page: Optional[int] = None,
+        use_ocr: bool = False,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the tool with OCR support.
 
         Args:
             url (Optional[str]): URL of the PDF
-            base64Pdf (Optional[str]): Base64 encoded PDF content
-            startPage (Optional[int]): Starting page for extraction
-            endPage (Optional[int]): Ending page for extraction
-            useOCR (bool): Use AWS Textract for OCR if text extraction fails
+            base64_pdf (Optional[str]): Base64 encoded PDF content
+            start_page (Optional[int]): Starting page for extraction
+            end_page (Optional[int]): Ending page for extraction
+            use_ocr (bool): Use AWS Textract for OCR if text extraction fails
 
         Returns:
             Tuple of extracted text and artifact description
@@ -98,10 +98,10 @@ class PDFExtractionTool(BaseTool):
         else:
             logger.info("Extracting text from base64 encoded PDF")
 
-        assert base64Pdf or url, "Either base64Pdf or url must be provided"
+        assert base64_pdf or url, "Either base64_pdf or url must be provided"
 
         pdf_bytes: bytes
-        if not base64Pdf and url:
+        if not base64_pdf and url:
             # Read PDF from URL
             headers = Headers(
                 {
@@ -124,18 +124,18 @@ class PDFExtractionTool(BaseTool):
                     f"PDFExtractionAgent: Failed to fetch or process the URL: <{url}> ",
                 )
         else:
-            assert base64Pdf is not None, "base64Pdf must be provided"
-            pdf_bytes = base64.b64decode(base64Pdf)
+            assert base64_pdf is not None, "base64_pdf must be provided"
+            pdf_bytes = base64.b64decode(base64_pdf)
 
         try:
             # Create a bytes buffer to simulate file-like object
             pdf_buffer: io.BytesIO = io.BytesIO(pdf_bytes)
 
             # First, try PyPDF text extraction
-            full_text = self._extract_text_with_pypdf(pdf_buffer, startPage, endPage)
+            full_text = self._extract_text_with_pypdf(pdf_buffer, start_page, end_page)
 
             # If text extraction fails and OCR is enabled, use Textract
-            if not full_text.strip() and useOCR:
+            if not full_text.strip() and use_ocr:
                 ocr_extractor: OCRExtractor = self.ocr_extractor_factory.get(
                     name=self.ocr_type
                 )
@@ -145,12 +145,12 @@ class PDFExtractionTool(BaseTool):
 
             # Prepare artifact description
             total_pages = len(pypdf.PdfReader(pdf_buffer).pages)
-            start = startPage if startPage is not None else 0
-            end = endPage if endPage is not None else total_pages - 1
+            start = start_page if start_page is not None else 0
+            end = end_page if end_page is not None else total_pages - 1
 
             artifact = (
                 f"PDFExtractionAgent: Extracted text from pages {start} to {end} "
-                f"(Total pages: {total_pages}, OCR: {'Yes' if useOCR else 'No'})"
+                f"(Total pages: {total_pages}, OCR: {'Yes' if use_ocr else 'No'})"
             )
 
             return full_text.strip(), artifact
@@ -206,16 +206,16 @@ class PDFExtractionTool(BaseTool):
     @staticmethod
     def _extract_text_with_pypdf(
         pdf_buffer: io.BytesIO,
-        startPage: Optional[int] = None,
-        endPage: Optional[int] = None,
+        start_page: Optional[int] = None,
+        end_page: Optional[int] = None,
     ) -> str:
         """
         Extract text using PyPDF with multiple extraction methods
 
         Args:
             pdf_buffer (io.BytesIO): PDF file buffer
-            startPage (Optional[int]): Starting page
-            endPage (Optional[int]): Ending page
+            start_page (Optional[int]): Starting page
+            end_page (Optional[int]): Ending page
 
         Returns:
             str: Extracted text
@@ -224,8 +224,8 @@ class PDFExtractionTool(BaseTool):
         total_pages = len(pdf_reader.pages)
 
         # Determine page range
-        start = startPage if startPage is not None else 0
-        end = endPage if endPage is not None else total_pages - 1
+        start = start_page if start_page is not None else 0
+        end = end_page if end_page is not None else total_pages - 1
 
         # Validate page range
         if start < 0 or end >= total_pages or start > end:
@@ -252,19 +252,19 @@ class PDFExtractionTool(BaseTool):
         return full_text
 
     @staticmethod
-    def extract_metadata(base64Pdf: str) -> Dict[str, str]:
+    def extract_metadata(base64_pdf: str) -> Dict[str, str]:
         """
         Extract metadata from the PDF.
 
         Args:
-            base64Pdf (str): Base64 encoded PDF content
+            base64_pdf (str): Base64 encoded PDF content
 
         Returns:
             Dict[str, str]: PDF metadata
         """
         try:
             # Decode the base64 string to bytes
-            pdf_bytes = base64.b64decode(base64Pdf)
+            pdf_bytes = base64.b64decode(base64_pdf)
 
             # Create a bytes buffer to simulate file-like object
             pdf_buffer = io.BytesIO(pdf_bytes)

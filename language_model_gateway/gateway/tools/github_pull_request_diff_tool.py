@@ -1,9 +1,9 @@
 import logging
 from typing import Type, Optional, Tuple, Literal
 
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.github.github_pull_request_helper import (
     GithubPullRequestHelper,
 )
@@ -21,7 +21,7 @@ class GitHubPullRequestDiffAgentDiffInput(BaseModel):
     )
 
 
-class GitHubPullRequestDiffTool(BaseTool):
+class GitHubPullRequestDiffTool(ResilientBaseTool):
     """
     LangChain-compatible tool for extracting and analyzing GitHub pull requests.
     """

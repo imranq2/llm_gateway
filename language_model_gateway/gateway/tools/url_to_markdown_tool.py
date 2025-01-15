@@ -4,9 +4,9 @@ from typing import Type, Literal, Tuple
 
 import httpx
 from httpx import Headers
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
     HtmlToMarkdownConverter,
 )
@@ -19,7 +19,7 @@ class URLToMarkdownToolInput(BaseModel):
     url: str = Field(description="url of the webpage to scrape")
 
 
-class URLToMarkdownTool(BaseTool):
+class URLToMarkdownTool(ResilientBaseTool):
     """
     LangChain-compatible tool for downloading the content of a URL and converting it to Markdown.
     """

@@ -3,9 +3,9 @@ import os
 from datetime import datetime
 from typing import Type, Optional, List, Tuple, Literal
 
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.jira.jira_issue import JiraIssue
 from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
     JiraIssueHelper,
@@ -19,38 +19,35 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
     Input model for configuring GitHub Pull Request extraction and analysis.
     """
 
-    # IMPORTANT: Claude 3.5 Haiku 2024-10-22 has a bug where, when streaming, it changes parameter names to be camelCase
-    # Hence use camelCase names for all parameters instead of snake_case
-
-    projectName: Optional[str] = Field(
+    project_name: Optional[str] = Field(
         default=None,
         description=(
             "Specific project name to analyze. "
             "PARSING INSTRUCTION: Extract exact project name from the query. "
         ),
     )
-    assigneeName: Optional[str] = Field(
+    assignee: Optional[str] = Field(
         default=None,
         description=(
             "Jira username to filter issues. "
             "PARSING INSTRUCTION: Extract Jira username mentioned in the query."
         ),
     )
-    minimumCreatedDate: Optional[datetime] = Field(
+    minimum_created_date: Optional[datetime] = Field(
         default=None,
         description="Earliest date for issue creation (inclusive)",
     )
-    maximumCreatedDate: Optional[datetime] = Field(
+    maximum_created_date: Optional[datetime] = Field(
         default=None,
         description="Latest date for issue creation (inclusive)",
     )
-    summaryOnly: Optional[bool] = Field(
+    summary_only: Optional[bool] = Field(
         default=False,
         description="Whether to return just the summary or full issue details",
     )
 
 
-class JiraIssuesAnalyzerTool(BaseTool):
+class JiraIssuesAnalyzerTool(ResilientBaseTool):
     """
     A LangChain-compatible tool for comprehensive GitHub pull request analysis.
 
@@ -74,8 +71,8 @@ class JiraIssuesAnalyzerTool(BaseTool):
     ```python
     tool = JiraIssuesAnalyzerTool(access_token='your_github_token')
     results, artifact = await tool._arun(
-        projectName='my-project',
-        minimumCreatedDate=datetime(2023, 1, 1),
+        project_name='my-project',
+        minimum_created_date=datetime(2023, 1, 1),
         includeDetails=True
     )
     ```
@@ -101,11 +98,11 @@ class JiraIssuesAnalyzerTool(BaseTool):
     # noinspection PyPep8Naming
     def _run(
         self,
-        projectName: Optional[str] = None,
-        minimumCreatedDate: Optional[datetime] = None,
-        maximumCreatedDate: Optional[datetime] = None,
-        assigneeName: Optional[str] = None,
-        summaryOnly: Optional[bool] = None,
+        project_name: Optional[str] = None,
+        minimum_created_date: Optional[datetime] = None,
+        maximum_created_date: Optional[datetime] = None,
+        assignee: Optional[str] = None,
+        summary_only: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -118,11 +115,11 @@ class JiraIssuesAnalyzerTool(BaseTool):
     # noinspection PyPep8Naming
     async def _arun(
         self,
-        projectName: Optional[str] = None,
-        minimumCreatedDate: Optional[datetime] = None,
-        maximumCreatedDate: Optional[datetime] = None,
-        assigneeName: Optional[str] = None,
-        summaryOnly: Optional[bool] = None,
+        project_name: Optional[str] = None,
+        minimum_created_date: Optional[datetime] = None,
+        maximum_created_date: Optional[datetime] = None,
+        assignee: Optional[str] = None,
+        summary_only: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the Jira Issues analyzer tool.
@@ -133,14 +130,14 @@ class JiraIssuesAnalyzerTool(BaseTool):
 
         logger.info(
             "JiraIssuesAnalyzerAgent:"
-            + f" {projectName=}, {minimumCreatedDate=}, {maximumCreatedDate=}"
-            + f", {assigneeName=}, {summaryOnly=}"
+            + f" {project_name=}, {minimum_created_date=}, {maximum_created_date=}"
+            + f", {assignee=}, {summary_only=}"
         )
 
         log_prefix: str = (
             "JiraIssuesAnalyzerAgent:"
-            + f" {projectName=}, {minimumCreatedDate=}, {maximumCreatedDate=}"
-            + f", {assigneeName=}, {summaryOnly=}"
+            + f" {project_name=}, {minimum_created_date=}, {maximum_created_date=}"
+            + f", {assignee=}, {summary_only=}"
         )
 
         try:
@@ -152,15 +149,15 @@ class JiraIssuesAnalyzerTool(BaseTool):
                 await self.jira_issues_helper.retrieve_closed_issues(
                     max_projects=max_projects,
                     max_issues=max_issues,
-                    min_created_at=minimumCreatedDate,
-                    max_created_at=maximumCreatedDate,
-                    project_key=projectName,
-                    assignee=assigneeName,
+                    min_created_at=minimum_created_date,
+                    max_created_at=maximum_created_date,
+                    project_key=project_name,
+                    assignee=assignee,
                 )
             )
 
             full_text: str
-            if not summaryOnly:
+            if not summary_only:
                 full_text = ""
                 for issue in jira_issues:
                     full_text += f"Issue: {issue.summary} status: {issue.status} assigned to {issue.assignee}"

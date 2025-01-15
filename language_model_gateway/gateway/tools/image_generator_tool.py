@@ -4,7 +4,6 @@ import os
 from typing import Literal, Tuple, Type, Optional
 from uuid import uuid4
 
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
@@ -17,6 +16,7 @@ from language_model_gateway.gateway.image_generation.image_generator import (
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class ImageGeneratorToolInput(BaseModel):
     prompt: str = Field(description="Prompt to use for generating the image")
 
 
-class ImageGeneratorTool(BaseTool):
+class ImageGeneratorTool(ResilientBaseTool):
     """
     LangChain-compatible tool for generating an image from a given text.
     """

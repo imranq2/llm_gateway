@@ -6,8 +6,9 @@ from os import environ
 from typing import Optional, Dict, Any, List, cast, Type, Literal, Tuple
 
 import httpx
-from langchain_core.tools import BaseTool
 from pydantic import PrivateAttr, Field, BaseModel
+
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 
 logger = logging.getLogger(__file__)
 
@@ -16,7 +17,7 @@ class GoogleSearchToolInput(BaseModel):
     query: str = Field(description="The search query to send to Google Search")
 
 
-class GoogleSearchTool(BaseTool):
+class GoogleSearchTool(ResilientBaseTool):
     """
     2. Enable the Custom Search API
     - Navigate to the APIs & Services→Dashboard panel in Cloud Console.

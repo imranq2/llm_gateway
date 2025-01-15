@@ -4,13 +4,13 @@ from typing import Type, Literal, Tuple, Optional, List
 from uuid import uuid4
 
 from graphviz import Digraph
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.file_managers.file_manager_factory import (
     FileManagerFactory,
 )
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class SequenceDiagramInput(BaseModel):
     )
 
 
-class SequenceDiagramGeneratorTool(BaseTool):
+class SequenceDiagramGeneratorTool(ResilientBaseTool):
     """
     LangChain-compatible tool for generating sequence diagrams using Graphviz.
     """

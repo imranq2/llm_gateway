@@ -4,13 +4,13 @@ from typing import Type, Literal, Tuple, Optional, List, Dict, Any
 from uuid import uuid4
 
 from graphviz import Graph  # Note: Using Graph instead of Digraph
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.file_managers.file_manager_factory import (
     FileManagerFactory,
 )
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class NetworkTopologyInput(BaseModel):
     )
 
 
-class NetworkTopologyGeneratorTool(BaseTool):
+class NetworkTopologyGeneratorTool(ResilientBaseTool):
     """
     LangChain-compatible tool for generating network topology diagrams
     """
