@@ -1,10 +1,14 @@
 import os
+import logging
+
 from typing import Optional, Dict, Any, List, cast, Type, Literal, Tuple
 
 import httpx
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
+
+logger = logging.getLogger(__name__)
 
 
 class ProviderSearchToolInput(BaseModel):
@@ -33,74 +37,71 @@ class ProviderSearchTool(ResilientBaseTool):
     def _build_query(self) -> str:
         return """
             query SearchProviders(
-                $search: String
-                $searchPosition: SearchPosition
-                $specialty: [InputCoding]
-                $insurance: [InputCoding]
+              $search: String
+              $searchPosition: SearchPosition
+              $specialty: [InputCoding]
+              $insurance: [InputCoding]
             ) {
-                providers(
-                    client: [
-                        {
-                            id: lee_health
-                            data_sets: nppes
-                        }
-                    ]
-                    search: $search
-                    search_position: $searchPosition
-                    specialty: $specialty
-                    insurance: $insurance
-                ) {
-                    total_count
-                    results {
-                        id
-                        npi
-                        content
-                        name {
-                            text
-                            family
-                            given
-                        }
-                        specialty {
-                            code
-                            system
-                            display
-                            isPrimary
-                        }
-                        location {
-                            name
-                            address {
-                                text
-                                line
-                                city
-                                state
-                                postalCode
-                            }
-                            position {
-                                lat
-                                lon
-                            }
-                            telecom {
-                                system
-                                value
-                            }
-                        }
-                        next_available_slot {
-                            start
-                            end
-                            minutesDuration
-                        }
-                        bookable {
-                            online
-                            phone
-                        }
-                        insurance_plan {
-                            name
-                        }
-                        endpoint {
-                            name
-                        }
+              searchProviders(
+                searchProvidersInput: {
+                  client: [{ dataSets: NPPES }]
+                  search: $search
+                  searchPosition: $searchPosition
+                  specialty: $specialty
+                  insurance: $insurance
+              }
+              ) {
+                totalCount
+                results {
+                  id
+                  npi
+                  content
+                  name {
+                    text
+                    family
+                    given
+                  }
+                  specialty {
+                    code
+                    system
+                    display
+                    isPrimary
+                  }
+                  location {
+                    name
+                    address {
+                      text
+                      line
+                      city
+                      state
+                      postalCode
                     }
+                    position {
+                      lat
+                      lon
+                    }
+                    telecom {
+                      system
+                      value
+                    }
+                  }
+                  nextAvailableSlot {
+                    start
+                    end
+                    minutesDuration
+                  }
+                  bookable {
+                    online
+                    phone
+                  }
+                  insurancePlan {
+                    name
+                  }
+                  endpoint {
+                    name
+                  }
                 }
+              }
             }
         """
 
@@ -137,7 +138,9 @@ class ProviderSearchTool(ResilientBaseTool):
         return variables
 
     def _prepare_request_payload(self, variables: Dict[str, Any]) -> Dict[str, Any]:
-        return {"query": self._build_query(), "variables": variables}
+        pss_gql_query = self._build_query()
+        logger.info(f"PSS Query:\n{pss_gql_query}\nVariables\n:{variables}")
+        return {"query": pss_gql_query, "variables": variables}
 
     # noinspection PyMethodMayBeStatic
     def _handle_response(self, response: httpx.Response) -> Dict[str, Any]:
