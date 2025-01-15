@@ -110,7 +110,7 @@ tests: ## Runs all the tests
 
 .PHONY:tests-integration
 tests-integration: ## Runs all the tests
-	docker compose run --rm -e RUN_TESTS_WITH_REAL_LLM=1 --name language_model_gateway_tests dev pytest tests tests_integration
+	docker compose run --rm -e RUN_TESTS_WITH_REAL_LLM=1 --name language_model_gateway_tests dev pytest tests
 
 .PHONY:shell
 shell: ## Brings up the bash shell in dev docker

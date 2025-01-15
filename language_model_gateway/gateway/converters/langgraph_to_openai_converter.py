@@ -199,28 +199,29 @@ class LangGraphToOpenAIConverter:
                         tool_input: Dict[str, Any] | None = event.get("data", {}).get(
                             "input"
                         )
-                        logger.debug(f"on_tool_start: {tool_name} {tool_input}")
-                        chat_stream_response = ChatCompletionChunk(
-                            id=request_id,
-                            created=int(time.time()),
-                            model=request["model"],
-                            choices=[
-                                ChunkChoice(
-                                    index=0,
-                                    delta=ChoiceDelta(
-                                        role="assistant",
-                                        content=f"\n[Running Agent {tool_name}: {tool_input}]\n",
-                                    ),
-                                )
-                            ],
-                            usage=CompletionUsage(
-                                prompt_tokens=0,
-                                completion_tokens=0,
-                                total_tokens=0,
-                            ),
-                            object="chat.completion.chunk",
-                        )
-                        yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
+                        if tool_name:
+                            logger.debug(f"on_tool_start: {tool_name} {tool_input}")
+                            chat_stream_response = ChatCompletionChunk(
+                                id=request_id,
+                                created=int(time.time()),
+                                model=request["model"],
+                                choices=[
+                                    ChunkChoice(
+                                        index=0,
+                                        delta=ChoiceDelta(
+                                            role="assistant",
+                                            content=f"\n[Running Agent {tool_name}: {tool_input}]\n",
+                                        ),
+                                    )
+                                ],
+                                usage=CompletionUsage(
+                                    prompt_tokens=0,
+                                    completion_tokens=0,
+                                    total_tokens=0,
+                                ),
+                                object="chat.completion.chunk",
+                            )
+                            yield f"data: {json.dumps(chat_stream_response.model_dump())}\n\n"
 
                     case "on_tool_end":
                         # Handle the end of the tool event
