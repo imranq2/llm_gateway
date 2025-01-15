@@ -1,11 +1,11 @@
 import logging
 import os
 from datetime import datetime
-from typing import Type, Optional, List, Tuple, Literal, Union, Any, Dict
+from typing import Type, Optional, List, Tuple, Literal
 
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
     GithubPullRequest,
 )
@@ -80,7 +80,7 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
     )
 
 
-class GitHubPullRequestAnalyzerTool(BaseTool):
+class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
     """
     A LangChain-compatible tool for comprehensive GitHub pull request analysis.
 
@@ -146,29 +146,6 @@ class GitHubPullRequestAnalyzerTool(BaseTool):
             NotImplementedError: Always raises to enforce async usage
         """
         raise NotImplementedError("Use async version of this tool")
-
-    def _parse_input(
-        self, tool_input: Union[str, Dict[str, Any]], tool_call_id: Optional[str]
-    ) -> Union[str, dict[str, Any]]:
-        # somehow the LLMs can mess up camelCase vs snake_case parameter names
-        # so we need to handle both cases
-        if isinstance(tool_input, dict):
-
-            def camel_to_snake(name: str) -> str:
-                return "".join(
-                    [f"_{c.lower()}" if c.isupper() else c for c in name]
-                ).lstrip("_")
-
-            # find keys that are not present in GitHubPullRequestAnalyzerAgentInput
-            # and convert them to snake_case
-
-            # noinspection PyUnresolvedReferences
-            input_fields: List[str] = [c for c in self.args_schema.model_fields.keys()]
-            tool_input = {
-                (camel_to_snake(key) if key not in input_fields else key): value
-                for key, value in tool_input.items()
-            }
-        return super()._parse_input(tool_input, tool_call_id)
 
     # noinspection PyPep8Naming
     async def _arun(
