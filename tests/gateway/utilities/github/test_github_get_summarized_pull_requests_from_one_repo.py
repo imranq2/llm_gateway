@@ -78,24 +78,6 @@ async def test_github_get_summarized_pull_requests_from_one_repo(
             status_code=200,
         )
 
-        # mock rate limit
-        rate_limit_url = "https://api.github.com/rate_limit"
-        rate_limit_content = {
-            "resources": {
-                "core": {"limit": 5000, "remaining": 4999, "reset": 1641316800}
-            }
-        }
-        httpx_mock.add_response(
-            url=rate_limit_url,
-            method="GET",
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/vnd.github+json",
-            },
-            content=json.dumps(rate_limit_content).encode(),
-            status_code=200,
-        )
-
         # mock pull API
         pull_url: str = (
             f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc"
