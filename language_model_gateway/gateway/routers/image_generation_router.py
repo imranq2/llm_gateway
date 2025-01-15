@@ -87,7 +87,7 @@ class ImageGenerationRouter:
                 detail=f"Error retrieving AWS token: {e}.  If running on developer machines, run `aws sso login --profile [profile_name]` to get the token.",
             )
         except Exception as e:
-            logger.exception(f"Error generating image", e)
+            logger.exception("Error generating image", e)
             # return JSONResponse(content=f"Error generating image: {e}", status_code=500)
             raise HTTPException(
                 status_code=500, detail=f"Error retrieving AWS token: {e}"

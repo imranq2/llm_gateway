@@ -4,13 +4,13 @@ from typing import Type, Literal, Tuple, Optional, List, Dict, Union, Set
 from uuid import uuid4
 
 from graphviz import Digraph
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.file_managers.file_manager_factory import (
     FileManagerFactory,
 )
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class FlowChartInput(BaseModel):
     )
 
 
-class FlowChartGeneratorTool(BaseTool):
+class FlowChartGeneratorTool(ResilientBaseTool):
     """
     LangChain-compatible tool for generating flow charts using Graphviz
     """
@@ -174,15 +174,15 @@ class FlowChartGeneratorTool(BaseTool):
             )
             if file_path is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"FlowChartGeneratorTool: Failed to save image to disk ",
+                    "Failed to save image to disk",
+                    "FlowChartGeneratorTool: Failed to save image to disk ",
                 )
             # Generate URL for the image
             url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
             if url is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"FlowChartGeneratorTool: Failed to save image to disk",
+                    "Failed to save image to disk",
+                    "FlowChartGeneratorTool: Failed to save image to disk",
                 )
             # Return the image bytes and a description
             artifact: str = f"FlowChartGeneratorTool: Generated flow chart  <{url}> "

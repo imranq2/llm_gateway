@@ -4,13 +4,13 @@ from typing import Type, Literal, Tuple, Optional
 from uuid import uuid4
 
 from graphviz import Digraph
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
 from language_model_gateway.gateway.file_managers.file_manager_factory import (
     FileManagerFactory,
 )
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class GraphVizDiagramGeneratorToolInput(BaseModel):
     )
 
 
-class GraphVizDiagramGeneratorTool(BaseTool):
+class GraphVizDiagramGeneratorTool(ResilientBaseTool):
     """
     LangChain-compatible tool for generating a diagram using Graphviz.
     """
@@ -106,18 +106,18 @@ class GraphVizDiagramGeneratorTool(BaseTool):
             )
             if file_path is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
+                    "Failed to save image to disk",
+                    f"GraphVizDiagramGeneratorAgent: Failed to save image to disk from prompt: {dot_input}",
                 )
 
             url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
             if url is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"GraphVizDiagramGeneratorTool: Failed to save image to disk from prompt: {dot_input}",
+                    "Failed to save image to disk",
+                    f"GraphVizDiagramGeneratorAgent: Failed to save image to disk from prompt: {dot_input}",
                 )
 
-            artifact: str = f"GraphVizDiagramGeneratorTool: Generated image: <{url}> "
+            artifact: str = f"GraphVizDiagramGeneratorAgent: Generated image: <{url}> "
             return url, artifact
         except Exception as e:
             raise ValueError(f"Failed to generate diagram: {str(e)}")

@@ -7,6 +7,13 @@ repos:
         types: [ python ]
   - repo: local
     hooks:
+      - id: ruff
+        name: ruff
+        language: system
+        types: [ python ]
+        entry: ruff
+        require_serial: true
+        args: [ 'check', '--fix']
       - id: autoflake
         name: autoflake
         language: system
