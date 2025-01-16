@@ -35,12 +35,12 @@ services:
       DEFAULT_MODEL_PROVIDER: "bedrock"
       DEFAULT_MODEL_NAME: "us.anthropic.claude-3-5-haiku-20241022-v1:0"
       GITHUB_ORGANIZATION_NAME: "icanbwell"
-      GITHUB_MAXIMUM_REPOS: 100
-      GITHUB_MAXIMUM_PULL_REQUESTS_PER_REPO: 100
+      GITHUB_MAXIMUM_REPOS: "100"
+      GITHUB_MAXIMUM_PULL_REQUESTS_PER_REPO: "100"
       JIRA_BASE_URL: "https://icanbwell.atlassian.net"
       JIRA_USERNAME: "imran.qureshi@icanbwell.com"
-      JIRA_MAXIMUM_PROJECTS: 100
-      JIRA_MAXIMUM_ISSUES_PER_PROJECT: 100
+      JIRA_MAXIMUM_PROJECTS: "100"
+      JIRA_MAXIMUM_ISSUES_PER_PROJECT: "100"
     env_file: docker.env
     ports:
       - '5050:5000'

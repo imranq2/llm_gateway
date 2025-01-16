@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
-  "id": "engineering_tools",
-  "name": "Engineering Tools",
+  "id": "development_tools",
+  "name": "Development Tools",
   "description": "This model allows searching pull requests across repos, getting git diff and getting issues from Jira.",
   "owner": "Imran Qureshi",
   "system_prompts": [
