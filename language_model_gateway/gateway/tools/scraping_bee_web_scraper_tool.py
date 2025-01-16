@@ -3,9 +3,9 @@ import os
 from typing import Optional, Dict, Type, Tuple, Literal
 
 import httpx
-from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.html_to_markdown_converter import (
     HtmlToMarkdownConverter,
 )
@@ -18,7 +18,7 @@ class ScrapingBeeWebScraperToolInput(BaseModel):
     query: Optional[str] = Field(description="Query to search for on the webpage")
 
 
-class ScrapingBeeWebScraperTool(BaseTool):
+class ScrapingBeeWebScraperTool(ResilientBaseTool):
     """Tool that scrapes websites using ScrapingBee API"""
 
     name: str = "scraping_bee_web_scraper"
@@ -123,10 +123,10 @@ class ScrapingBeeWebScraperTool(BaseTool):
         if content:
             return (
                 await self._extract_text_content_async(content),
-                f"ScrapingBeeWebScraperTool: Scraped content using ScrapingBee from <{url}> ",
+                f"ScrapingBeeWebScraperAgent: Scraped content using ScrapingBee from <{url}> ",
             )
         else:
             return (
                 "Error: Failed to scrape the webpage.",
-                f"ScrapingBeeWebScraperTool: Failed to scrape <{url}> ",
+                f"ScrapingBeeWebScraperAgent: Failed to scrape <{url}> ",
             )

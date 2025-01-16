@@ -91,6 +91,8 @@ async def test_chat_completions_streaming(
             ),
             url="http://host.docker.internal:5055/api/v1/chat/completions",
         )
+    else:
+        return  # this test only works with AI Agent
 
     model_configuration_cache: ExpiringCache[List[ChatModelConfig]] = (
         test_container.resolve(ExpiringCache)

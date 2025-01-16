@@ -44,8 +44,8 @@ class GitHubConfigReader:
 
         if len(parts) < 4 or parts[2] != "tree":
             raise ValueError(
-                f"Invalid GitHub URL format. Expected format: "
-                f"https://github.com/owner/repo/tree/branch/path"
+                "Invalid GitHub URL format. Expected format: "
+                "https://github.com/owner/repo/tree/branch/path"
             )
 
         owner = parts[0]

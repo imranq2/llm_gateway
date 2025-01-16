@@ -40,8 +40,8 @@ class AwsS3FileManager(FileManager):
         assert "s3://" not in filename, "filename should not contain s3://"
 
         # Parse S3 URL
-        bucket_name: str
-        prefix: str
+        # bucket_name: str
+        # prefix: str
         s3_url: S3Url = self.get_bucket(filename=filename, folder=folder)
 
         s3_full_path: str = s3_url.url
@@ -73,7 +73,7 @@ class AwsS3FileManager(FileManager):
         # Convert Path to string for S3 key
         assert folder
         assert filename
-        s3_full_path = f"s3://" + UrlParser.combine_path(folder, filename)
+        s3_full_path = "s3://" + UrlParser.combine_path(folder, filename)
         return s3_full_path
 
     # noinspection PyMethodMayBeStatic

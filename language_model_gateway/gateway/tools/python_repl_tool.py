@@ -2,9 +2,10 @@ import logging
 import os
 from typing import Type
 
-from langchain_core.tools import BaseTool
 from langchain_experimental.utilities import PythonREPL
 from pydantic import BaseModel, Field
+
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 
 logger = logging.getLogger(__file__)
 
@@ -13,7 +14,7 @@ class PythonReplToolInput(BaseModel):
     query: str = Field(description="A valid Python command to execute")
 
 
-class PythonReplTool(BaseTool):
+class PythonReplTool(ResilientBaseTool):
     name: str = "python_repl"
     description: str = (
         "A Python shell. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`."

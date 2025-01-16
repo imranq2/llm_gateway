@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Any
 
-from langchain_core.tools import BaseTool
+
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 
 
-class CurrentTimeTool(BaseTool):
+class CurrentTimeTool(ResilientBaseTool):
     name: str = "CurrentTime"
     description: str = "Useful for when you need to know the current time"
 

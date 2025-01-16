@@ -4,7 +4,6 @@ import os
 from typing import Literal, Tuple, Type, Optional
 from uuid import uuid4
 
-from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.file_managers.file_manager import FileManager
@@ -17,6 +16,7 @@ from language_model_gateway.gateway.image_generation.image_generator import (
 from language_model_gateway.gateway.image_generation.image_generator_factory import (
     ImageGeneratorFactory,
 )
+from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.url_parser import UrlParser
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class ImageGeneratorToolInput(BaseModel):
     prompt: str = Field(description="Prompt to use for generating the image")
 
 
-class ImageGeneratorTool(BaseTool):
+class ImageGeneratorTool(ResilientBaseTool):
     """
     LangChain-compatible tool for generating an image from a given text.
     """
@@ -88,15 +88,15 @@ class ImageGeneratorTool(BaseTool):
             )
             if file_path is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"ImageGeneratorTool[{self.model_provider}]: Failed to save image to disk from prompt: {prompt}",
+                    "Failed to save image to disk",
+                    f"ImageGeneratorAgent[{self.model_provider}]: Failed to save image to disk from prompt: {prompt}",
                 )
 
             url: Optional[str] = UrlParser.get_url_for_file_name(image_file_name)
             if url is None:
                 return (
-                    f"Failed to save image to disk",
-                    f"ImageGeneratorTool[{self.model_provider}]: Failed to save image to disk from prompt: {prompt}",
+                    "Failed to save image to disk",
+                    f"ImageGeneratorAgent[{self.model_provider}]: Failed to save image to disk from prompt: {prompt}",
                 )
 
             if self.return_embedded_image:
@@ -105,17 +105,17 @@ class ImageGeneratorTool(BaseTool):
                 markdown_image = f"![Generated Image]({embedded_url})"
                 return (
                     url,
-                    f"ImageGeneratorTool[{self.model_provider}]: Generated image from prompt: {prompt}: {markdown_image} ",
+                    f"ImageGeneratorAgent[{self.model_provider}]: Generated image from prompt: {prompt}: {markdown_image} ",
                 )
             else:
                 return (
                     url,
-                    f"ImageGeneratorTool[{self.model_provider}]: Generated image from prompt: {prompt}: <{url}> ",
+                    f"ImageGeneratorAgent[{self.model_provider}]: Generated image from prompt: {prompt}: <{url}> ",
                 )
         except Exception as e:
             logger.error(f"Failed to generate image: {str(e)}")
             logger.exception(e, stack_info=True)
             return (
                 f"Failed to generate image: {e}",
-                f"ImageGeneratorTool[{self.model_provider}]: Failed to generate image from prompt: {prompt}",
+                f"ImageGeneratorAgent[{self.model_provider}]: Failed to generate image from prompt: {prompt}",
             )
