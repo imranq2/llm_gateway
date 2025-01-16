@@ -22,14 +22,14 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
     project_name: Optional[str] = Field(
         default=None,
         description=(
-            "Specific project name to analyze. "
-            "PARSING INSTRUCTION: Extract exact project name from the query. "
+            "Optional specific project name to analyze. "
+            "PARSING INSTRUCTION: Extract exact project name from the query if query specifies a project name. "
         ),
     )
     assignee: Optional[str] = Field(
         default=None,
         description=(
-            "Jira username to filter issues. "
+            "Optional Jira username to filter issues. "
             "PARSING INSTRUCTION: Extract Jira username mentioned in the query."
         ),
     )
@@ -59,12 +59,12 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
     description: str = (
         "Advanced Jira Issue analysis tool. "
         "USAGE TIPS: "
-        "- Specify project with 'in [project]' "
         "- Specify assignee with username "
         "- Example queries: "
         "'Pull issues in EFS', "
         "'Issues assigned to johndoe in EFS', "
         "'What issues assigned to imranq2 in EFS project'"
+        "'Get last 10 issues'"
     )
 
     args_schema: Type[BaseModel] = JiraIssuesAnalyzerAgentInput
