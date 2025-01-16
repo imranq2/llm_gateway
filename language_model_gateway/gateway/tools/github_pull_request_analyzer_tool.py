@@ -49,9 +49,6 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
         # ... (rest of the attributes remain the same)
     """
 
-    # IMPORTANT: Claude 3.5 Haiku 2024-10-22 has a bug where, when streaming, it changes parameter names to be camelCase
-    # Hence use camelCase names for all parameters instead of snake_case
-
     repository_name: Optional[str] = Field(
         default=None,
         description=(
@@ -76,7 +73,7 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
     )
     include_details: Optional[bool] = Field(
         default=False,
-        description="Include detailed pull request information or return contributor summary",
+        description="Include detailed pull request information or just return contributor summary",
     )
 
 
@@ -118,7 +115,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         "- Specify repository with 'in [repo]' "
         "- Specify contributor with username "
         "- If querying for a specific date range, include 'from [date] to [date]' "
-        "- Include 'details' for detailed pull request information "
+        "- Set 'include_details' for detailed pull request information "
         "- Example queries: "
         "'Pull requests in kubernetes/kubernetes', "
         "'PRs from johndoe in myorg/myrepo', "

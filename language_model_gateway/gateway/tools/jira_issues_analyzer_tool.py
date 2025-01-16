@@ -49,38 +49,15 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
 
 class JiraIssuesAnalyzerTool(ResilientBaseTool):
     """
-    A LangChain-compatible tool for comprehensive GitHub pull request analysis.
+    A LangChain-compatible tool for comprehensive Jira issue analysis.
 
-    This tool provides advanced capabilities for extracting and analyzing
-    pull request data from a GitHub organization. It supports:
-    - Filtering issues by project, date range, and contributor
-    - Generating summary reports of pull request activity
-    - Retrieving detailed pull request information
+    This tool can be used to extract and analyze Jira issues across projects and assignees.
 
-    Key Features:
-    - Asynchronous pull request retrieval
-    - Configurable analysis scope
-    - Detailed or summarized reporting
-    - Error handling and logging
-
-    Requires:
-    - GitHub access token
-    - GITHUB_ORGANIZATION_NAME environment variable
-
-    Example Usage:
-    ```python
-    tool = JiraIssuesAnalyzerTool(access_token='your_github_token')
-    results, artifact = await tool._arun(
-        project_name='my-project',
-        minimum_created_date=datetime(2023, 1, 1),
-        includeDetails=True
-    )
-    ```
     """
 
     name: str = "jira_issues_analyzer"
     description: str = (
-        "Advanced Jira Issue analysis tool. Set includeDetails if you want detailed issue information. "
+        "Advanced Jira Issue analysis tool. "
         "USAGE TIPS: "
         "- Specify project with 'in [project]' "
         "- Specify assignee with username "
