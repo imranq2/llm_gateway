@@ -57,6 +57,7 @@ class JiraIssueHelper:
         assignee: Optional[str] = None,
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
+        include_full_description: Optional[bool] = False,
     ) -> List[JiraIssue]:
         """
         Async method to retrieve closed issues across Jira projects.
@@ -72,6 +73,7 @@ class JiraIssueHelper:
             assignee (str, optional): Specific assignee to filter issues
             sort_by (str, optional): Field to sort by
             sort_by_direction (str, optional): Sort direction
+            include_full_description (bool, optional): Include full description
 
         Returns:
             List[JiraIssue]: List of closed Jira issues
@@ -134,15 +136,7 @@ class JiraIssueHelper:
                         # "startAt": start_at,
                         "nextPageToken": next_page_token,
                         "maxResults": max_results,
-                        "fields": [
-                            "id",
-                            "summary",
-                            "status",
-                            "created",
-                            "resolutiondate",
-                            "assignee",
-                            "project",
-                        ],
+                        "fields": ["*all"],
                     }
                     response = await client.post(
                         f"{self.jira_base_url}/rest/api/3/search/jql",
@@ -161,9 +155,70 @@ class JiraIssueHelper:
                             if assignee_object
                             else "Unassigned"
                         )
+                        assignee_email: str = (
+                            assignee_object.get("emailAddress", "Unassigned")
+                            if assignee_object
+                            else "Unassigned"
+                        )
+                        reporter_object: Optional[Dict[str, Any]] = issue["fields"].get(
+                            "reporter", {}
+                        )
+                        reporter_name: str = (
+                            reporter_object.get("displayName", "Unassigned")
+                            if reporter_object
+                            else "Unassigned"
+                        )
+                        reporter_email: str = (
+                            reporter_object.get("emailAddress", "Unassigned")
+                            if reporter_object
+                            else "Unassigned"
+                        )
+                        creator_object: Optional[Dict[str, Any]] = issue["fields"].get(
+                            "creator", {}
+                        )
+                        creator_name: str = (
+                            creator_object.get("displayName", "Unassigned")
+                            if creator_object
+                            else "Unassigned"
+                        )
+                        creator_email: str = (
+                            creator_object.get("emailAddress", "Unassigned")
+                            if creator_object
+                            else "Unassigned"
+                        )
+                        issue_type: str = issue["fields"]["issuetype"]["name"]
+                        project_name: str = issue["fields"]["project"]["name"]
+
+                        def read_description(description: Dict[str, Any] | None) -> str:
+                            if not include_full_description:
+                                return ""
+                            if not description:
+                                return ""
+                            try:
+                                description1 = ""
+                                content: List[Dict[str, Any]] = description.get(
+                                    "content", []
+                                )
+                                for item in content:
+                                    if item.get("type") == "paragraph":
+                                        for element in item.get("content", []):
+                                            if element.get("type") == "text":
+                                                description1 += element.get("text", "")
+                                return description1
+                            except Exception as e:
+                                self.logger.error(
+                                    f"Error reading item_description: {e}: {description}"
+                                )
+                                return ""
+
+                        item_description: str = read_description(
+                            issue["fields"].get("item_description", {})
+                        )
+                        issue_priority: str = issue["fields"]["priority"]["name"]
                         closed_issues_list.append(
                             JiraIssue(
                                 key=issue["key"],
+                                url=issue["self"],
                                 summary=issue["fields"].get("summary", "No Summary"),
                                 status=issue["fields"]["status"]["name"],
                                 created_at=datetime.fromisoformat(
@@ -179,6 +234,15 @@ class JiraIssueHelper:
                                     else None
                                 ),
                                 assignee=assignee_name,
+                                assignee_email=assignee_email,
+                                reporter=reporter_name,
+                                reporter_email=reporter_email,
+                                creator=creator_name,
+                                creator_email=creator_email,
+                                issue_type=issue_type,
+                                project_name=project_name,
+                                description=item_description,
+                                priority=issue_priority,
                                 project=issue["fields"].get("project", {}).get("key"),
                             )
                         )
