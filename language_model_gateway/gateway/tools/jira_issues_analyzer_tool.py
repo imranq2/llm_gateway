@@ -54,7 +54,7 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
         description="Whether to return just the summary or full issue details",
     )
     sort_by: Optional[Literal["updated", "created", "resolved"]] = Field(
-        default=None,
+        default="updated",
         description="Field to sort by.  Choices: 'updated', 'created', 'resolved'",
     )
 
@@ -123,17 +123,34 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
             Tuple of Jira issue text and artifact description
         """
 
-        logger.info(
-            "JiraIssuesAnalyzerAgent:"
-            + f" {project_name=}, {minimum_created_date=}, {maximum_created_date=}"
-            + f", {assignee=}, {summary_only=}"
-        )
+        log_prefix: str = "JiraIssuesAnalyzerAgent:"
+        log_prefix_items: List[str] = []
+        if project_name:
+            log_prefix_items.append(f"{project_name=}")
+        if minimum_created_date:
+            log_prefix_items.append(
+                f"minimum_created_date={minimum_created_date.isoformat()}"
+            )
+        if maximum_created_date:
+            log_prefix_items.append(
+                f"maximum_created_date={maximum_created_date.isoformat()}"
+            )
+        if minimum_updated_date:
+            log_prefix_items.append(
+                f"minimum_updated_date={minimum_updated_date.isoformat()}"
+            )
+        if maximum_updated_date:
+            log_prefix_items.append(
+                f"maximum_updated_date={maximum_updated_date.isoformat()}"
+            )
+        if assignee:
+            log_prefix_items.append(f"{assignee=}")
+        if summary_only:
+            log_prefix_items.append(f"{summary_only=}")
+        if sort_by:
+            log_prefix_items.append(f"{sort_by=}")
 
-        log_prefix: str = (
-            "JiraIssuesAnalyzerAgent:"
-            + f" {project_name=}, {minimum_created_date=}, {maximum_created_date=}"
-            + f", {assignee=}, {summary_only=}"
-        )
+        log_prefix += ", ".join(log_prefix_items)
 
         try:
             max_projects: int = int(os.environ.get("JIRA_MAXIMUM_PROJECTS", 100))
