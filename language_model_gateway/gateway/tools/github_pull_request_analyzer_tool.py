@@ -183,11 +183,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             Tuple of pull request analysis text and artifact description
         """
 
-        log_prefix: str = (
-            "GitHubPullRequestAnalyzerAgent:"
-            + f" {repository_name=}, {minimum_created_date=}, {maximum_created_date=}"
-            + f", {contributor_name=}, {include_details=}"
-        )
+        log_prefix: str = "GitHubPullRequestAnalyzerAgent:"
         log_prefix_items: List[str] = []
         if repository_name:
             log_prefix_items.append(f"{repository_name=}")
