@@ -55,7 +55,11 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
     )
     sort_by: Optional[Literal["updated", "created", "resolved"]] = Field(
         default="updated",
-        description="Field to sort by.  Choices: 'updated', 'created', 'resolved'",
+        description="Field to sort by.  Choices: 'updated', 'created', 'resolved'.  Default is 'updated'.",
+    )
+    sort_by_direction: Optional[Literal["asc", "desc"]] = Field(
+        default="desc",
+        description="Sort direction for jira issues. Choices: 'asc', 'desc'.  Default is 'desc'.",
     )
 
 
@@ -72,6 +76,10 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         "Advanced Jira Issue analysis tool. "
         "USAGE TIPS: "
         "- Specify assignee with username "
+        "- If querying for a specific date range, include 'from [date] to [date]' "
+        "- Set 'include_details' for detailed pull request information "
+        "- Set 'sort_by' to sort by 'created', 'updated', 'popularity', or 'long-running' "
+        "- Set 'sort_by_direction' to 'asc' or 'desc' "
         "- Example queries: "
         "'Pull issues in EFS', "
         "'Issues assigned to johndoe in EFS', "
@@ -95,6 +103,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         assignee: Optional[str] = None,
         summary_only: Optional[bool] = None,
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
+        sort_by_direction: Optional[Literal["asc", "desc"]] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -115,6 +124,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         assignee: Optional[str] = None,
         summary_only: Optional[bool] = None,
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
+        sort_by_direction: Optional[Literal["asc", "desc"]] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the Jira Issues analyzer tool.
@@ -168,6 +178,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                     project_key=project_name,
                     assignee=assignee,
                     sort_by=sort_by,
+                    sort_by_direction=sort_by_direction,
                 )
             )
 
@@ -183,16 +194,9 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                 pr_summary = self.jira_issues_helper.summarize_issues_by_assignee(
                     issues=jira_issues
                 )
-
-                # Generate detailed text report
-                report_lines = [
-                    "Issues by Assignee:",
-                ]
-
-                for engineer, info in pr_summary.items():
-                    report_lines.append(f"{engineer}: {info.issue_count}")
-
-                full_text = "\n".join(report_lines)
+                full_text = self.jira_issues_helper.export_results_to_csv(
+                    issue_counts=pr_summary
+                )
 
             # Create artifact description
             artifact = log_prefix + f", Analyzed {len(jira_issues)} closed issues"

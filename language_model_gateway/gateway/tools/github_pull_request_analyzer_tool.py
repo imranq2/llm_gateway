@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime
-from typing import Type, Optional, List, Tuple, Literal
+from typing import Type, Optional, List, Tuple, Literal, Dict
 
 from pydantic import BaseModel, Field
 
@@ -11,6 +11,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request import 
 )
 from language_model_gateway.gateway.utilities.github.github_pull_request_helper import (
     GithubPullRequestHelper,
+)
+from language_model_gateway.gateway.utilities.github.github_pull_request_per_contributor_info import (
+    GithubPullRequestPerContributorInfo,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,6 +78,16 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
         default=False,
         description="Include detailed pull request information or just return contributor summary",
     )
+    sort_by: Optional[Literal["created", "updated", "popularity", "long-running"]] = (
+        Field(
+            default="created",
+            description="Sort pull requests by created, updated, popularity, or long-running.  Default is 'created'.",
+        )
+    )
+    sort_by_direction: Optional[Literal["asc", "desc"]] = Field(
+        default="desc",
+        description="Sort direction for pull requests.  Choices: 'asc', 'desc'.  Default is 'desc'.",
+    )
 
 
 class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
@@ -116,6 +129,8 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         "- Specify contributor with username "
         "- If querying for a specific date range, include 'from [date] to [date]' "
         "- Set 'include_details' for detailed pull request information "
+        "- Set 'sort_by' to sort by 'created', 'updated', 'popularity', or 'long-running' "
+        "- Set 'sort_by_direction' to 'asc' or 'desc' "
         "- Example queries: "
         "'Pull requests in kubernetes/kubernetes', "
         "'PRs from johndoe in myorg/myrepo', "
@@ -135,6 +150,10 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         maximum_created_date: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
         include_details: Optional[bool] = None,
+        sort_by: Optional[
+            Literal["created", "updated", "popularity", "long-running"]
+        ] = None,
+        sort_by_direction: Optional[Literal["asc", "desc"]] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -152,6 +171,10 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         maximum_created_date: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
         include_details: Optional[bool] = None,
+        sort_by: Optional[
+            Literal["created", "updated", "popularity", "long-running"]
+        ] = None,
+        sort_by_direction: Optional[Literal["asc", "desc"]] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
@@ -160,17 +183,30 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             Tuple of pull request analysis text and artifact description
         """
 
-        logger.info(
-            "GitHubPullRequestAnalyzerAgent:"
-            + f" {repository_name=}, {minimum_created_date=}, {maximum_created_date=}"
-            + f", {contributor_name=}, {include_details=}"
-        )
-
         log_prefix: str = (
             "GitHubPullRequestAnalyzerAgent:"
             + f" {repository_name=}, {minimum_created_date=}, {maximum_created_date=}"
             + f", {contributor_name=}, {include_details=}"
         )
+        log_prefix_items: List[str] = []
+        if repository_name:
+            log_prefix_items.append(f"{repository_name=}")
+        if minimum_created_date:
+            log_prefix_items.append(
+                f"minimum_created_date={minimum_created_date.isoformat()}"
+            )
+        if maximum_created_date:
+            log_prefix_items.append(f"maximum_created_date={maximum_created_date}")
+        if contributor_name:
+            log_prefix_items.append(f"{contributor_name=}")
+        if include_details:
+            log_prefix_items.append(f"{include_details=}")
+        if sort_by:
+            log_prefix_items.append(f"{sort_by=}")
+        if sort_by_direction:
+            log_prefix_items.append(f"{sort_by_direction=}")
+
+        log_prefix = log_prefix + ", ".join(log_prefix_items)
 
         try:
             # Initialize GitHub Pull Request Helper
@@ -187,6 +223,8 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
                     max_created_at=maximum_created_date,
                     include_merged=True,
                     repo_name=repository_name,
+                    sort_by=sort_by,
+                    sort_by_direction=sort_by_direction,
                 )
             )
 
@@ -197,19 +235,15 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
                     full_text += f"PR: {pr.title} by {pr.user} closed on {pr.closed_at} - {pr.html_url}\n"
             else:
                 # Summarize pull requests by engineer
-                pr_summary = self.github_pull_request_helper.summarize_prs_by_engineer(
-                    pull_requests=closed_prs
+                pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = (
+                    self.github_pull_request_helper.summarize_prs_by_engineer(
+                        pull_requests=closed_prs
+                    )
                 )
 
-                # Generate detailed text report
-                report_lines = [
-                    "Pull Requests by Contributor:",
-                ]
-
-                for engineer, info in pr_summary.items():
-                    report_lines.append(f"{engineer}: {info.pull_request_count}")
-
-                full_text = "\n".join(report_lines)
+                full_text = self.github_pull_request_helper.export_results_as_csv(
+                    pr_counts=pr_counts
+                )
 
             # Create artifact description
             artifact = log_prefix + f", Analyzed {len(closed_prs)} closed PRs"

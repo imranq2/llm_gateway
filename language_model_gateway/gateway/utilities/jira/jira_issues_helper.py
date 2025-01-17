@@ -2,7 +2,7 @@ import base64
 import logging
 from datetime import datetime
 from logging import Logger
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Literal
 
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.utilities.jira.JiraIssuesPerAssigneeInfo import (
@@ -55,7 +55,8 @@ class JiraIssueHelper:
         max_updated_at: Optional[datetime] = None,
         project_key: Optional[str] = None,
         assignee: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
+        sort_by_direction: Optional[Literal["asc", "desc"]] = None,
     ) -> List[JiraIssue]:
         """
         Async method to retrieve closed issues across Jira projects.
@@ -70,6 +71,7 @@ class JiraIssueHelper:
             project_key (str, optional): Specific project to fetch issues from
             assignee (str, optional): Specific assignee to filter issues
             sort_by (str, optional): Field to sort by
+            sort_by_direction (str, optional): Sort direction
 
         Returns:
             List[JiraIssue]: List of closed Jira issues
@@ -114,7 +116,9 @@ class JiraIssueHelper:
 
                 # order the list descending by updated date
                 if sort_by:
-                    jql += f" ORDER BY {sort_by} DESC"
+                    if not sort_by_direction:
+                        sort_by_direction = "desc"
+                    jql += f" ORDER BY {sort_by} {sort_by_direction}"
 
                 # Pagination parameters
                 start_at = 0
@@ -236,7 +240,7 @@ class JiraIssueHelper:
         self,
         *,
         issue_counts: Dict[str, JiraIssuesPerAssigneeInfo],
-        output_file: Optional[str] = None,
+        output_file: str,
     ) -> None:
         """
         Export issue count results to console and optional file.
@@ -245,22 +249,36 @@ class JiraIssueHelper:
             issue_counts (Dict[str, Dict[str, Any]]): Issue counts by assignee
             output_file (Optional[str]): Path to output file
         """
-        # Print results to console
-        self.logger.info("\n------ Closed Issues by Assignee ------\n")
-        for assignee, info in issue_counts.items():
-            self.logger.info(f"{assignee} | {info.issue_count} | {info.projects}")
-        self.logger.info("\n------------------------------------\n")
+        assert issue_counts, "Issue counts are required"
+        assert output_file or output_file is None, "Output file path is invalid"
 
-        # Optional file export
-        if output_file:
-            try:
-                with open(output_file, "w") as f:
-                    f.write("Assignee\tIssue Count\tProjects\n")
-                    for assignee, info in issue_counts.items():
-                        projects_text: str = (
-                            " | ".join(info.projects) if info.projects else ""
-                        )
-                        f.write(f"{assignee}\t{info.issue_count}\t{projects_text}\n")
-                self.logger.info(f"Results exported to {output_file}")
-            except IOError as e:
-                self.logger.error(f"Failed to export results: {e}")
+        try:
+            with open(output_file, "w") as f:
+                f.write("Assignee\tIssue Count\tProjects\n")
+                for assignee, info in issue_counts.items():
+                    projects_text: str = (
+                        " | ".join(info.projects) if info.projects else ""
+                    )
+                    f.write(f"{assignee}\t{info.issue_count}\t{projects_text}\n")
+            self.logger.info(f"Results exported to {output_file}")
+        except IOError as e:
+            self.logger.error(f"Failed to export results: {e}")
+
+    # noinspection PyMethodMayBeStatic
+    def export_results_to_csv(
+        self,
+        *,
+        issue_counts: Dict[str, JiraIssuesPerAssigneeInfo],
+    ) -> str:
+        """
+        Export issue count results to console and optional file.
+
+        Args:
+            issue_counts (Dict[str, Dict[str, Any]]): Issue counts by assignee
+        """
+
+        result: str = "Assignee\tIssue Count\tProjects\n"
+        for assignee, info in issue_counts.items():
+            projects_text: str = " | ".join(info.projects) if info.projects else ""
+            result += f"{assignee}\t{info.issue_count}\t{projects_text}\n"
+        return result

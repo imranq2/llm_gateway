@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 from logging import Logger
-from typing import Dict, Optional, List, Union, Any
+from typing import Dict, Optional, List, Union, Any, Literal
 from urllib.parse import urlparse
 
 import httpx
@@ -91,6 +91,10 @@ class GithubPullRequestHelper:
         max_created_at: Optional[datetime] = None,
         include_merged: bool = True,
         repo_name: Optional[str] = None,
+        sort_by: Optional[
+            Literal["created", "updated", "popularity", "long-running"]
+        ] = None,
+        sort_by_direction: Optional[Literal["asc", "desc"]] = None,
     ) -> List[GithubPullRequest]:
         """
         Async method to retrieve closed pull requests across organization repositories.
@@ -122,19 +126,25 @@ class GithubPullRequestHelper:
 
                     page_number: int = 1
                     while pages_remaining:
+                        params: Dict[str, Any] = {
+                            "type": "all",
+                            "sort": "pushed",
+                            "direction": "desc",
+                            "per_page": max_repos or 50,
+                            "page": page_number,
+                        }
+                        if sort_by:
+                            params["sort"] = sort_by
+                        if sort_by and sort_by_direction:
+                            params["direction"] = sort_by_direction
+
                         repos_response = await client.get(
                             repos_url,
                             headers={
                                 "Accept": "application/vnd.github+json",
                                 **self.headers,
                             },
-                            params={
-                                "type": "all",
-                                "sort": "pushed",
-                                "direction": "desc",
-                                "per_page": max_repos or 50,
-                                "page": page_number,
-                            },
+                            params=params,
                         )
                         repos_response.raise_for_status()
                         repos.extend(repos_response.json())
@@ -326,7 +336,7 @@ class GithubPullRequestHelper:
         self,
         *,
         pr_counts: Dict[str, GithubPullRequestPerContributorInfo],
-        output_file: Optional[str] = None,
+        output_file: str,
     ) -> None:
         """
         Export PR count results to console and optional file.
@@ -335,22 +345,34 @@ class GithubPullRequestHelper:
             pr_counts (Dict[str, GithubPullRequestPerContributorInfo]): PR counts by engineer
             output_file (Optional[str]): Path to output file
         """
-        # Print results to console
-        self.logger.info("\n------ Closed PRs by Engineer ------\n")
-        for engineer, info in pr_counts.items():
-            self.logger.info(f"{engineer} | {info.pull_request_count} | {info.repos}")
-        self.logger.info("\n------------------------------------\n")
+        assert output_file, "Output file path is required"
+        assert pr_counts, "PR counts are required"
 
-        # Optional file export
-        if output_file:
-            try:
-                with open(output_file, "w") as f:
-                    f.write("Contributor\tPR Count\tRepos\n")
-                    for engineer, info in pr_counts.items():
-                        repos_text: str = " | ".join(info.repos) if info.repos else ""
-                        f.write(
-                            f"{engineer}\t{info.pull_request_count}\t{repos_text}\n"
-                        )
-                self.logger.info(f"Results exported to {output_file}")
-            except IOError as e:
-                self.logger.error(f"Failed to export results: {e}")
+        try:
+            with open(output_file, "w") as f:
+                f.write("Contributor\tPR Count\tRepos\n")
+                for engineer, info in pr_counts.items():
+                    repos_text: str = " | ".join(info.repos) if info.repos else ""
+                    f.write(f"{engineer}\t{info.pull_request_count}\t{repos_text}\n")
+            self.logger.info(f"Results exported to {output_file}")
+        except IOError as e:
+            self.logger.error(f"Failed to export results: {e}")
+
+    # noinspection PyMethodMayBeStatic
+    def export_results_as_csv(
+        self,
+        *,
+        pr_counts: Dict[str, GithubPullRequestPerContributorInfo],
+    ) -> str:
+        """
+        Export PR count results to console and optional file.
+
+        Args:
+            pr_counts (Dict[str, GithubPullRequestPerContributorInfo]): PR counts by engineer
+        """
+
+        result: str = "Contributor\tPR Count\tRepos\n"
+        for engineer, info in pr_counts.items():
+            repos_text: str = " | ".join(info.repos) if info.repos else ""
+            result += f"{engineer}\t{info.pull_request_count}\t{repos_text}\n"
+        return result
