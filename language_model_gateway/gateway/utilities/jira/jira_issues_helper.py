@@ -121,28 +121,32 @@ class JiraIssueHelper:
                     jql += f" ORDER BY {sort_by} {sort_by_direction}"
 
                 # Pagination parameters
-                start_at = 0
                 max_results = max_issues or 100
 
                 closed_issues_list: List[JiraIssue] = []
                 pages_remaining = True
+                next_page_token: Optional[str] = None
 
                 while pages_remaining:
-                    response = await client.get(
-                        f"{self.jira_base_url}/rest/api/3/search",
-                        params={
-                            "jql": jql,
-                            "startAt": start_at,
-                            "maxResults": max_results,
-                            "fields": [
-                                "summary",
-                                "status",
-                                "created",
-                                "resolutiondate",
-                                "assignee",
-                                "project",
-                            ],
-                        },
+                    # https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-jql-post
+                    params = {
+                        "jql": jql,
+                        # "startAt": start_at,
+                        "nextPageToken": next_page_token,
+                        "maxResults": max_results,
+                        "fields": [
+                            "id",
+                            "summary",
+                            "status",
+                            "created",
+                            "resolutiondate",
+                            "assignee",
+                            "project",
+                        ],
+                    }
+                    response = await client.post(
+                        f"{self.jira_base_url}/rest/api/3/search/jql",
+                        json=params,
                     )
                     response.raise_for_status()
 
@@ -188,7 +192,9 @@ class JiraIssueHelper:
                     ):
                         pages_remaining = False
 
-                    start_at += max_results
+                    next_page_token = issues_data.get("nextPageToken")
+                    if next_page_token is None:
+                        pages_remaining = False
 
                 return closed_issues_list
 
