@@ -136,7 +136,22 @@ class JiraIssueHelper:
                         # "startAt": start_at,
                         "nextPageToken": next_page_token,
                         "maxResults": max_results,
-                        "fields": ["*all"],
+                        "fields": [
+                            # "*all",
+                            "id",
+                            "summary",
+                            "status",
+                            "created",
+                            "resolutiondate",
+                            "assignee",
+                            "assignee",
+                            "reporter",
+                            "creator",
+                            "project",
+                            "issuetype",
+                            "priority",
+                            "item_description",
+                        ],
                     }
                     response = await client.post(
                         f"{self.jira_base_url}/rest/api/3/search/jql",
@@ -186,8 +201,12 @@ class JiraIssueHelper:
                             if creator_object
                             else "Unassigned"
                         )
-                        issue_type: str = issue["fields"]["issuetype"]["name"]
-                        project_name: str = issue["fields"]["project"]["name"]
+                        issue_type: str = (
+                            issue["fields"].get("issuetype", {}).get("name")
+                        )
+                        project_name: str = (
+                            issue["fields"].get("project", {}).get("name")
+                        )
 
                         def read_description(description: Dict[str, Any] | None) -> str:
                             if not include_full_description:
@@ -220,7 +239,7 @@ class JiraIssueHelper:
                                 key=issue["key"],
                                 url=issue["self"],
                                 summary=issue["fields"].get("summary", "No Summary"),
-                                status=issue["fields"]["status"]["name"],
+                                status=issue["fields"].get("status", {}).get("name"),
                                 created_at=datetime.fromisoformat(
                                     issue["fields"]["created"].replace("Z", "+00:00")
                                 ),
