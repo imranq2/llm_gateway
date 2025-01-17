@@ -51,8 +51,11 @@ class JiraIssueHelper:
         max_issues: Optional[int] = None,
         min_created_at: Optional[datetime] = None,
         max_created_at: Optional[datetime] = None,
+        min_updated_at: Optional[datetime] = None,
+        max_updated_at: Optional[datetime] = None,
         project_key: Optional[str] = None,
         assignee: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ) -> List[JiraIssue]:
         """
         Async method to retrieve closed issues across Jira projects.
@@ -62,8 +65,11 @@ class JiraIssueHelper:
             max_issues (int, optional): Maximum number of issues to retrieve
             min_created_at (datetime, optional): Minimum creation date
             max_created_at (datetime, optional): Maximum creation date
+            min_updated_at (datetime, optional): Minimum updated date
+            max_updated_at (datetime, optional): Maximum updated date
             project_key (str, optional): Specific project to fetch issues from
             assignee (str, optional): Specific assignee to filter issues
+            sort_by (str, optional): Field to sort by
 
         Returns:
             List[JiraIssue]: List of closed Jira issues
@@ -91,10 +97,24 @@ class JiraIssueHelper:
                         f"created <= '{max_created_at.strftime('%Y-%m-%d')}'"
                     )
 
+                if min_updated_at:
+                    jql_conditions.append(
+                        f"updated >= '{min_updated_at.strftime('%Y-%m-%d')}'"
+                    )
+
+                if max_updated_at:
+                    jql_conditions.append(
+                        f"updated <= '{max_updated_at.strftime('%Y-%m-%d')}'"
+                    )
+
                 if assignee:
                     jql_conditions.append(f"assignee = {assignee}")
 
                 jql = " AND ".join(jql_conditions)
+
+                # order the list descending by updated date
+                if sort_by:
+                    jql += f" ORDER BY {sort_by} DESC"
 
                 # Pagination parameters
                 start_at = 0

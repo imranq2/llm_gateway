@@ -41,9 +41,21 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
         default=None,
         description="Latest date for issue creation (inclusive)",
     )
+    minimum_updated_date: Optional[datetime] = Field(
+        default=None,
+        description="Earliest date for issue update (inclusive)",
+    )
+    maximum_updated_date: Optional[datetime] = Field(
+        default=None,
+        description="Latest date for issue update (inclusive)",
+    )
     summary_only: Optional[bool] = Field(
         default=False,
         description="Whether to return just the summary or full issue details",
+    )
+    sort_by: Optional[Literal["updated", "created", "resolved"]] = Field(
+        default=None,
+        description="Field to sort by.  Choices: 'updated', 'created', 'resolved'",
     )
 
 
@@ -78,8 +90,11 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         project_name: Optional[str] = None,
         minimum_created_date: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
+        minimum_updated_date: Optional[datetime] = None,
+        maximum_updated_date: Optional[datetime] = None,
         assignee: Optional[str] = None,
         summary_only: Optional[bool] = None,
+        sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -95,8 +110,11 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         project_name: Optional[str] = None,
         minimum_created_date: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
+        minimum_updated_date: Optional[datetime] = None,
+        maximum_updated_date: Optional[datetime] = None,
         assignee: Optional[str] = None,
         summary_only: Optional[bool] = None,
+        sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the Jira Issues analyzer tool.
@@ -128,8 +146,11 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                     max_issues=max_issues,
                     min_created_at=minimum_created_date,
                     max_created_at=maximum_created_date,
+                    min_updated_at=minimum_updated_date,
+                    max_updated_at=maximum_updated_date,
                     project_key=project_name,
                     assignee=assignee,
+                    sort_by=sort_by,
                 )
             )
 
