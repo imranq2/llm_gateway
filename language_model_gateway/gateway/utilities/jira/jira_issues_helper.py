@@ -57,7 +57,7 @@ class JiraIssueHelper:
         assignee: Optional[str] = None,
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
-        include_full_description: Optional[bool] = False,
+        include_full_description: Optional[bool] = True,
     ) -> List[JiraIssue]:
         """
         Async method to retrieve closed issues across Jira projects.
@@ -137,20 +137,20 @@ class JiraIssueHelper:
                         "nextPageToken": next_page_token,
                         "maxResults": max_results,
                         "fields": [
-                            # "*all",
-                            "id",
-                            "summary",
-                            "status",
-                            "created",
-                            "resolutiondate",
-                            "assignee",
-                            "assignee",
-                            "reporter",
-                            "creator",
-                            "project",
-                            "issuetype",
-                            "priority",
-                            "item_description",
+                            "*all",
+                            # "id",
+                            # "summary",
+                            # "status",
+                            # "created",
+                            # "resolutiondate",
+                            # "assignee",
+                            # "assignee",
+                            # "reporter",
+                            # "creator",
+                            # "project",
+                            # "issuetype",
+                            # "priority",
+                            # "description",
                         ],
                     }
                     response = await client.post(
@@ -226,12 +226,12 @@ class JiraIssueHelper:
                                 return description1
                             except Exception as e:
                                 self.logger.error(
-                                    f"Error reading item_description: {e}: {description}"
+                                    f"Error reading description: {e}: {description}"
                                 )
                                 return ""
 
                         item_description: str = read_description(
-                            issue["fields"].get("item_description", {})
+                            issue["fields"].get("description", {})
                         )
                         issue_priority: str = issue["fields"]["priority"]["name"]
                         closed_issues_list.append(

@@ -120,6 +120,7 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         min_created_at=datetime(
             2024, 9, 1, tzinfo=timezone.utc
         ),  # Optional: minimum created date
+        include_full_description=True,
     )
 
     print("========== Issues ========")
