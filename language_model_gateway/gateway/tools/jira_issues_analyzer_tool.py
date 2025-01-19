@@ -49,9 +49,9 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
         default=None,
         description="Latest date for issue update (inclusive)",
     )
-    summary_only: Optional[bool] = Field(
+    counts_only: Optional[bool] = Field(
         default=False,
-        description="Whether to return just the summary or full issue details",
+        description="Whether to return just count of issues or each issue details",
     )
     sort_by: Optional[Literal["updated", "created", "resolved"]] = Field(
         default="updated",
@@ -60,6 +60,10 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
     sort_by_direction: Optional[Literal["asc", "desc"]] = Field(
         default="desc",
         description="Sort direction for jira issues. Choices: 'asc', 'desc'.  Default is 'desc'.",
+    )
+    include_full_description: Optional[bool] = Field(
+        default=False,
+        description="Include full issue description or just summary",
     )
 
 
@@ -101,9 +105,10 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         minimum_updated_date: Optional[datetime] = None,
         maximum_updated_date: Optional[datetime] = None,
         assignee: Optional[str] = None,
-        summary_only: Optional[bool] = None,
+        counts_only: Optional[bool] = None,
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
+        include_full_description: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -122,9 +127,10 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         minimum_updated_date: Optional[datetime] = None,
         maximum_updated_date: Optional[datetime] = None,
         assignee: Optional[str] = None,
-        summary_only: Optional[bool] = None,
+        counts_only: Optional[bool] = None,
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
+        include_full_description: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the Jira Issues analyzer tool.
@@ -155,8 +161,8 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
             )
         if assignee:
             log_prefix_items.append(f"{assignee=}")
-        if summary_only:
-            log_prefix_items.append(f"{summary_only=}")
+        if counts_only:
+            log_prefix_items.append(f"{counts_only=}")
         if sort_by:
             log_prefix_items.append(f"{sort_by=}")
 
@@ -179,11 +185,12 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                     assignee=assignee,
                     sort_by=sort_by,
                     sort_by_direction=sort_by_direction,
+                    include_full_description=include_full_description,
                 )
             )
 
             full_text: str
-            if not summary_only:
+            if not counts_only:
                 full_text = ""
                 for issue in jira_issues:
                     full_text += f"Issue: {issue.summary} status: {issue.status} assigned to {issue.assignee}"

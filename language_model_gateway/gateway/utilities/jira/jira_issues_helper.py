@@ -57,7 +57,7 @@ class JiraIssueHelper:
         assignee: Optional[str] = None,
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
-        include_full_description: Optional[bool] = True,
+        include_full_description: Optional[bool] = False,
     ) -> List[JiraIssue]:
         """
         Async method to retrieve closed issues across Jira projects.
