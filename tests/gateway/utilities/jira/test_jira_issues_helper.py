@@ -54,12 +54,13 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         )
 
         # Mock Jira search API response
-        search_url = f"{jira_base_url}/rest/api/3/search?jql=status+%3D+Closed+AND+created+%3E%3D+%272024-09-01%27&startAt=0&maxResults=2&fields=summary&fields=status&fields=created&fields=resolutiondate&fields=assignee&fields=project"
+        search_url = f"{jira_base_url}/rest/api/3/search/jql"
         sample_issues_content: Dict[str, Any] = {
             "total": 2,
             "issues": [
                 {
                     "key": "PROJECT-1",
+                    "self": "http://foo/PROJECT-1",
                     "fields": {
                         "summary": "First test issue",
                         "status": {"name": "Closed"},
@@ -71,6 +72,7 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
                 },
                 {
                     "key": "PROJECT-2",
+                    "self": "http://foo/PROJECT-2",
                     "fields": {
                         "summary": "Second test issue",
                         "status": {"name": "Closed"},
@@ -85,7 +87,7 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
 
         httpx_mock.add_response(
             url=search_url,
-            method="GET",
+            method="POST",
             headers={
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json",
@@ -126,6 +128,10 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         include_full_description=True,
     )
     issues: List[JiraIssue] = jira_issue_result.issues
+
+    assert jira_issue_result.error is None
+
+    assert len(issues) > 0, jira_issue_result.error
 
     print("========== Issues ========")
     for issue in issues:

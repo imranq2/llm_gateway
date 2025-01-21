@@ -63,6 +63,7 @@ class JiraIssueHelper:
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         include_full_description: Optional[bool] = False,
+        status: Optional[str] = "Closed",
     ) -> JiraIssueResult:
         """
         Async method to retrieve closed issues across Jira projects.
@@ -79,6 +80,7 @@ class JiraIssueHelper:
             sort_by (str, optional): Field to sort by
             sort_by_direction (str, optional): Sort direction
             include_full_description (bool, optional): Include full description
+            status: (str, Optional): match status
 
         Returns:
             List[JiraIssue]: List of closed Jira issues
@@ -92,7 +94,7 @@ class JiraIssueHelper:
             query: str = ""
             try:
                 # Construct JQL (Jira Query Language) based on parameters
-                jql_conditions = ["status = Closed"]
+                jql_conditions = [f"status = {status}"]
 
                 if project_key:
                     jql_conditions.append(f"project = {project_key}")
@@ -172,7 +174,8 @@ class JiraIssueHelper:
                     issues_data = response.json()
 
                     for issue in issues_data.get("issues", []):
-                        assignee_object: Optional[Dict[str, Any]] = issue["fields"].get(
+                        fields_ = issue["fields"]
+                        assignee_object: Optional[Dict[str, Any]] = fields_.get(
                             "assignee", {}
                         )
                         assignee_name: str = (
@@ -185,7 +188,7 @@ class JiraIssueHelper:
                             if assignee_object
                             else "Unassigned"
                         )
-                        reporter_object: Optional[Dict[str, Any]] = issue["fields"].get(
+                        reporter_object: Optional[Dict[str, Any]] = fields_.get(
                             "reporter", {}
                         )
                         reporter_name: str = (
@@ -198,7 +201,7 @@ class JiraIssueHelper:
                             if reporter_object
                             else "Unassigned"
                         )
-                        creator_object: Optional[Dict[str, Any]] = issue["fields"].get(
+                        creator_object: Optional[Dict[str, Any]] = fields_.get(
                             "creator", {}
                         )
                         creator_name: str = (
@@ -211,12 +214,8 @@ class JiraIssueHelper:
                             if creator_object
                             else "Unassigned"
                         )
-                        issue_type: str = (
-                            issue["fields"].get("issuetype", {}).get("name")
-                        )
-                        project_name: str = (
-                            issue["fields"].get("project", {}).get("name")
-                        )
+                        issue_type: str = fields_.get("issuetype", {}).get("name")
+                        project_name: str = fields_.get("project", {}).get("name")
 
                         def read_description(description: Dict[str, Any] | None) -> str:
                             if not include_full_description:
@@ -241,25 +240,25 @@ class JiraIssueHelper:
                                 return ""
 
                         item_description: str = read_description(
-                            issue["fields"].get("description", {})
+                            fields_.get("description", {})
                         )
-                        issue_priority: str = issue["fields"]["priority"]["name"]
+                        issue_priority: str = fields_.get("priority", {}).get("name")
                         closed_issues_list.append(
                             JiraIssue(
-                                key=issue["key"],
-                                url=issue["self"],
-                                summary=issue["fields"].get("summary", "No Summary"),
-                                status=issue["fields"].get("status", {}).get("name"),
+                                key=issue.get("key"),
+                                url=issue.get("self"),
+                                summary=fields_.get("summary", "No Summary"),
+                                status=fields_.get("status", {}).get("name"),
                                 created_at=datetime.fromisoformat(
-                                    issue["fields"]["created"].replace("Z", "+00:00")
+                                    fields_["created"].replace("Z", "+00:00")
                                 ),
                                 closed_at=(
                                     datetime.fromisoformat(
-                                        issue["fields"]
-                                        .get("resolutiondate", "")
-                                        .replace("Z", "+00:00")
+                                        fields_.get("resolutiondate", "").replace(
+                                            "Z", "+00:00"
+                                        )
                                     )
-                                    if issue["fields"].get("resolutiondate")
+                                    if fields_.get("resolutiondate")
                                     else None
                                 ),
                                 assignee=assignee_name,
@@ -272,7 +271,7 @@ class JiraIssueHelper:
                                 project_name=project_name,
                                 description=item_description,
                                 priority=issue_priority,
-                                project=issue["fields"].get("project", {}).get("key"),
+                                project=fields_.get("project", {}).get("key"),
                             )
                         )
 
