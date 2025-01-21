@@ -22,6 +22,9 @@ from language_model_gateway.gateway.utilities.jira.JiraIssuesPerAssigneeInfo imp
     JiraIssuesPerAssigneeInfo,
 )
 from language_model_gateway.gateway.utilities.jira.jira_issue import JiraIssue
+from language_model_gateway.gateway.utilities.jira.jira_issue_result import (
+    JiraIssueResult,
+)
 from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
     JiraIssueHelper,
 )
@@ -114,7 +117,7 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
     max_issues = 2
 
     # Get issue counts with optional parameters
-    issues: List[JiraIssue] = await issue_helper.retrieve_closed_issues(
+    jira_issue_result: JiraIssueResult = await issue_helper.retrieve_closed_issues(
         max_projects=max_projects,  # Optional: limit projects
         max_issues=max_issues,  # Optional: limit issues
         min_created_at=datetime(
@@ -122,6 +125,7 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
         ),  # Optional: minimum created date
         include_full_description=True,
     )
+    issues: List[JiraIssue] = jira_issue_result.issues
 
     print("========== Issues ========")
     for issue in issues:

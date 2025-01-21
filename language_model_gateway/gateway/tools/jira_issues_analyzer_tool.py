@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
 from language_model_gateway.gateway.utilities.jira.jira_issue import JiraIssue
+from language_model_gateway.gateway.utilities.jira.jira_issue_result import (
+    JiraIssueResult,
+)
 from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
     JiraIssueHelper,
 )
@@ -65,6 +68,10 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
         default=False,
         description="Include full issue description or just summary",
     )
+    use_verbose_logging: Optional[bool] = Field(
+        default=False,
+        description="Whether to enable verbose logging",
+    )
 
 
 class JiraIssuesAnalyzerTool(ResilientBaseTool):
@@ -81,9 +88,11 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         "USAGE TIPS: "
         "- Specify assignee with username "
         "- If querying for a specific date range, include 'from [date] to [date]' "
-        "- Set 'include_details' for detailed pull request information "
+        "- Set 'counts_only' if you want to get counts only"
+        "- Set include_full_description to get full issue description"
         "- Set 'sort_by' to sort by 'created', 'updated', 'popularity', or 'long-running' "
         "- Set 'sort_by_direction' to 'asc' or 'desc' "
+        "- Set use_verbose_logging to get verbose logs"
         "- Example queries: "
         "'Pull issues in EFS', "
         "'Issues assigned to johndoe in EFS', "
@@ -109,6 +118,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         include_full_description: Optional[bool] = None,
+        use_verbose_logging: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -131,6 +141,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         include_full_description: Optional[bool] = None,
+        use_verbose_logging: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the Jira Issues analyzer tool.
@@ -173,7 +184,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
             max_issues: int = int(
                 os.environ.get("JIRA_MAXIMUM_ISSUES_PER_PROJECT", 100)
             )
-            jira_issues: List[JiraIssue] = (
+            jira_issues_result: JiraIssueResult = (
                 await self.jira_issues_helper.retrieve_closed_issues(
                     max_projects=max_projects,
                     max_issues=max_issues,
@@ -189,13 +200,21 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                 )
             )
 
+            if jira_issues_result.error:
+                error_msg = f"Error analyzing Jira issues: {jira_issues_result.error}"
+                error_artifact = (
+                    log_prefix + f" Analysis Failed: {jira_issues_result.error}"
+                )
+                logger.error(error_msg)
+                return error_msg, error_artifact
+
+            jira_issues: List[JiraIssue] = jira_issues_result.issues
+
             full_text: str
             if not counts_only:
-                full_text = ""
+                full_text = "Id,Summary,Status,Assignee,Created,Closed\n"
                 for issue in jira_issues:
-                    full_text += f"Issue: {issue.summary} status: {issue.status} assigned to {issue.assignee}"
-                    f" created on {issue.created_at}\n"
-                    f" closed on {issue.closed_at}\n"
+                    full_text += f'{issue.key},"{issue.summary}",{issue.status},{issue.assignee},{issue.created_at},{issue.closed_at}\n'
             else:
                 # Summarize issues by engineer
                 pr_summary = self.jira_issues_helper.summarize_issues_by_assignee(
@@ -206,12 +225,14 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                 )
 
             # Create artifact description
-            artifact = log_prefix + f", Analyzed {len(jira_issues)} closed issues"
+            artifact = log_prefix + f", Analyzed {len(jira_issues)} closed issues."
+            if use_verbose_logging:
+                artifact += f"\nJira Query: {jira_issues_result.query}"
 
             return full_text, artifact
 
         except Exception as e:
             error_msg = f"Error analyzing Jira issues: {str(e)}"
-            error_artifact = log_prefix + " Analysis Failed"
+            error_artifact = log_prefix + " Analysis Failed: " + str(e)
             logger.error(error_msg)
             return error_msg, error_artifact

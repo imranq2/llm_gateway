@@ -4,11 +4,16 @@ from datetime import datetime
 from logging import Logger
 from typing import Dict, Optional, List, Any, Literal
 
+from httpx import URL
+
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.utilities.jira.JiraIssuesPerAssigneeInfo import (
     JiraIssuesPerAssigneeInfo,
 )
 from language_model_gateway.gateway.utilities.jira.jira_issue import JiraIssue
+from language_model_gateway.gateway.utilities.jira.jira_issue_result import (
+    JiraIssueResult,
+)
 
 
 class JiraIssueHelper:
@@ -58,7 +63,7 @@ class JiraIssueHelper:
         sort_by: Optional[Literal["updated", "created", "resolved"]] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         include_full_description: Optional[bool] = False,
-    ) -> List[JiraIssue]:
+    ) -> JiraIssueResult:
         """
         Async method to retrieve closed issues across Jira projects.
 
@@ -84,6 +89,7 @@ class JiraIssueHelper:
         async with self.http_client_factory.create_http_client(
             base_url=self.jira_base_url, headers=self.headers, timeout=30.0
         ) as client:
+            query: str = ""
             try:
                 # Construct JQL (Jira Query Language) based on parameters
                 jql_conditions = ["status = Closed"]
@@ -123,7 +129,7 @@ class JiraIssueHelper:
                     jql += f" ORDER BY {sort_by} {sort_by_direction}"
 
                 # Pagination parameters
-                max_results = max_issues or 100
+                max_results = max_issues or 100  # * (max_projects or 10)
 
                 closed_issues_list: List[JiraIssue] = []
                 pages_remaining = True
@@ -158,6 +164,10 @@ class JiraIssueHelper:
                         json=params,
                     )
                     response.raise_for_status()
+
+                    if not query:
+                        url: URL = response.request.url
+                        query = str(url) + ":" + response.request.content.decode()
 
                     issues_data = response.json()
 
@@ -279,11 +289,16 @@ class JiraIssueHelper:
                     if next_page_token is None:
                         pages_remaining = False
 
-                return closed_issues_list
+                return JiraIssueResult(
+                    issues=closed_issues_list, query=query, error=None
+                )
 
             except Exception as e:
-                self.logger.error(f"Error retrieving Jira issues: {e}")
-                raise
+                return JiraIssueResult(
+                    issues=[],
+                    query=query,
+                    error=str(e),
+                )
 
     # noinspection PyMethodMayBeStatic
     def summarize_issues_by_assignee(

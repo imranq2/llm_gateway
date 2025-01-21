@@ -50,6 +50,8 @@ services:
       AUDIO_TTS_VOICE: "alloy"
       SAFE_MODE: True
       ENABLE_WEBSOCKET_SUPPORT: True
+      # disable some unneeded stuff like RAG
+      RAG_EMBEDDING_MODEL: ""
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
       WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
     networks:
