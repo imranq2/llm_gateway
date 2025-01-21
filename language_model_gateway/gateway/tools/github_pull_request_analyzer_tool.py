@@ -15,6 +15,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 from language_model_gateway.gateway.utilities.github.github_pull_request_per_contributor_info import (
     GithubPullRequestPerContributorInfo,
 )
+from language_model_gateway.gateway.utilities.github.github_pull_request_result import (
+    GithubPullRequestResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +91,10 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
         default="desc",
         description="Sort direction for pull requests.  Choices: 'asc', 'desc'.  Default is 'desc'.",
     )
+    use_verbose_logging: Optional[bool] = Field(
+        default=False,
+        description="Whether to enable verbose logging",
+    )
 
 
 class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
@@ -154,6 +161,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             Literal["created", "updated", "popularity", "long-running"]
         ] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
+        use_verbose_logging: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -175,6 +183,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             Literal["created", "updated", "popularity", "long-running"]
         ] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
+        use_verbose_logging: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
@@ -211,7 +220,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             max_pull_requests: int = int(
                 os.environ.get("GITHUB_MAXIMUM_PULL_REQUESTS_PER_REPO", 100)
             )
-            closed_prs: List[GithubPullRequest] = (
+            pull_request_result: GithubPullRequestResult = (
                 await self.github_pull_request_helper.retrieve_closed_prs(
                     max_repos=max_repos,
                     max_pull_requests=max_pull_requests,
@@ -223,17 +232,18 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
                     sort_by_direction=sort_by_direction,
                 )
             )
+            pull_requests: List[GithubPullRequest] = pull_request_result.pull_requests
 
             full_text: str
             if include_details:
-                full_text = ""
-                for pr in closed_prs:
-                    full_text += f"PR: {pr.title} by {pr.user} closed on {pr.closed_at} - {pr.html_url}\n"
+                full_text = "Number,Title,User,CreatedAt,ClosedAt,Url,State,Body\n"
+                for pr in pull_requests:
+                    full_text += f'{pr.pull_request_number},"{pr.title}",{pr.user},{pr.created_at},{pr.closed_at},{pr.html_url},{pr.state},"{pr.body}"\n'
             else:
                 # Summarize pull requests by engineer
                 pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = (
                     self.github_pull_request_helper.summarize_prs_by_engineer(
-                        pull_requests=closed_prs
+                        pull_requests=pull_requests
                     )
                 )
 
@@ -242,12 +252,16 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
                 )
 
             # Create artifact description
-            artifact = log_prefix + f", Analyzed {len(closed_prs)} closed PRs"
+            artifact = log_prefix + f", Analyzed {len(pull_requests)} closed PRs"
+            if pull_request_result.error:
+                artifact += f"\nError: {pull_request_result.error}"
+            if use_verbose_logging:
+                artifact += f"\nJira Query: {pull_request_result.query}"
 
             return full_text, artifact
 
         except Exception as e:
             error_msg = f"Error analyzing GitHub pull requests: {str(e)}"
-            error_artifact = log_prefix + " Analysis Failed"
+            error_artifact = log_prefix + " Analysis Failed" + str(e)
             logger.error(error_msg)
             return error_msg, error_artifact

@@ -27,6 +27,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 from language_model_gateway.gateway.utilities.github.github_pull_request_per_contributor_info import (
     GithubPullRequestPerContributorInfo,
 )
+from language_model_gateway.gateway.utilities.github.github_pull_request_result import (
+    GithubPullRequestResult,
+)
 from tests.gateway.mocks.mock_environment_variables import MockEnvironmentVariables
 
 
@@ -155,7 +158,7 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
     )
 
     # Get PR counts with optional parameters
-    pull_requests: List[GithubPullRequest] = await pr_counter.retrieve_closed_prs(
+    pull_request_result: GithubPullRequestResult = await pr_counter.retrieve_closed_prs(
         max_repos=max_repos,  # Optional: limit repositories
         max_pull_requests=200,  # Optional: limit PRs
         min_created_at=datetime(
@@ -163,6 +166,7 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
         ),  # Optional: minimum created date
         include_merged=True,  # Include merged PRs
     )
+    pull_requests: List[GithubPullRequest] = pull_request_result.pull_requests
     pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = (
         pr_counter.summarize_prs_by_engineer(pull_requests=pull_requests)
     )

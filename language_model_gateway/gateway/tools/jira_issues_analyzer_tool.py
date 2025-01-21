@@ -226,6 +226,8 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
 
             # Create artifact description
             artifact = log_prefix + f", Analyzed {len(jira_issues)} closed issues."
+            if jira_issues_result.error:
+                artifact += f"\nError: {jira_issues_result.error}"
             if use_verbose_logging:
                 artifact += f"\nJira Query: {jira_issues_result.query}"
 

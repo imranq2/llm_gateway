@@ -7,7 +7,7 @@ from typing import Dict, Optional, List, Union, Any, Literal
 from urllib.parse import urlparse
 
 import httpx
-from httpx import Response
+from httpx import Response, URL
 
 from language_model_gateway.gateway.http.http_client_factory import HttpClientFactory
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
@@ -15,6 +15,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request import 
 )
 from language_model_gateway.gateway.utilities.github.github_pull_request_per_contributor_info import (
     GithubPullRequestPerContributorInfo,
+)
+from language_model_gateway.gateway.utilities.github.github_pull_request_result import (
+    GithubPullRequestResult,
 )
 
 
@@ -95,7 +98,7 @@ class GithubPullRequestHelper:
             Literal["created", "updated", "popularity", "long-running"]
         ] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
-    ) -> List[GithubPullRequest]:
+    ) -> GithubPullRequestResult:
         """
         Async method to retrieve closed pull requests across organization repositories.
         """
@@ -106,6 +109,7 @@ class GithubPullRequestHelper:
         async with self.http_client_factory.create_http_client(
             base_url=self.base_url, headers=self.headers, timeout=30.0
         ) as client:
+            query: str = ""
             try:
                 if repo_name:
                     repos_url = f"{self.base_url}/repos/{self.org_name}/{repo_name}"
@@ -116,6 +120,9 @@ class GithubPullRequestHelper:
                             **self.headers,
                         },
                     )
+                    if not query:
+                        url: URL = repo_response.request.url
+                        query = str(url)
                     repo_response.raise_for_status()
                     repos = [repo_response.json()]
                 else:
@@ -146,6 +153,10 @@ class GithubPullRequestHelper:
                             },
                             params=params,
                         )
+                        if not query:
+                            url = repos_response.request.url
+                            query = str(url)
+
                         repos_response.raise_for_status()
                         repos.extend(repos_response.json())
                         if max_repos and len(repos) >= max_repos:
@@ -191,8 +202,16 @@ class GithubPullRequestHelper:
                             ] == "closed":
                                 closed_prs_list.append(
                                     GithubPullRequest(
+                                        pull_request_number=pr["number"],
                                         repo=repo["name"],
                                         title=pr.get("title") or "No Title",
+                                        created_at=(
+                                            datetime.fromisoformat(
+                                                pr["created_at"].replace("Z", "+00:00")
+                                            )
+                                            if pr.get("created_at")
+                                            else None
+                                        ),
                                         closed_at=(
                                             datetime.fromisoformat(
                                                 pr["closed_at"].replace("Z", "+00:00")
@@ -204,14 +223,20 @@ class GithubPullRequestHelper:
                                         diff_url=pr.get("diff_url") or "No URL",
                                         user=pr.get("user", {}).get("login")
                                         or "No User",
+                                        state=pr.get("state"),
+                                        body=pr.get("body"),
                                     )
                                 )
 
-                return closed_prs_list
+                return GithubPullRequestResult(
+                    pull_requests=closed_prs_list, query=query, error=None
+                )
 
             except Exception as e:
                 self.logger.error(f"Error retrieving PRs: {e}")
-                raise
+                return GithubPullRequestResult(
+                    pull_requests=[], query=query, error=str(e)
+                )
 
     # noinspection PyMethodMayBeStatic
     def summarize_prs_by_engineer(
