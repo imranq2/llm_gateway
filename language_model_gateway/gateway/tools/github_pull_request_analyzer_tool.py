@@ -202,7 +202,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             Tuple of pull request analysis text and artifact description
         """
 
-        log_prefix: str = "GitHubPullRequestAnalyzerAgent:"
+        log_prefix: str = "GitHubPullRequestAnalyzerAgent: "
         log_prefix_items: List[str] = []
         if repository_name:
             log_prefix_items.append(f"{repository_name=}")
@@ -249,7 +249,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
 
             full_text: str
             if not counts_only:
-                full_text = "Number,Title,User,CreatedAt,ClosedAt,Url,State,Body\n"
+                full_text = "Number,Title,User,Created,Closed,Url,State,Body\n"
                 for pr in pull_requests:
                     full_text += f'{pr.pull_request_number},"{pr.title}",{pr.user},{pr.created_at},{pr.closed_at},{pr.html_url},{pr.state},"{pr.body}"\n'
             else:

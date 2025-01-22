@@ -159,7 +159,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
             Tuple of Jira issue text and artifact description
         """
 
-        log_prefix: str = "JiraIssuesAnalyzerAgent:"
+        log_prefix: str = "JiraIssuesAnalyzerAgent: "
         log_prefix_items: List[str] = []
         if project_name:
             log_prefix_items.append(f"{project_name=}")
