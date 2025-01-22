@@ -22,6 +22,10 @@ class ProviderSearchToolInput(BaseModel):
     insurance: Optional[List[str]] = Field(
         description="List of insurance plans to filter by"
     )
+    use_verbose_logging: Optional[bool] = Field(
+        default=False,
+        description="Whether to enable verbose logging",
+    )
 
 
 class ProviderSearchTool(ResilientBaseTool):
@@ -165,6 +169,7 @@ class ProviderSearchTool(ResilientBaseTool):
         distance: Optional[float] = None,
         specialty: Optional[List[str]] = None,
         insurance: Optional[List[str]] = None,
+        use_verbose_logging: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Synchronous execution"""
         raise NotImplementedError("Use async version of this tool")
@@ -177,6 +182,7 @@ class ProviderSearchTool(ResilientBaseTool):
         distance: Optional[float] = None,
         specialty: Optional[List[str]] = None,
         insurance: Optional[List[str]] = None,
+        use_verbose_logging: Optional[bool] = None,
     ) -> Tuple[Dict[str, Any], str]:
         """Asynchronous execution"""
 
@@ -202,10 +208,11 @@ class ProviderSearchTool(ResilientBaseTool):
 
         try:
             response = await async_client.post(self.api_url, json=payload, timeout=30.0)
-            return (
-                self._handle_response(response),
-                f"ProviderSearchAgent: Searched for {search} {variables} ",
-            )
+            artifact: str = f"ProviderSearchAgent: Searched for {search} {variables} "
+            if use_verbose_logging:
+                artifact += f"\nRequest: {payload}"
+                artifact += f"===== Response ======\n```{response.text}```\n====== End of Response ======"
+            return self._handle_response(response), artifact
 
         except httpx.TimeoutException:
             raise Exception("Request timed out")

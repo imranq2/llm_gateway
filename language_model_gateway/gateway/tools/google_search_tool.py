@@ -159,7 +159,7 @@ class GoogleSearchTool(ResilientBaseTool):
 
             artifact: str = f'GoogleSearchAgent: Searched Google for "{query}"'
             if use_verbose_logging:
-                artifact += f"\n{response}"
+                artifact += f"\n```{response}```"
             return response, artifact
         except Exception as e:
             logger.exception(e, stack_info=True)
