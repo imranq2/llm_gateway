@@ -262,7 +262,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             if use_verbose_logging:
                 artifact += f"\nJira Query: {pull_request_result.query}"
                 artifact += "\n\nRaw:"
-                artifact += f"\n{full_text}"
+                artifact += f"\n```{full_text}```"
                 artifact += "\n\nMarkdown Table:"
                 artifact += (
                     f"\n{CsvToMarkdownConverter.csv_to_markdown_table(full_text)}"
