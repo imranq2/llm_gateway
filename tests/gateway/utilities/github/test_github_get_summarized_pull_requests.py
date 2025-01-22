@@ -45,6 +45,7 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
     makedirs(temp_folder)
 
     max_repos = 2
+    max_pull_requests = 10
 
     test_container: SimpleContainer = await get_container_async()
 
@@ -74,11 +75,9 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
 
         # org_name = "icanbwell"
         repo_name = "helix.pipelines"
-        # repos_url = f"https://api.github.com/repos/{org_name}/{repo_name}"
-        repos_url = f"https://api.github.com/orgs/{org_name}/repos?type=all&sort=pushed&direction=desc&per_page={max_repos}&page=1"
 
         httpx_mock.add_response(
-            url=repos_url,
+            url=f"https://api.github.com/orgs/{org_name}/repos?type=all&sort=pushed&direction=desc&per_page={max_repos}&page=1",
             method="GET",
             headers={
                 "Authorization": f"Bearer {access_token}",
@@ -90,10 +89,7 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
             status_code=200,
         )
 
-        # mock pull API
-        pull_url: str = (
-            f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc"
-        )
+        # mock pull API for first repo
         sample_pull_content: List[Dict[str, Any]] = [
             {
                 "url": "https://api.github.com/repos/icanbwell/helix.pipelines/pulls/1",
@@ -119,7 +115,9 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
             },
         ]
         httpx_mock.add_response(
-            url=pull_url,
+            url=(
+                f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc&per_page={max_pull_requests}&page=1"
+            ),
             method="GET",
             headers={
                 "Authorization": f"Bearer {access_token}",
@@ -128,10 +126,20 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
             content=json.dumps(sample_pull_content).encode(),
             status_code=200,
         )
-        pull_url = f"https://api.github.com/repos/{org_name}/foo/pulls?state=closed&sort=created&direction=desc"
+        httpx_mock.add_response(
+            url=f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc&per_page={max_pull_requests}&page=2",
+            method="GET",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/vnd.github+json",
+            },
+            content=json.dumps([]).encode(),
+            status_code=200,
+        )
+        # now pull requests from second repo
         sample_pull_content = []
         httpx_mock.add_response(
-            url=pull_url,
+            url=f"https://api.github.com/repos/{org_name}/foo/pulls?state=closed&sort=created&direction=desc&per_page={max_pull_requests}&page=1",
             method="GET",
             headers={
                 "Authorization": f"Bearer {access_token}",
@@ -160,7 +168,7 @@ async def test_github_get_summarized_pull_requests(httpx_mock: HTTPXMock) -> Non
     # Get PR counts with optional parameters
     pull_request_result: GithubPullRequestResult = await pr_counter.retrieve_closed_prs(
         max_repos=max_repos,  # Optional: limit repositories
-        max_pull_requests=200,  # Optional: limit PRs
+        max_pull_requests=max_pull_requests,  # Optional: limit PRs
         min_created_at=datetime(
             2024, 9, 1, tzinfo=timezone.utc
         ),  # Optional: minimum created date

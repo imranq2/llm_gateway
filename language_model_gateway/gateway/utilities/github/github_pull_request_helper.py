@@ -154,9 +154,8 @@ class GithubPullRequestHelper:
                             },
                             params=params,
                         )
-                        if not query:
-                            url = repos_response.request.url
-                            query += f"\n{str(url)}"
+                        url = repos_response.request.url
+                        query += f"\n{str(url)}"
 
                         repos_response.raise_for_status()
                         repos.extend(repos_response.json())
@@ -164,6 +163,7 @@ class GithubPullRequestHelper:
                             pages_remaining = False
                         elif len(repos_response.json()) == 0:
                             pages_remaining = False
+                        page_number += 1
 
                 # Limit repositories if max_repos is specified
                 repos = repos[:max_repos] if max_repos else repos
