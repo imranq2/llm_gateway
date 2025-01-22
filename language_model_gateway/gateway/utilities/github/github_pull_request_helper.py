@@ -175,17 +175,29 @@ class GithubPullRequestHelper:
                     prs_url = (
                         f"{self.base_url}/repos/{self.org_name}/{repo['name']}/pulls"
                     )
-                    prs_response = await client.get(
-                        prs_url,
-                        params={
-                            "state": status or "closed",
-                            "sort": "created",
-                            "direction": "desc",
-                        },
-                    )
-                    query += f"\n{str(prs_response.request.url)}"
-                    prs_response.raise_for_status()
-                    prs: List[Dict[str, Any]] = prs_response.json()
+                    pages_remaining = True
+                    prs: List[Dict[str, Any]] = []
+                    page_number = 1
+
+                    while pages_remaining:
+                        prs_response = await client.get(
+                            prs_url,
+                            params={
+                                "state": status or "closed",
+                                "sort": "created",
+                                "direction": "desc",
+                                "per_page": max_pull_requests or 50,
+                                "page": page_number,
+                            },
+                        )
+                        query += f"\n{str(prs_response.request.url)}"
+                        prs_response.raise_for_status()
+                        prs.extend(prs_response.json())
+                        if len(prs_response.json()) == 0:
+                            pages_remaining = False
+                        elif max_pull_requests and len(prs) >= max_pull_requests:
+                            pages_remaining = False
+                        page_number += 1
 
                     for pr_index, pr in enumerate(prs):
                         if max_pull_requests and pr_index >= max_pull_requests:

@@ -225,7 +225,8 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
             if not counts_only:
                 full_text = "Id,Summary,Status,Assignee,Created,Closed\n"
                 for issue in jira_issues:
-                    full_text += f'{issue.key},"{issue.summary}",{issue.status},{issue.assignee},{issue.created_at},{issue.closed_at}\n'
+                    clean_summary: str = issue.summary.replace('"', "'")
+                    full_text += f'{issue.key},"{clean_summary}",{issue.status},{issue.assignee},{issue.created_at},{issue.closed_at}\n'
             else:
                 # Summarize issues by engineer
                 pr_summary = self.jira_issues_helper.summarize_issues_by_assignee(

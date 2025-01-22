@@ -251,7 +251,9 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             if not counts_only:
                 full_text = "Number,Title,User,Created,Closed,Url,State,Body\n"
                 for pr in pull_requests:
-                    full_text += f'{pr.pull_request_number},"{pr.title}",{pr.user},{pr.created_at},{pr.closed_at},{pr.html_url},{pr.state},"{pr.body}"\n'
+                    clean_title: str = pr.title.replace('"', "'")
+                    clean_body: str = pr.body.replace('"', "'") if pr.body else ""
+                    full_text += f'{pr.pull_request_number},"{clean_title}",{pr.user},{pr.created_at},{pr.closed_at},{pr.html_url},{pr.state},"{clean_body}"\n'
             else:
                 # Summarize pull requests by engineer
                 pr_counts: Dict[str, GithubPullRequestPerContributorInfo] = (
