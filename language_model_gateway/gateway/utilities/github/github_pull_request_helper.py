@@ -98,6 +98,7 @@ class GithubPullRequestHelper:
             Literal["created", "updated", "popularity", "long-running"]
         ] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
+        status: Optional[Literal["closed"]] = None,
     ) -> GithubPullRequestResult:
         """
         Async method to retrieve closed pull requests across organization repositories.
@@ -122,7 +123,7 @@ class GithubPullRequestHelper:
                     )
                     if not query:
                         url: URL = repo_response.request.url
-                        query = str(url)
+                        query += f"\n{str(url)}"
                     repo_response.raise_for_status()
                     repos = [repo_response.json()]
                 else:
@@ -155,7 +156,7 @@ class GithubPullRequestHelper:
                         )
                         if not query:
                             url = repos_response.request.url
-                            query = str(url)
+                            query += f"\n{str(url)}"
 
                         repos_response.raise_for_status()
                         repos.extend(repos_response.json())
@@ -177,11 +178,12 @@ class GithubPullRequestHelper:
                     prs_response = await client.get(
                         prs_url,
                         params={
-                            "state": "closed",
+                            "state": status or "closed",
                             "sort": "created",
                             "direction": "desc",
                         },
                     )
+                    query += f"\n{str(prs_response.request.url)}"
                     prs_response.raise_for_status()
                     prs: List[Dict[str, Any]] = prs_response.json()
 
@@ -199,7 +201,7 @@ class GithubPullRequestHelper:
                         if not max_created_at or pr_created_at <= max_created_at:
                             if (include_merged and pr.get("'merge_commit_sha'")) or pr[
                                 "state"
-                            ] == "closed":
+                            ] == (status or "closed"):
                                 closed_prs_list.append(
                                     GithubPullRequest(
                                         pull_request_number=pr["number"],

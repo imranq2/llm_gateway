@@ -167,9 +167,8 @@ class JiraIssueHelper:
                     )
                     response.raise_for_status()
 
-                    if not query:
-                        url: URL = response.request.url
-                        query = str(url) + ":" + response.request.content.decode()
+                    url: URL = response.request.url
+                    query += f"{url}: {response.request.content.decode()}\n"
 
                     issues_data = response.json()
 

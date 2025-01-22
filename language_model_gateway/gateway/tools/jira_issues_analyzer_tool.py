@@ -75,6 +75,10 @@ class JiraIssuesAnalyzerAgentInput(BaseModel):
         default=False,
         description="Whether to enable verbose logging",
     )
+    limit: Optional[int] = Field(
+        default=100,
+        description="Maximum number of jira issues to retrieve",
+    )
 
 
 class JiraIssuesAnalyzerTool(ResilientBaseTool):
@@ -122,6 +126,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         include_full_description: Optional[bool] = None,
         use_verbose_logging: Optional[bool] = None,
+        limit: Optional[int] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -145,6 +150,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         include_full_description: Optional[bool] = None,
         use_verbose_logging: Optional[bool] = None,
+        limit: Optional[int] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the Jira Issues analyzer tool.
@@ -187,6 +193,8 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
             max_issues: int = int(
                 os.environ.get("JIRA_MAXIMUM_ISSUES_PER_PROJECT", 100)
             )
+            if limit:
+                max_issues = limit
             jira_issues_result: JiraIssueResult = (
                 await self.jira_issues_helper.retrieve_closed_issues(
                     max_projects=max_projects,
@@ -231,12 +239,13 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
             artifact = log_prefix + f", Analyzed {len(jira_issues)} closed issues."
             if jira_issues_result.error:
                 artifact += f"\nError: {jira_issues_result.error}"
-            if use_verbose_logging:
+            if len(jira_issues) == 0:
+                artifact += f"\nJira Query:\n{jira_issues_result.query}"
+            elif use_verbose_logging:
                 artifact += f"\nJira Query: {jira_issues_result.query}"
-                artifact += "\n\nMarkdown Table:"
-                artifact += (
-                    f"\n{CsvToMarkdownConverter.csv_to_markdown_table(full_text)}"
-                )
+
+            artifact += "\n\nResults:"
+            artifact += f"\n{CsvToMarkdownConverter.csv_to_markdown_table(full_text)}"
 
             return full_text, artifact
 

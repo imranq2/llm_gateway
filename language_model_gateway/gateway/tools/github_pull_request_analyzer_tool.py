@@ -98,6 +98,10 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
         default=False,
         description="Whether to enable verbose logging",
     )
+    limit: Optional[int] = Field(
+        default=100,
+        description="Maximum number of pull requests to retrieve",
+    )
 
 
 class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
@@ -166,6 +170,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         ] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         use_verbose_logging: Optional[bool] = None,
+        limit: Optional[int] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -188,6 +193,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         ] = None,
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         use_verbose_logging: Optional[bool] = None,
+        limit: Optional[int] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
@@ -224,6 +230,9 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             max_pull_requests: int = int(
                 os.environ.get("GITHUB_MAXIMUM_PULL_REQUESTS_PER_REPO", 100)
             )
+            if limit:
+                max_pull_requests = limit
+
             pull_request_result: GithubPullRequestResult = (
                 await self.github_pull_request_helper.retrieve_closed_prs(
                     max_repos=max_repos,
@@ -259,14 +268,16 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             artifact = log_prefix + f", Analyzed {len(pull_requests)} PRs"
             if pull_request_result.error:
                 artifact += f"\nError: {pull_request_result.error}"
-            if use_verbose_logging:
-                artifact += f"\nJira Query: {pull_request_result.query}"
-                artifact += "\n\nRaw:"
-                artifact += f"\n```{full_text}```"
-                artifact += "\n\nMarkdown Table:"
-                artifact += (
-                    f"\n{CsvToMarkdownConverter.csv_to_markdown_table(full_text)}"
-                )
+
+            if len(pull_requests) == 0:
+                artifact += f"\nQueries:\n{pull_request_result.query}"
+            elif use_verbose_logging:
+                artifact += f"\nQueries:\n{pull_request_result.query}"
+                # artifact += "\n\nRaw:"
+                # artifact += f"\n```{full_text}```"
+
+            artifact += "\n\nResults:"
+            artifact += f"\n{CsvToMarkdownConverter.csv_to_markdown_table(full_text)}"
 
             return full_text, artifact
 
