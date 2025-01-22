@@ -94,10 +94,10 @@ class JiraIssueHelper:
             query: str = ""
             try:
                 # Construct JQL (Jira Query Language) based on parameters
-                jql_conditions = [f"status = {status}"]
+                jql_conditions = [f"status = '{status}'"]
 
                 if project_key:
-                    jql_conditions.append(f"project = {project_key}")
+                    jql_conditions.append(f"project = '{project_key}'")
 
                 if min_created_at:
                     jql_conditions.append(
@@ -120,7 +120,7 @@ class JiraIssueHelper:
                     )
 
                 if assignee:
-                    jql_conditions.append(f"assignee = {assignee}")
+                    jql_conditions.append(f"assignee = '{assignee}'")
 
                 jql = " AND ".join(jql_conditions)
 
@@ -129,6 +129,8 @@ class JiraIssueHelper:
                     if not sort_by_direction:
                         sort_by_direction = "desc"
                     jql += f" ORDER BY {sort_by} {sort_by_direction}"
+                else:
+                    jql += " ORDER BY updated desc"
 
                 # Pagination parameters
                 max_results = max_issues or 100  # * (max_projects or 10)
