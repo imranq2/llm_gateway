@@ -6,6 +6,9 @@ from typing import Type, Optional, List, Tuple, Literal
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
+from language_model_gateway.gateway.utilities.csv_to_markdown_converter import (
+    CsvToMarkdownConverter,
+)
 from language_model_gateway.gateway.utilities.jira.jira_issue import JiraIssue
 from language_model_gateway.gateway.utilities.jira.jira_issue_result import (
     JiraIssueResult,
@@ -230,6 +233,10 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                 artifact += f"\nError: {jira_issues_result.error}"
             if use_verbose_logging:
                 artifact += f"\nJira Query: {jira_issues_result.query}"
+                artifact += "\n\nMarkdown Table:"
+                artifact += (
+                    f"\n{CsvToMarkdownConverter.csv_to_markdown_table(full_text)}"
+                )
 
             return full_text, artifact
 

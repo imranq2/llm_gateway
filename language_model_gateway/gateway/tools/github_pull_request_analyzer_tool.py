@@ -6,6 +6,9 @@ from typing import Type, Optional, List, Tuple, Literal, Dict
 from pydantic import BaseModel, Field
 
 from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
+from language_model_gateway.gateway.utilities.csv_to_markdown_converter import (
+    CsvToMarkdownConverter,
+)
 from language_model_gateway.gateway.utilities.github.github_pull_request import (
     GithubPullRequest,
 )
@@ -77,9 +80,9 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
         default=None,
         description="Latest date for pull request creation (inclusive)",
     )
-    include_details: Optional[bool] = Field(
+    counts_only: Optional[bool] = Field(
         default=False,
-        description="Include detailed pull request information or just return contributor summary",
+        description="Whether to return just count of issues or each issue details",
     )
     sort_by: Optional[Literal["created", "updated", "popularity", "long-running"]] = (
         Field(
@@ -135,9 +138,10 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         "- Specify repository with 'in [repo]' "
         "- Specify contributor with username "
         "- If querying for a specific date range, include 'from [date] to [date]' "
-        "- Set 'include_details' for detailed pull request information "
+        "- Set 'counts_only' if you want to get counts only"
         "- Set 'sort_by' to sort by 'created', 'updated', 'popularity', or 'long-running' "
         "- Set 'sort_by_direction' to 'asc' or 'desc' "
+        "- Set use_verbose_logging to get verbose logs"
         "- Example queries: "
         "'Pull requests in kubernetes/kubernetes', "
         "'PRs from johndoe in myorg/myrepo', "
@@ -156,7 +160,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         minimum_created_date: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
-        include_details: Optional[bool] = None,
+        counts_only: Optional[bool] = None,
         sort_by: Optional[
             Literal["created", "updated", "popularity", "long-running"]
         ] = None,
@@ -178,7 +182,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         minimum_created_date: Optional[datetime] = None,
         maximum_created_date: Optional[datetime] = None,
         contributor_name: Optional[str] = None,
-        include_details: Optional[bool] = None,
+        counts_only: Optional[bool] = None,
         sort_by: Optional[
             Literal["created", "updated", "popularity", "long-running"]
         ] = None,
@@ -204,8 +208,8 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             log_prefix_items.append(f"maximum_created_date={maximum_created_date}")
         if contributor_name:
             log_prefix_items.append(f"{contributor_name=}")
-        if include_details:
-            log_prefix_items.append(f"{include_details=}")
+        if counts_only:
+            log_prefix_items.append(f"{counts_only=}")
         if sort_by:
             log_prefix_items.append(f"{sort_by=}")
         if sort_by_direction:
@@ -235,7 +239,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
             pull_requests: List[GithubPullRequest] = pull_request_result.pull_requests
 
             full_text: str
-            if include_details:
+            if not counts_only:
                 full_text = "Number,Title,User,CreatedAt,ClosedAt,Url,State,Body\n"
                 for pr in pull_requests:
                     full_text += f'{pr.pull_request_number},"{pr.title}",{pr.user},{pr.created_at},{pr.closed_at},{pr.html_url},{pr.state},"{pr.body}"\n'
@@ -252,11 +256,17 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
                 )
 
             # Create artifact description
-            artifact = log_prefix + f", Analyzed {len(pull_requests)} closed PRs"
+            artifact = log_prefix + f", Analyzed {len(pull_requests)} PRs"
             if pull_request_result.error:
                 artifact += f"\nError: {pull_request_result.error}"
             if use_verbose_logging:
                 artifact += f"\nJira Query: {pull_request_result.query}"
+                artifact += "\n\nRaw:"
+                artifact += f"\n{full_text}"
+                artifact += "\n\nMarkdown Table:"
+                artifact += (
+                    f"\n{CsvToMarkdownConverter.csv_to_markdown_table(full_text)}"
+                )
 
             return full_text, artifact
 

@@ -51,7 +51,7 @@ services:
       SAFE_MODE: True
       ENABLE_WEBSOCKET_SUPPORT: True
       # RAG requires downloading embedding models.  On slow connections, this can timeout docker compose
-#      RAG_EMBEDDING_MODEL: ""
+      RAG_EMBEDDING_MODEL: ""
       # curl --silent --fail http://localhost:8081/health | jq -ne 'input.status == true' || exit 1
       WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-$(openssl rand -hex 32)}"
     networks:
