@@ -389,10 +389,7 @@ class GithubPullRequestHelper:
 
         try:
             with open(output_file, "w") as f:
-                f.write("Contributor\tPR Count\tRepos\n")
-                for engineer, info in pr_counts.items():
-                    repos_text: str = " | ".join(info.repos) if info.repos else ""
-                    f.write(f"{engineer}\t{info.pull_request_count}\t{repos_text}\n")
+                f.write(self.export_results_as_csv(pr_counts=pr_counts))
             self.logger.info(f"Results exported to {output_file}")
         except IOError as e:
             self.logger.error(f"Failed to export results: {e}")
@@ -410,8 +407,8 @@ class GithubPullRequestHelper:
             pr_counts (Dict[str, GithubPullRequestPerContributorInfo]): PR counts by engineer
         """
 
-        result: str = "Contributor\tPR Count\tRepos\n"
+        result: str = "Contributor,PullRequests,Repos\n"
         for engineer, info in pr_counts.items():
             repos_text: str = " | ".join(info.repos) if info.repos else ""
-            result += f"{engineer}\t{info.pull_request_count}\t{repos_text}\n"
+            result += f'{engineer},{info.pull_request_count},"{repos_text}"\n'
         return result

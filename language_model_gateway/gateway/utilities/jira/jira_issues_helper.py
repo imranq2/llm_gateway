@@ -358,12 +358,7 @@ class JiraIssueHelper:
 
         try:
             with open(output_file, "w") as f:
-                f.write("Assignee\tIssue Count\tProjects\n")
-                for assignee, info in issue_counts.items():
-                    projects_text: str = (
-                        " | ".join(info.projects) if info.projects else ""
-                    )
-                    f.write(f"{assignee}\t{info.issue_count}\t{projects_text}\n")
+                f.write(self.export_results_to_csv(issue_counts=issue_counts))
             self.logger.info(f"Results exported to {output_file}")
         except IOError as e:
             self.logger.error(f"Failed to export results: {e}")
@@ -381,8 +376,8 @@ class JiraIssueHelper:
             issue_counts (Dict[str, Dict[str, Any]]): Issue counts by assignee
         """
 
-        result: str = "Assignee\tIssue Count\tProjects\n"
+        result: str = "Assignee,IssueCount,Projects\n"
         for assignee, info in issue_counts.items():
             projects_text: str = " | ".join(info.projects) if info.projects else ""
-            result += f"{assignee}\t{info.issue_count}\t{projects_text}\n"
+            result += f'{assignee},{info.issue_count},"{projects_text}"\n'
         return result
