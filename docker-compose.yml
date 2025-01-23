@@ -3,6 +3,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
+      target: development
     container_name: language_model_gateway
     environment:
       DEBUG_METRICS: 0
@@ -38,7 +39,7 @@ services:
       GITHUB_MAXIMUM_REPOS: "100"
       GITHUB_MAXIMUM_PULL_REQUESTS_PER_REPO: "100"
       JIRA_BASE_URL: "https://icanbwell.atlassian.net"
-      JIRA_USERNAME: "imran.qureshi@icanbwell.com"
+#      JIRA_USERNAME: "imran.qureshi@icanbwell.com"
       JIRA_MAXIMUM_PROJECTS: "100"
       JIRA_MAXIMUM_ISSUES_PER_PROJECT: "100"
     env_file: docker.env
