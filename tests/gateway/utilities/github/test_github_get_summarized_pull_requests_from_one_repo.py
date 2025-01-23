@@ -48,6 +48,8 @@ async def test_github_get_summarized_pull_requests_from_one_repo(
 
     test_container: SimpleContainer = await get_container_async()
 
+    max_pull_requests = 2
+    max_repos = 2
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
         org_name: str = "icanbwell"
         access_token: Optional[str] = "fake_token"
@@ -83,7 +85,7 @@ async def test_github_get_summarized_pull_requests_from_one_repo(
 
         # mock pull API
         pull_url: str = (
-            f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc"
+            f"https://api.github.com/repos/{org_name}/{repo_name}/pulls?state=closed&sort=created&direction=desc&per_page={max_pull_requests}&page=1"
         )
         sample_pull_content: List[Dict[str, Any]] = [
             {
@@ -101,7 +103,7 @@ async def test_github_get_summarized_pull_requests_from_one_repo(
                 "url": "https://api.github.com/repos/icanbwell/helix.pipelines/pulls/2",
                 "html_url": "",
                 "diff_url": "",
-                "number": 2,
+                "number": max_repos,
                 "state": "closed",
                 "title": "PR 2",
                 "user": {"login": "user2"},
@@ -139,8 +141,8 @@ async def test_github_get_summarized_pull_requests_from_one_repo(
         # Get PR counts with optional parameters
         pull_request_result: GithubPullRequestResult = (
             await pr_counter.retrieve_closed_prs(
-                max_repos=2,  # Optional: limit repositories
-                max_pull_requests=200,  # Optional: limit PRs
+                max_repos=max_repos,  # Optional: limit repositories
+                max_pull_requests=max_pull_requests,  # Optional: limit PRs
                 min_created_at=datetime(
                     2024, 9, 1, tzinfo=timezone.utc
                 ),  # Optional: minimum created date
