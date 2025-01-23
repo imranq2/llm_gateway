@@ -102,9 +102,9 @@ class GitHubPullRequestAnalyzerAgentInput(BaseModel):
         default=100,
         description="Maximum number of pull requests to retrieve",
     )
-    include_full_description: Optional[bool] = Field(
+    include_description: Optional[bool] = Field(
         default=False,
-        description="Include full issue description or not",
+        description="Whether to include pull request description",
     )
 
 
@@ -149,7 +149,9 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         "- Set 'counts_only' if you want to get counts only"
         "- Set 'sort_by' to sort by 'created', 'updated', 'popularity', or 'long-running' "
         "- Set 'sort_by_direction' to 'asc' or 'desc' "
-        "- Set use_verbose_logging to get verbose logs"
+        "- Set 'use_verbose_logging' to get verbose logs"
+        "- Set 'limit' to limit the number of pull requests to retrieve"
+        "- Set 'include_description' to include description"
         "- Example queries: "
         "'Pull requests in kubernetes/kubernetes', "
         "'PRs from johndoe in myorg/myrepo', "
@@ -175,7 +177,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         use_verbose_logging: Optional[bool] = None,
         limit: Optional[int] = None,
-        include_full_description: Optional[bool] = None,
+        include_description: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
@@ -199,7 +201,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         sort_by_direction: Optional[Literal["asc", "desc"]] = None,
         use_verbose_logging: Optional[bool] = None,
         limit: Optional[int] = None,
-        include_full_description: Optional[bool] = None,
+        include_description: Optional[bool] = None,
     ) -> Tuple[str, str]:
         """
         Asynchronous version of the GitHub Pull Request extraction tool.
@@ -255,12 +257,12 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
 
             full_text: str
             if not counts_only:
-                full_text = "Number,Title,User,Created,Closed,Url,State,Body\n"
+                full_text = "Number,Title,User,Created,Closed,Url,State,Description\n"
                 for pr in pull_requests:
                     clean_title: str = pr.title.replace('"', "'")
                     clean_body: str = (
                         pr.body.replace('"', "'")
-                        if pr.body and include_full_description
+                        if pr.body and include_description
                         else ""
                     )
                     full_text += f'{pr.pull_request_number},"{clean_title}",{pr.user},{pr.created_at},{pr.closed_at},{pr.html_url},{pr.state},"{clean_body}"\n'
