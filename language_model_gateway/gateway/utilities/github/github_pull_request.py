@@ -11,6 +11,7 @@ class GithubPullRequest:
     title: str
     created_at: Optional[datetime]
     closed_at: Optional[datetime]
+    updated_at: Optional[datetime]
     html_url: str
     diff_url: Optional[str]
     state: Optional[str]

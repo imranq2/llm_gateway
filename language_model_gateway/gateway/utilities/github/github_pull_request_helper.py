@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 from datetime import datetime
 from logging import Logger
@@ -107,6 +108,16 @@ class GithubPullRequestHelper:
         assert self.org_name, "Organization name is required"
         assert self.github_access_token, "GitHub access token is required"
 
+        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+            self.logger.info(
+                f"Retrieving closed PRs for {self.org_name} organization"
+                f" with max_repos={max_repos}, max_pull_requests={max_pull_requests},"
+                f" min_created_at={min_created_at}, max_created_at={max_created_at},"
+                f" include_merged={include_merged}, repo_name={repo_name},"
+                f" sort_by={sort_by}, sort_by_direction={sort_by_direction},"
+                f" status={status}"
+            )
+
         async with self.http_client_factory.create_http_client(
             base_url=self.base_url, headers=self.headers, timeout=30.0
         ) as client:
@@ -114,6 +125,8 @@ class GithubPullRequestHelper:
             try:
                 if repo_name:
                     repos_url = f"{self.base_url}/repos/{self.org_name}/{repo_name}"
+                    if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                        self.logger.info(f"Fetching repository: {repos_url}")
                     repo_response = await client.get(
                         repos_url,
                         headers={
@@ -121,6 +134,7 @@ class GithubPullRequestHelper:
                             **self.headers,
                         },
                     )
+
                     if not query:
                         url: URL = repo_response.request.url
                         query += f"\n{str(url)}"
@@ -141,11 +155,10 @@ class GithubPullRequestHelper:
                             "per_page": max_repos or 50,
                             "page": page_number,
                         }
-                        if sort_by:
-                            params["sort"] = sort_by
-                        if sort_by and sort_by_direction:
-                            params["direction"] = sort_by_direction
-
+                        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                            self.logger.info(
+                                f"Fetching repositories: {repos_url}: {params}"
+                            )
                         repos_response = await client.get(
                             repos_url,
                             headers={
@@ -180,15 +193,19 @@ class GithubPullRequestHelper:
                     page_number = 1
 
                     while pages_remaining:
+                        params = {
+                            "state": status or "closed",
+                            "sort": sort_by or "created",
+                            "direction": sort_by_direction or "desc",
+                            "per_page": max_pull_requests or 50,
+                            "page": page_number,
+                        }
+                        if os.environ.get("LOG_INPUT_AND_OUTPUT", "0") == "1":
+                            self.logger.info(f"Fetching PRs: {prs_url}: {params}")
+
                         prs_response = await client.get(
                             prs_url,
-                            params={
-                                "state": status or "closed",
-                                "sort": "created",
-                                "direction": "desc",
-                                "per_page": max_pull_requests or 50,
-                                "page": page_number,
-                            },
+                            params=params,
                         )
                         query += f"\n{str(prs_response.request.url)}"
                         prs_response.raise_for_status()
@@ -233,6 +250,13 @@ class GithubPullRequestHelper:
                                             if pr.get("closed_at")
                                             else None
                                         ),
+                                        updated_at=(
+                                            datetime.fromisoformat(
+                                                pr["updated_at"].replace("Z", "+00:00")
+                                            )
+                                            if pr.get("updated_at")
+                                            else None
+                                        ),
                                         html_url=pr.get("html_url") or "No URL",
                                         diff_url=pr.get("diff_url") or "No URL",
                                         user=pr.get("user", {}).get("login")
@@ -241,6 +265,30 @@ class GithubPullRequestHelper:
                                         body=pr.get("body"),
                                     )
                                 )
+
+                # sort the result across all repos
+                def sort_func(pr1: GithubPullRequest) -> Union[datetime, int, None]:
+                    if sort_by == "created":
+                        return pr1.created_at
+                    elif sort_by == "updated":
+                        return pr1.updated_at
+                    else:
+                        return pr1.created_at
+
+                closed_prs_list = sorted(
+                    closed_prs_list,
+                    key=sort_func,  # type: ignore[arg-type]
+                    reverse=(
+                        True
+                        if not sort_by_direction or sort_by_direction == "desc"
+                        else False
+                    ),
+                )
+                closed_prs_list = (
+                    closed_prs_list[:max_pull_requests]
+                    if max_pull_requests
+                    else closed_prs_list
+                )
 
                 return GithubPullRequestResult(
                     pull_requests=closed_prs_list, query=query, error=None

@@ -256,7 +256,7 @@ async def test_github_pull_request_analyzer_full_details_tool(
         messages=[
             {
                 "role": "user",
-                "content": "List all the pull requests with title and author for the helix.pipelines repository for past 3 months",
+                "content": "Get last 3 PRs across all repositories",
             }
         ],
         model="General Purpose",
