@@ -155,6 +155,7 @@ class GitHubPullRequestAnalyzerTool(ResilientBaseTool):
         "- Example queries: "
         "'Pull requests in kubernetes/kubernetes', "
         "'PRs from johndoe in myorg/myrepo', "
+        "'PRs including description from johndoe in myorg/myrepo', "
         "'What pull requests from imranq2 in helix.pipelines repo'"
     )
 
