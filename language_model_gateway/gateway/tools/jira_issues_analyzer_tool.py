@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class JiraIssuesAnalyzerAgentInput(BaseModel):
     """
-    Input model for configuring GitHub Pull Request extraction and analysis.
+    Input model for configuring Jira data extraction and analysis.
     """
 
     project_name: Optional[str] = Field(

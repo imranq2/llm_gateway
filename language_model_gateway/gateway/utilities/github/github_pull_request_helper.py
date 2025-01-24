@@ -217,6 +217,7 @@ class GithubPullRequestHelper:
                         page_number += 1
 
                     for pr_index, pr in enumerate(prs):
+                        self.logger.info(f"PR DETAILS:\n{pr}")
                         if max_pull_requests and pr_index >= max_pull_requests:
                             break
 
@@ -412,6 +413,8 @@ class GithubPullRequestHelper:
                     url=pr_url, headers=headers, follow_redirects=True
                 )
                 pr_response.raise_for_status()
+
+                # self.logger.info(f"PR Response:\n{pr_response.text}")
 
                 return pr_response.text
 

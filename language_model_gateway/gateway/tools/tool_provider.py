@@ -38,6 +38,9 @@ from language_model_gateway.gateway.tools.image_generator_tool import ImageGener
 from language_model_gateway.gateway.tools.jira_issues_analyzer_tool import (
     JiraIssuesAnalyzerTool,
 )
+from language_model_gateway.gateway.tools.jira_issue_retriever import (
+    JiraIssueRetriever,
+)
 from language_model_gateway.gateway.tools.network_topology_diagram_tool import (
     NetworkTopologyGeneratorTool,
 )
@@ -135,6 +138,9 @@ class ToolProvider:
                 github_pull_request_helper=github_pull_request_helper
             ),
             "jira_issues_analyzer": JiraIssuesAnalyzerTool(
+                jira_issues_helper=jira_issues_helper
+            ),
+            "jira_issue_retriever": JiraIssueRetriever(
                 jira_issues_helper=jira_issues_helper
             ),
             # "sql_query": QuerySQLDataBaseTool(
