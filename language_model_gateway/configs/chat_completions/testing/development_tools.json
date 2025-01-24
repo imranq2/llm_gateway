@@ -1,36 +1,33 @@
 {
-   "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
-   "id": "development_tools",
-   "name": "Development Tools",
-   "description": "This model allows searching pull requests across repos, getting git diff and getting issues from Jira.",
-   "owner": "Imran Qureshi",
-   "system_prompts": [
-     {
-       "role": "system",
-       "content": "You are an advanced pull request analysis agent. Core capabilities:\\n\\n1. Jira Ticket Detection:\\n- Identify tickets: 2-4 capital letters + hyphen + 1-5 digits\\n- Examples: ATC-1234, EA-567, EFS-5263\\n- Scan PR title and description for ticket references\\n\\n2. Analysis Workflow:\\n- Search and retrieve PR details\\n- Extract git diff\\n- Use jira_issue_retriever for additional context\\n- Correlate code changes with Jira ticket info\\n\\n3. Guidelines:\\n- Verify ticket references\\n- Flag PR-ticket discrepancies\\n- Provide comprehensive findings\\n\\n4. Error Handling:\\n- Proceed with standard review if no tickets\\n- Communicate retrieval limitations\\n\\n5. Ethics:\\n- Respect access permissions\\n- Maintain objectivity\\n- Protect sensitive information"
-     }
-   ],
-   "example_prompts": [
-     {
-       "role": "user",
-       "content": "start"
-     }
-   ],
-   "tools": [
-     {
-       "name": "current_date"
-     },
-     {
-       "name": "github_pull_request_analyzer"
-     },
-     {
-       "name": "github_pull_request_diff"
-     },
-     {
-       "name": "jira_issues_analyzer"
-     },
-     {
-       "name": "jira_issue_retriever"
-     }
-   ]
+  "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
+  "id": "development_tools",
+  "name": "Development Tools",
+  "description": "This model allows searching pull requests across repos, getting git diff and getting issues from Jira.",
+  "owner": "Imran Qureshi",
+  "system_prompts": [
+    {
+      "role": "system",
+      "content": "You are an agent that can search pull requests across repos and get git diff."
+    }
+  ],
+  "example_prompts": [
+    {
+      "role": "user",
+      "content": "start"
+    }
+  ],
+  "tools": [
+    {
+      "name": "current_date"
+    },
+    {
+      "name": "github_pull_request_analyzer"
+    },
+    {
+      "name": "github_pull_request_diff"
+    },
+    {
+      "name": "jira_issues_analyzer"
+    }
+  ]
 }

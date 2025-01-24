@@ -13,7 +13,7 @@ class JiraIssueRetrieverAgentInput(BaseModel):
     """
     issue_id: str = Field(
         default=None,
-        description="The ID of the Jira issue to retrieve. It typically follows this format: 2-4 capital letters + hyphen + 1-5 digits. Examples: ATC-1234, EFS-564",
+        description="The ID of the Jira issue to retrieve. It typically follows this format: 2-4 capital letters + hyphen or space + 1-5 digits. Examples: ATC-1234, Atc 6789, EFS-564",
     )
 
 class JiraIssueRetriever(ResilientBaseTool):
@@ -25,7 +25,7 @@ class JiraIssueRetriever(ResilientBaseTool):
         "Tool to retrieve a specific Jira issue by ID. "
         "USAGE TIPS: "
         "- Provide the Jira issue ID to retrieve the issue details."
-        "- ID typically follows this format: 2-4 capital letters + hyphen + 1-5 digits. Examples: ATC-1234, EFS-564"
+        "- ID typically follows this format: 2-4 capital letters + hyphen or space + 1-5 digits. Examples: ATC-1234, Atc 6789, EFS-564"
     )
 
     args_schema: Type[BaseModel] = JiraIssueRetrieverAgentInput

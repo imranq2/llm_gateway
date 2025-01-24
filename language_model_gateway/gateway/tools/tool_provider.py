@@ -30,6 +30,7 @@ from language_model_gateway.gateway.tools.github_pull_request_analyzer_tool impo
 from language_model_gateway.gateway.tools.github_pull_request_diff_tool import (
     GitHubPullRequestDiffTool,
 )
+from language_model_gateway.gateway.tools.github_pull_request_retriever_tool import GitHubPullRequestRetriever
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
@@ -142,6 +143,9 @@ class ToolProvider:
             ),
             "jira_issue_retriever": JiraIssueRetriever(
                 jira_issues_helper=jira_issues_helper
+            ),
+            "github_pull_request_retriever": GitHubPullRequestRetriever(
+                github_pull_request_helper=github_pull_request_helper
             ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
