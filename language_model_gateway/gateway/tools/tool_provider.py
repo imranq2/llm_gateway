@@ -24,6 +24,9 @@ from language_model_gateway.gateway.tools.er_diagram_generator_tool import (
 from language_model_gateway.gateway.tools.flow_chart_generator_tool import (
     FlowChartGeneratorTool,
 )
+from language_model_gateway.gateway.tools.health_summary_generator_tool import (
+    HealthSummaryGeneratorTool,
+)
 from language_model_gateway.gateway.tools.github_pull_request_analyzer_tool import (
     GitHubPullRequestAnalyzerTool,
 )
@@ -96,6 +99,9 @@ class ToolProvider:
             "python_repl": PythonReplTool(),
             "get_web_page": URLToMarkdownTool(),
             "arxiv_search": ArxivQueryRun(),
+            "health_summary_generator": HealthSummaryGeneratorTool(
+                file_manager_factory=file_manager_factory,
+            ),
             "image_generator": ImageGeneratorTool(
                 image_generator_factory=image_generator_factory,
                 file_manager_factory=file_manager_factory,
