@@ -92,6 +92,6 @@ class HealthSummaryGeneratorTool(ResilientBaseTool):
         extracted_content = ""
         async for chunk in response.body_iterator:
             # Decode the chunk, assuming it is UTF-8 encoded
-            extracted_content += chunk.decode("utf-8") # type: ignore
+            extracted_content += chunk.decode("utf-8")  # type: ignore
 
         return extracted_content
