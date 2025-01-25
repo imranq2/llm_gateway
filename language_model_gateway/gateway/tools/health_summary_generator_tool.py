@@ -64,9 +64,9 @@ class HealthSummaryGeneratorTool(ResilientBaseTool):
             folder=s3_uri
         )
 
-        s3_uri = S3Url(s3_uri)
-        bucket_name = s3_uri.bucket
-        file_name = s3_uri.key
+        s3_url_object = S3Url(s3_uri)
+        bucket_name = s3_url_object.bucket
+        file_name = s3_url_object.key
 
         # Download the file from the S3 bucket
         response: StreamingResponse | Response = await file_manager.read_file_async(
