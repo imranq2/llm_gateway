@@ -16,7 +16,7 @@ class HealthSummaryGeneratorModel(BaseModel):
     user
     """
 
-    url: Optional[str] = Field(
+    s3_uri: Optional[str] = Field(
         default=None,
         description="S3 uri for the file for which we will be generating the health summary",
     )
@@ -49,20 +49,22 @@ class HealthSummaryGeneratorTool(ResilientBaseTool):
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"
     file_manager_factory: FileManagerFactory
 
-    # You can define any other initialization parameters to your class.  These are not passed by the LLM but we can pass them
-    # during initialization
-
-    async def _arun(self, url: Optional[str] = None) -> Tuple[str, str]:
+    async def _arun(self, s3_uri: Optional[str] = None) -> Tuple[str, str]:
+        """
+        Asynchronous version of the health summary generator tool.
+        :param s3_uri: (string) s3 uri of the file which we need to parse.
+        :return: The content of the file.
+        """
         # do your actual work here
-        if not url:
-            return "No URL provided", "URL for S3 object is required"
+        if not s3_uri:
+            return "No s3 file path provided", "uri for S3 object is required"
 
         # Create a file manager instance from the factory
         file_manager: FileManager = self.file_manager_factory.get_file_manager(
-            folder=url
+            folder=s3_uri
         )
 
-        s3_uri = S3Url(url)
+        s3_uri = S3Url(s3_uri)
         bucket_name = s3_uri.bucket
         file_name = s3_uri.key
 
@@ -79,16 +81,22 @@ class HealthSummaryGeneratorTool(ResilientBaseTool):
         content = await self._extract_content(response)
         return content, "File successfully fetched"
 
-    def _run(self, url: Optional[str] = None) -> Tuple[str, str]:
+    def _run(self, s3_uri: Optional[str] = None) -> Tuple[str, str]:
         """
         Synchronous version of the tool (falls back to async implementation).
+        :param s3_uri: (string) s3 uri of the file which we need to parse.
         Raises:
             NotImplementedError: Always raises to enforce async usage
         """
         raise NotImplementedError("Use async version of this tool")
 
-    async def _extract_content(self, response: StreamingResponse) -> str:
-        """Extracts and returns content from a streaming response."""
+    @staticmethod
+    async def _extract_content(response: StreamingResponse) -> str:
+        """
+        Extracts and returns content from a streaming response.
+        :param response: (StreamingResponse) s3 response for the file
+        :return: returns the file content in string format.
+        """
         extracted_content = ""
         async for chunk in response.body_iterator:
             # Decode the chunk, assuming it is UTF-8 encoded

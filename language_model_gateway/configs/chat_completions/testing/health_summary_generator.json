@@ -2,7 +2,7 @@
     "$schema": "https://raw.githubusercontent.com/imranq2/language_model_gateway/main/language_model_gateway/configs/config_schema.json",
     "id": "health_summary_generator",
     "name": "Health Summary Generator",
-    "description": "An AI assistant to generate the healthcare summary from the files for diagnosis.",
+    "description": "An AI assistant to generate the healthcare summary from the s3 files for users.",
     "owner": "Anurag Verma, Naveen Kumar Yadav",
     "type": "langchain",
     "model": {
