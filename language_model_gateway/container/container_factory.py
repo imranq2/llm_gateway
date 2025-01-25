@@ -34,6 +34,7 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
     OpenAiChatCompletionsProvider,
 )
 from language_model_gateway.gateway.tools.tool_provider import ToolProvider
+from language_model_gateway.gateway.utilities.confluence.confluence_helper import ConfluenceHelper
 from language_model_gateway.gateway.utilities.environment_variables import (
     EnvironmentVariables,
 )
@@ -121,6 +122,16 @@ class ContainerFactory:
         )
 
         container.register(
+            ConfluenceHelper,
+            lambda c: ConfluenceHelper(
+                http_client_factory=c.resolve(HttpClientFactory),
+                confluence_base_url=c.resolve(EnvironmentVariables).jira_base_url,
+                access_token=c.resolve(EnvironmentVariables).jira_token,
+                username=c.resolve(EnvironmentVariables).jira_username,
+            ),
+        )
+
+        container.register(
             ToolProvider,
             lambda c: ToolProvider(
                 image_generator_factory=c.resolve(ImageGeneratorFactory),
@@ -129,6 +140,7 @@ class ContainerFactory:
                 environment_variables=c.resolve(EnvironmentVariables),
                 github_pull_request_helper=c.resolve(GithubPullRequestHelper),
                 jira_issues_helper=c.resolve(JiraIssueHelper),
+                confluence_helper=c.resolve(ConfluenceHelper),
             ),
         )
         container.register(

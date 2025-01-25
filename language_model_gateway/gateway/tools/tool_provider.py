@@ -15,6 +15,7 @@ from language_model_gateway.gateway.image_generation.image_generator_factory imp
     ImageGeneratorFactory,
 )
 from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
+from language_model_gateway.gateway.tools.confluence_search_tool import ConfluenceSearchTool
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
@@ -55,6 +56,7 @@ from language_model_gateway.gateway.tools.sequence_diagram_generator_tool import
     SequenceDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
+from language_model_gateway.gateway.utilities.confluence.confluence_helper import ConfluenceHelper
 from language_model_gateway.gateway.utilities.environment_variables import (
     EnvironmentVariables,
 )
@@ -76,6 +78,7 @@ class ToolProvider:
         environment_variables: EnvironmentVariables,
         github_pull_request_helper: GithubPullRequestHelper,
         jira_issues_helper: JiraIssueHelper,
+        confluence_helper: ConfluenceHelper
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -146,6 +149,9 @@ class ToolProvider:
             ),
             "github_pull_request_retriever": GitHubPullRequestRetriever(
                 github_pull_request_helper=github_pull_request_helper
+            ),
+            "confluence_search_tool": ConfluenceSearchTool(
+                confluence_helper=confluence_helper
             ),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
