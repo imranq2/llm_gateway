@@ -78,7 +78,7 @@ class HealthSummaryGeneratorTool(ResilientBaseTool):
             return "Failed to retrieve the file", f"Error retrieving file: {response}"
 
         # Extract content from the file
-        content = await self._extract_content(response)
+        content = await file_manager.extract_content(response)
         return content, "File successfully fetched"
 
     def _run(self, s3_uri: Optional[str] = None) -> Tuple[str, str]:
@@ -89,17 +89,3 @@ class HealthSummaryGeneratorTool(ResilientBaseTool):
             NotImplementedError: Always raises to enforce async usage
         """
         raise NotImplementedError("Use async version of this tool")
-
-    @staticmethod
-    async def _extract_content(response: StreamingResponse) -> str:
-        """
-        Extracts and returns content from a streaming response.
-        :param response: (StreamingResponse) s3 response for the file
-        :return: returns the file content in string format.
-        """
-        extracted_content = ""
-        async for chunk in response.body_iterator:
-            # Decode the chunk, assuming it is UTF-8 encoded
-            extracted_content += chunk.decode("utf-8")  # type: ignore
-
-        return extracted_content
