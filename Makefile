@@ -26,6 +26,16 @@ up: ## starts docker containers
 	echo ""
 	@echo language_model_gateway Service: http://localhost:5050/graphql
 
+.PHONY: up-integration
+up-integration: ## starts docker containers
+	docker compose -f docker-compose.yml -f docker-compose-integration.yml up --build -d && \
+	echo "waiting for language_model_gateway service to become healthy" && \
+	while [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "healthy" ] && [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "unhealthy" ] && [ "`docker inspect --format {{.State.Status}} language_model_gateway`" != "restarting" ]; do printf "." && sleep 2; done && \
+	if [ "`docker inspect --format {{.State.Health.Status}} language_model_gateway`" != "healthy" ]; then docker ps && docker logs language_model_gateway && printf "========== ERROR: language_model_gateway did not start. Run docker logs language_model_gateway =========\n" && exit 1; fi && \
+	echo ""
+	@echo language_model_gateway Service: http://localhost:5050/graphql
+
+
 .PHONY: up-open-webui
 up-open-webui: clean_database ## starts docker containers
 	docker compose --progress=plain -f docker-compose-openwebui.yml up --build -d

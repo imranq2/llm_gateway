@@ -3,6 +3,7 @@
 ## Overview
 
 This project is a language model gateway that provides an OpenAI compatible API for language models. It is built using FastAPI and GraphQL.
+
 ## Prerequisites
 
 - Docker
@@ -19,37 +20,20 @@ To run the project locally, follow these steps:
     cd <repository-directory>
     ```
 
-2. Set up the development environment:
+2. Create `docker.env` file in the root of the project based on the `docker.env.example`. 
+Update the keys for the functionality/providers you're planning on using.
+`AWS_CREDENTIALS_PROFILE` is the only one that is absolutely required to get going.  Set this to the AWS profile you're part of e.g., `admin_dev`.
+
+3. Set up the development environment:
     ```sh
     make devsetup
     ```
 
-3. Start the Docker containers:
+4. Start the Docker containers:
     ```sh
-    make up
+    make down; make up
     ```
 
-4. Navigate to the GraphQL endpoint:
-    ```
-    http://localhost:5050/graphql
-    ```
-
-## Example Query
-
-Here is a simple GraphQL query to get providers:
-
-```graphql
-query getProviders {
-    providers(
-        query_id: "foo"
-    ) {
-        total_count
-        results {
-            result_id
-        }
-    }
-}
-```
 
 ## Running without OAuth
 Just run the following commands to run OpenWebUI without OAuth:
@@ -72,3 +56,6 @@ Then run:
 ```shell
 make down; make up; make up-open-webui-auth
 ```
+
+## How to add a new AI Agent
+[add_new_agent.md](add_new_agent.md)
