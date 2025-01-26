@@ -1,6 +1,7 @@
 import base64
 import csv
 import logging
+import re
 from datetime import datetime
 from typing import List, Optional
 from urllib.parse import urlencode
@@ -25,15 +26,14 @@ class ConfluenceHelper:
             "User-Agent": "AsyncConfluenceHelper",
         }
 
-    async def search_content(self, search_string: str, limit: int = 10, space: Optional[str] = None) -> List[ConfluenceSearchResult]:
+    async def search_content(self, search_string: str, limit: int = 10) -> List[ConfluenceSearchResult]:
         async with self.http_client_factory.create_http_client(
             base_url=self.confluence_base_url, headers=self.headers, timeout=30.0
         ) as client:
             try:
-                self.logger.info(f"Searching Confluence for: {search_string}")
-                cql_query = f'text ~ "{search_string}"'
-                if space:
-                    cql_query += f' AND space="{space}"'
+                cleaned_string = re.sub(r'[^a-zA-Z0-9\s]', '', search_string)
+                self.logger.info(f"Searching Confluence for: {search_string}; pre-cleaned search string was: {search_string}")
+                cql_query = f'siteSearch ~ "{cleaned_string}"' # 'siteSearch' gives much better results than doing 'text'
 
                 base_url = f"{self.confluence_base_url}/wiki/rest/api/search"
                 params = {"cql": cql_query, "limit": limit}

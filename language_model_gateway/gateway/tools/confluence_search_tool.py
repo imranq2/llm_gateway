@@ -13,26 +13,8 @@ class ConfluenceSearchToolInput(BaseModel):
     """
     Input model for configuring Confluence search and analysis.
 
-    IMPORTANT LLM PARSING GUIDANCE:
-    - When a query mentions a specific space, extract the space name exactly as written
-    - If there are no search results returned when 'space' is used, try the same query without the 'space'
-    - Examples of parsing:
-      * "what is PSS in ATC space"
-        -> space = "atc"
-      * "how are vitals processed in athd space"
-        -> space = "athd"
-
-    Attributes:
-        space (Optional[str]):
-            Specific Confluence space where the search must be constrained in.
-            PARSING HINT: Directly use the repository name mentioned in the query.
-            Can include organization prefix (e.g., "org/repo").
-            Example: "atc", "athd"
-
-        # ... (rest of the attributes remain the same)
     """
     search_string: str = Field(..., description="The search string to use for querying Confluence content.")
-    space: Optional[str] = Field(..., description="The Confluence space where the user is asking to search in.")
     limit: Optional[int] = Field(default=10, description="Maximum number of search results to retrieve.")
 
 
@@ -50,9 +32,9 @@ class ConfluenceSearchTool(ResilientBaseTool):
 
     confluence_helper: ConfluenceHelper
 
-    async def _arun(self, search_string: str, space: Optional[str] = None, limit: Optional[int] = 10) -> Tuple[str, str]:
+    async def _arun(self, search_string: str, limit: Optional[int] = 10) -> Tuple[str, str]:
         try:
-            search_results = await self.confluence_helper.search_content(search_string, limit, space)
+            search_results = await self.confluence_helper.search_content(search_string, limit)
 
             logger.info(f"CONFLUENCE SEARCH TOOL, RESULTS:\n{search_results}")
 
