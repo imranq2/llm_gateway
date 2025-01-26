@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 from urllib.parse import urlencode
 
+from language_model_gateway.gateway.utilities.confluence.confluence_document import ConfluenceDocument
 from language_model_gateway.gateway.utilities.confluence.confluence_search_result import ConfluenceSearchResult
 
 
@@ -123,3 +124,32 @@ class ConfluenceHelper:
         for result in search_results:
             output += f'{result.id},"{result.title}",{result.url},{result.updated_at.isoformat()}"\n'
         return output
+
+    async def retrieve_page_by_id(self, page_id: str) -> Optional[ConfluenceDocument]:
+        async with self.http_client_factory.create_http_client(
+                base_url=self.confluence_base_url, headers=self.headers, timeout=30.0
+        ) as client:
+            try:
+                url = f"{self.confluence_base_url}/wiki/rest/api/content/{page_id}?expand=body.storage,version.by"
+                self.logger.info(f"Retrieving Confluence page with ID: {page_id}, full URL: {url}")
+
+                response = await client.get(url)
+                response.raise_for_status()
+
+                result = response.json()
+                content = result.get('body', {}).get('storage', {}).get('value', '')
+                updated_at = datetime.fromisoformat(result.get('version', {}).get('when').replace("Z", "+00:00"))
+                author_name = result.get('version', {}).get('by', {}).get('displayName', 'Unknown')
+
+                page = ConfluenceDocument(
+                    id=result.get('id'),
+                    title=result.get('title'),
+                    url=f"{self.confluence_base_url}/wiki/{result.get('_links', {}).get('webui')}",
+                    updated_at=updated_at,
+                    author_name=author_name,
+                    content=content
+                )
+                return page
+            except Exception as e:
+                self.logger.error(f"Error retrieving Confluence page: {str(e)}")
+                return None

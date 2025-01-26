@@ -15,6 +15,7 @@ from language_model_gateway.gateway.image_generation.image_generator_factory imp
     ImageGeneratorFactory,
 )
 from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
+from language_model_gateway.gateway.tools.confluence_page_retriever import ConfluencePageRetriever
 from language_model_gateway.gateway.tools.confluence_search_tool import ConfluenceSearchTool
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
@@ -151,6 +152,9 @@ class ToolProvider:
                 github_pull_request_helper=github_pull_request_helper
             ),
             "confluence_search_tool": ConfluenceSearchTool(
+                confluence_helper=confluence_helper
+            ),
+            "confluence_page_retriever": ConfluencePageRetriever(
                 confluence_helper=confluence_helper
             ),
             # "sql_query": QuerySQLDataBaseTool(
