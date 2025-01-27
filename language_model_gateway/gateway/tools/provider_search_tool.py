@@ -103,6 +103,17 @@ class ProviderSearchTool(ResilientBaseTool):
                   }
                   endpoint {
                     name
+                    address
+                    status
+                    identifier {
+                      system
+                      value
+                    }
+                    connectionType {
+                      code
+                      display
+                      system
+                    }
                   }
                 }
               }
