@@ -3,8 +3,7 @@ import os
 import time
 from logging import Logger
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.sql import StatementState
-from databricks.sdk.types.sql import StatementResponse
+from databricks.sdk.service.sql import StatementState, StatementResponse
 import pandas as pd
 from pandas.core.frame import DataFrame
 
@@ -40,10 +39,10 @@ class DatabricksHelper:
         try:
             # Extract column names
             column_names = [
-                column.name for column in statement_response.manifest.schema.columns
+                column.name for column in statement_response.manifest.schema.columns  # type: ignore
             ]
             # Extract data array
-            data_array = statement_response.result.data_array
+            data_array = statement_response.result.data_array  # type: ignore
             # Create DataFrame
             df = pd.DataFrame(data_array, columns=column_names)
 
