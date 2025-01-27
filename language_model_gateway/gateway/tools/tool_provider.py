@@ -37,6 +37,9 @@ from language_model_gateway.gateway.tools.google_search_tool import GoogleSearch
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
 )
+from language_model_gateway.gateway.tools.fhir_graphql_schema_provider import (
+    GraphqlSchemaProviderTool,
+)
 from language_model_gateway.gateway.tools.image_generator_tool import ImageGeneratorTool
 from language_model_gateway.gateway.tools.jira_issues_analyzer_tool import (
     JiraIssuesAnalyzerTool,
@@ -143,6 +146,7 @@ class ToolProvider:
             "jira_issues_analyzer": JiraIssuesAnalyzerTool(
                 jira_issues_helper=jira_issues_helper
             ),
+            "fhir_graphql_schema_provider": GraphqlSchemaProviderTool(),
             # "sql_query": QuerySQLDataBaseTool(
             #     db=SQLDatabase(
             #         engine=Engine(
