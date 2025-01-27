@@ -1,5 +1,7 @@
 import logging
 import os
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.core import Config
 
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.container.simple_container import SimpleContainer
@@ -43,6 +45,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 )
 from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
     JiraIssueHelper,
+)
+from language_model_gateway.gateway.utilities.databricks.databricks_helper import (
+    DatabricksHelper,
 )
 
 logger = logging.getLogger(__name__)
@@ -102,6 +107,16 @@ class ContainerFactory:
         )
 
         container.register(
+            WorkspaceClient,
+            lambda c: WorkspaceClient(
+                config=Config(
+                    host=c.resolve(EnvironmentVariables).databricks_host,
+                    token=c.resolve(EnvironmentVariables).databricks_token,
+                )
+            ),
+        )
+
+        container.register(
             GithubPullRequestHelper,
             lambda c: GithubPullRequestHelper(
                 org_name=c.resolve(EnvironmentVariables).github_org,
@@ -121,6 +136,13 @@ class ContainerFactory:
         )
 
         container.register(
+            DatabricksHelper,
+            lambda c: DatabricksHelper(
+                workspace_client=c.resolve(WorkspaceClient),
+            ),
+        )
+
+        container.register(
             ToolProvider,
             lambda c: ToolProvider(
                 image_generator_factory=c.resolve(ImageGeneratorFactory),
@@ -129,6 +151,7 @@ class ContainerFactory:
                 environment_variables=c.resolve(EnvironmentVariables),
                 github_pull_request_helper=c.resolve(GithubPullRequestHelper),
                 jira_issues_helper=c.resolve(JiraIssueHelper),
+                databricks_helper=c.resolve(DatabricksHelper),
             ),
         )
         container.register(

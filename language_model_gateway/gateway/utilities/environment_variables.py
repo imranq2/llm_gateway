@@ -22,3 +22,11 @@ class EnvironmentVariables:
     @property
     def jira_username(self) -> Optional[str]:
         return os.environ.get("JIRA_USERNAME")
+
+    @property
+    def databricks_host(self) -> Optional[str]:
+        return os.environ.get("DATABRICKS_HOST")
+
+    @property
+    def databricks_token(self) -> Optional[str]:
+        return os.environ.get("DATABRICKS_TOKEN")
