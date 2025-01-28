@@ -45,6 +45,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
     JiraIssueHelper,
 )
+from language_model_gateway.gateway.utilities.databricks.databricks_helper import (
+    DatabricksHelper,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +135,11 @@ class ContainerFactory:
         )
 
         container.register(
+            DatabricksHelper,
+            lambda c: DatabricksHelper(),
+        )
+
+        container.register(
             ToolProvider,
             lambda c: ToolProvider(
                 image_generator_factory=c.resolve(ImageGeneratorFactory),
@@ -141,6 +149,7 @@ class ContainerFactory:
                 github_pull_request_helper=c.resolve(GithubPullRequestHelper),
                 jira_issues_helper=c.resolve(JiraIssueHelper),
                 confluence_helper=c.resolve(ConfluenceHelper),
+                databricks_helper=c.resolve(DatabricksHelper),
             ),
         )
         container.register(

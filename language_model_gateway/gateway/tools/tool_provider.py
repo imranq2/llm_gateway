@@ -47,6 +47,8 @@ from language_model_gateway.gateway.tools.image_generator_tool import ImageGener
 from language_model_gateway.gateway.tools.jira_issues_analyzer_tool import (
     JiraIssuesAnalyzerTool,
 )
+from language_model_gateway.gateway.tools.databricks_sql_tool import DatabricksSQLTool
+
 from language_model_gateway.gateway.tools.jira_issue_retriever import (
     JiraIssueRetriever,
 )
@@ -73,6 +75,9 @@ from language_model_gateway.gateway.utilities.github.github_pull_request_helper 
 from language_model_gateway.gateway.utilities.jira.jira_issues_helper import (
     JiraIssueHelper,
 )
+from language_model_gateway.gateway.utilities.databricks.databricks_helper import (
+    DatabricksHelper,
+)
 
 
 class ToolProvider:
@@ -85,7 +90,8 @@ class ToolProvider:
         environment_variables: EnvironmentVariables,
         github_pull_request_helper: GithubPullRequestHelper,
         jira_issues_helper: JiraIssueHelper,
-        confluence_helper: ConfluenceHelper
+        confluence_helper: ConfluenceHelper,
+        databricks_helper: DatabricksHelper,
     ) -> None:
         web_search_tool: BaseTool
         default_web_search_tool: str = environ.get(
@@ -153,6 +159,9 @@ class ToolProvider:
             ),
             "jira_issues_analyzer": JiraIssuesAnalyzerTool(
                 jira_issues_helper=jira_issues_helper
+            ),
+            "databricks_query_validator": DatabricksSQLTool(
+                databricks_helper=databricks_helper
             ),
             "fhir_graphql_schema_provider": GraphqlSchemaProviderTool(),
             "jira_issue_retriever": JiraIssueRetriever(

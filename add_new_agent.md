@@ -168,7 +168,27 @@ class ToolProvider:
  ```
 Match the name here with the name defined in your AI Agent class
 
-### Step 5: Add your agent to the configuration for task models
+### Step 5: Register your agent in the container_factory
+Add your new AI Agent to the container_factory.py file in the same directory: `language_model_gateway/container/container_factory.py`.  This is where the LLM will look for all available AI Agents.
+
+```python
+container.register(
+    JiraIssueHelper,
+    lambda c: JiraIssueHelper(
+        http_client_factory=c.resolve(HttpClientFactory),
+        jira_base_url=c.resolve(EnvironmentVariables).jira_base_url,
+        access_token=c.resolve(EnvironmentVariables).jira_token,
+        username=c.resolve(EnvironmentVariables).jira_username,
+    ),
+)
+```
+You may also need to register any dependencies that your AI Agent needs to the container_factory.py file.  For example, the JiraIssueHelper needs a HttpClientFactory class to do the actual work.
+```python
+container.register(HttpClientFactory, lambda c: HttpClientFactory())
+```
+
+
+### Step 6: Add your agent to the configuration for task models
 You can now add this to any task model configurations where you want this tool available: `language_model_gateway/configs/chat_completions/testing`
 
 ```json

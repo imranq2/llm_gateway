@@ -82,6 +82,10 @@ cachetools = ">=5.5.0"
 pypdf = ">=5.1.0"
 # backoff is a Python library for retrying requests
 backoff = ">=2.2.1"
+# Databricks SDK is a Python library for interacting with Databricks
+databricks-sdk = ">=0.1.6"
+# pandas is a Python library for working with data
+pandas = ">=2.2.3"
 
 [dev-packages]
 # pre-commit is a Python library for running pre-commit checks
