@@ -381,3 +381,125 @@ class JiraIssueHelper:
             projects_text: str = " | ".join(info.projects) if info.projects else ""
             result += f'{assignee},{info.issue_count},"{projects_text}"\n'
         return result
+
+    async def retrieve_issue_by_id(
+        self,
+        issue_id: str,
+    ) -> JiraIssueResult:
+        """
+        Async method to retrieve a specific Jira issue by ID.
+
+        Args:
+            issue_id (str): The ID of the Jira issue to retrieve
+
+        Returns:
+            JiraIssueResult: The result containing the Jira issue
+        """
+        assert self.jira_base_url, "Jira base URL is required"
+        assert self.jira_access_token, "Jira access token is required"
+
+        async with self.http_client_factory.create_http_client(
+            base_url=self.jira_base_url, headers=self.headers, timeout=30.0
+        ) as client:
+            query: str = ""
+            try:
+                response = await client.get(
+                    f"{self.jira_base_url}/rest/api/3/issue/{issue_id}"
+                )
+                response.raise_for_status()
+
+                url: URL = response.request.url
+                query += f"{url}: {response.request.content.decode()}\n"
+
+                issue_data = response.json()
+                fields_ = issue_data["fields"]
+
+                assignee_object: Optional[Dict[str, Any]] = fields_.get("assignee", {})
+                assignee_name: str = (
+                    assignee_object.get("displayName", "Unassigned")
+                    if assignee_object
+                    else "Unassigned"
+                )
+                assignee_email: str = (
+                    assignee_object.get("emailAddress", "Unassigned")
+                    if assignee_object
+                    else "Unassigned"
+                )
+                reporter_object: Optional[Dict[str, Any]] = fields_.get("reporter", {})
+                reporter_name: str = (
+                    reporter_object.get("displayName", "Unassigned")
+                    if reporter_object
+                    else "Unassigned"
+                )
+                reporter_email: str = (
+                    reporter_object.get("emailAddress", "Unassigned")
+                    if reporter_object
+                    else "Unassigned"
+                )
+                creator_object: Optional[Dict[str, Any]] = fields_.get("creator", {})
+                creator_name: str = (
+                    creator_object.get("displayName", "Unassigned")
+                    if creator_object
+                    else "Unassigned"
+                )
+                creator_email: str = (
+                    creator_object.get("emailAddress", "Unassigned")
+                    if creator_object
+                    else "Unassigned"
+                )
+                issue_type: str = fields_.get("issuetype", {}).get("name")
+                project_name: str = fields_.get("project", {}).get("name")
+
+                def read_description(description: Dict[str, Any] | None) -> str:
+                    if not description:
+                        return ""
+                    try:
+                        description1 = ""
+                        content: List[Dict[str, Any]] = description.get("content", [])
+                        for item in content:
+                            if item.get("type") == "paragraph":
+                                for element in item.get("content", []):
+                                    if element.get("type") == "text":
+                                        description1 += element.get("text", "")
+                        return description1
+                    except Exception as e:
+                        self.logger.error(
+                            f"Error reading description: {e}: {description}"
+                        )
+                        return ""
+
+                item_description: str = read_description(fields_.get("description", {}))
+                issue_priority: str = fields_.get("priority", {}).get("name")
+
+                jira_issue = JiraIssue(
+                    key=issue_data.get("key"),
+                    url=issue_data.get("self"),
+                    summary=fields_.get("summary", "No Summary"),
+                    status=fields_.get("status", {}).get("name"),
+                    created_at=datetime.fromisoformat(
+                        fields_["created"].replace("Z", "+00:00")
+                    ),
+                    closed_at=(
+                        datetime.fromisoformat(
+                            fields_.get("resolutiondate", "").replace("Z", "+00:00")
+                        )
+                        if fields_.get("resolutiondate")
+                        else None
+                    ),
+                    assignee=assignee_name,
+                    assignee_email=assignee_email,
+                    reporter=reporter_name,
+                    reporter_email=reporter_email,
+                    creator=creator_name,
+                    creator_email=creator_email,
+                    issue_type=issue_type,
+                    project_name=project_name,
+                    description=item_description,
+                    priority=issue_priority,
+                    project=fields_.get("project", {}).get("key"),
+                )
+
+                return JiraIssueResult(issues=[jira_issue], query=query, error=None)
+
+            except Exception as e:
+                return JiraIssueResult(issues=[], query=query, error=str(e))

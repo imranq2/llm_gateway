@@ -51,6 +51,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
+            --target production \
             -t $REPOSITORY_URL/$IMAGE_NAME:$TAG \
             -t $REPOSITORY_URL/$IMAGE_NAME:latest \
             --push \

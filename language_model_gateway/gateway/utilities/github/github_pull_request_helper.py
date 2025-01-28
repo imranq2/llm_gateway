@@ -217,6 +217,7 @@ class GithubPullRequestHelper:
                         page_number += 1
 
                     for pr_index, pr in enumerate(prs):
+                        self.logger.info(f"PR DETAILS:\n{pr}")
                         if max_pull_requests and pr_index >= max_pull_requests:
                             break
 
@@ -413,6 +414,8 @@ class GithubPullRequestHelper:
                 )
                 pr_response.raise_for_status()
 
+                # self.logger.info(f"PR Response:\n{pr_response.text}")
+
                 return pr_response.text
 
             except Exception as e:
@@ -460,3 +463,65 @@ class GithubPullRequestHelper:
             repos_text: str = " | ".join(info.repos) if info.repos else ""
             result += f'{engineer},{info.pull_request_count},"{repos_text}"\n'
         return result
+
+    async def get_pr_info(self, *, pr_url: str) -> GithubPullRequest:
+        """
+        Async method to fetch information for a given GitHub PR URL.
+
+        Args:
+            pr_url (str): Full GitHub PR URL
+
+        Returns:
+            GithubPullRequest: The pull request information
+        """
+        assert self.org_name, "Organization name is required"
+        assert self.github_access_token, "GitHub access token is required"
+
+        async with self.http_client_factory.create_http_client(
+            base_url=self.base_url
+        ) as client:
+            try:
+                # Parse the PR URL
+                pr_details: Dict[str, Any] = self.parse_pr_url(pr_url=pr_url)
+
+                # Construct PR URL
+                pr_url = f"{self.base_url}/repos/{pr_details['owner']}/{pr_details['repo']}/pulls/{pr_details['pr_number']}"
+                headers: Dict[str, str] = {
+                    "Authorization": f"Bearer {self.github_access_token}",
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "AsyncGithubPullRequestHelper",
+                }
+                # Fetch PR details
+                pr_response: Response = await client.get(
+                    url=pr_url, headers=headers, follow_redirects=True
+                )
+                pr_response.raise_for_status()
+                pr_data = pr_response.json()
+
+                return GithubPullRequest(
+                    pull_request_number=pr_data["number"],
+                    repo=pr_data["base"]["repo"]["name"],
+                    user=pr_data["user"]["login"],
+                    title=pr_data["title"],
+                    created_at=datetime.fromisoformat(
+                        pr_data["created_at"].replace("Z", "+00:00")
+                    ),
+                    closed_at=(
+                        datetime.fromisoformat(
+                            pr_data["closed_at"].replace("Z", "+00:00")
+                        )
+                        if pr_data.get("closed_at")
+                        else None
+                    ),
+                    updated_at=datetime.fromisoformat(
+                        pr_data["updated_at"].replace("Z", "+00:00")
+                    ),
+                    html_url=pr_data["html_url"],
+                    diff_url=pr_data.get("diff_url"),
+                    state=pr_data["state"],
+                    body=pr_data.get("body"),
+                )
+
+            except Exception as e:
+                self.logger.error(f"Error fetching PR information: {e}")
+                raise
