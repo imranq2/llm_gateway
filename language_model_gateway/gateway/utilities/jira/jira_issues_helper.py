@@ -403,7 +403,9 @@ class JiraIssueHelper:
         ) as client:
             query: str = ""
             try:
-                response = await client.get(f"{self.jira_base_url}/rest/api/3/issue/{issue_id}")
+                response = await client.get(
+                    f"{self.jira_base_url}/rest/api/3/issue/{issue_id}"
+                )
                 response.raise_for_status()
 
                 url: URL = response.request.url
@@ -461,7 +463,9 @@ class JiraIssueHelper:
                                         description1 += element.get("text", "")
                         return description1
                     except Exception as e:
-                        self.logger.error(f"Error reading description: {e}: {description}")
+                        self.logger.error(
+                            f"Error reading description: {e}: {description}"
+                        )
                         return ""
 
                 item_description: str = read_description(fields_.get("description", {}))
@@ -472,9 +476,13 @@ class JiraIssueHelper:
                     url=issue_data.get("self"),
                     summary=fields_.get("summary", "No Summary"),
                     status=fields_.get("status", {}).get("name"),
-                    created_at=datetime.fromisoformat(fields_["created"].replace("Z", "+00:00")).date().isoformat(),
+                    created_at=datetime.fromisoformat(
+                        fields_["created"].replace("Z", "+00:00")
+                    ),
                     closed_at=(
-                        datetime.fromisoformat(fields_.get("resolutiondate", "").replace("Z", "+00:00")).date().isoformat()
+                        datetime.fromisoformat(
+                            fields_.get("resolutiondate", "").replace("Z", "+00:00")
+                        )
                         if fields_.get("resolutiondate")
                         else None
                     ),

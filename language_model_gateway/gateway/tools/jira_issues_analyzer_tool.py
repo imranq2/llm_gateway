@@ -227,7 +227,7 @@ class JiraIssuesAnalyzerTool(ResilientBaseTool):
                 full_text = "Id,Summary,Status,Assignee,Created,Closed\n"
                 for issue in jira_issues:
                     clean_summary: str = issue.summary.replace('"', "'")
-                    full_text += f'{issue.key},"{clean_summary}",{issue.status},{issue.assignee},{issue.created_at},{issue.closed_at}\n'
+                    full_text += f'{issue.key},"{clean_summary}",{issue.status},{issue.assignee},{issue.created_at.date().isoformat()},{issue.closed_at.date().isoformat() if issue.closed_at else "N/A"}\n'
             else:
                 # Summarize issues by engineer
                 pr_summary = self.jira_issues_helper.summarize_issues_by_assignee(

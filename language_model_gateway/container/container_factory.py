@@ -34,7 +34,9 @@ from language_model_gateway.gateway.providers.openai_chat_completions_provider i
     OpenAiChatCompletionsProvider,
 )
 from language_model_gateway.gateway.tools.tool_provider import ToolProvider
-from language_model_gateway.gateway.utilities.confluence.confluence_helper import ConfluenceHelper
+from language_model_gateway.gateway.utilities.confluence.confluence_helper import (
+    ConfluenceHelper,
+)
 from language_model_gateway.gateway.utilities.environment_variables import (
     EnvironmentVariables,
 )

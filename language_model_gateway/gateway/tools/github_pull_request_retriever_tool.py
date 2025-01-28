@@ -4,13 +4,19 @@ from pydantic import BaseModel, Field
 
 from typing import Type, Optional, Tuple, Literal
 from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
-from language_model_gateway.gateway.utilities.github.github_pull_request import GithubPullRequest
-from language_model_gateway.gateway.utilities.github.github_pull_request_helper import GithubPullRequestHelper
+from language_model_gateway.gateway.utilities.github.github_pull_request import (
+    GithubPullRequest,
+)
+from language_model_gateway.gateway.utilities.github.github_pull_request_helper import (
+    GithubPullRequestHelper,
+)
 
 logger = logging.getLogger(__name__)
 
+
 class GitHubPullRequestRetrieverInput(BaseModel):
     """Input model for GitHub Pull Request retriever tool."""
+
     url: str = Field(
         ...,
         title="Pull Request URL",
@@ -21,12 +27,16 @@ class GitHubPullRequestRetrieverInput(BaseModel):
         description="Whether to enable verbose logging",
     )
 
+
 class GitHubPullRequestRetriever(ResilientBaseTool):
     """
     LangChain-compatible tool for retrieving information about a GitHub pull request.
     """
+
     name: str = "github_pull_request_retriever"
-    description: str = "Retrieves information about a GitHub pull request given its URL, such as title, description, etc."
+    description: str = (
+        "Retrieves information about a GitHub pull request given its URL, such as title, description, etc."
+    )
 
     args_schema: Type[BaseModel] = GitHubPullRequestRetrieverInput
     response_format: Literal["content", "content_and_artifact"] = "content_and_artifact"

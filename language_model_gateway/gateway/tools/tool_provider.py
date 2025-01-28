@@ -15,8 +15,12 @@ from language_model_gateway.gateway.image_generation.image_generator_factory imp
     ImageGeneratorFactory,
 )
 from language_model_gateway.gateway.ocr.ocr_extractor_factory import OCRExtractorFactory
-from language_model_gateway.gateway.tools.confluence_page_retriever import ConfluencePageRetriever
-from language_model_gateway.gateway.tools.confluence_search_tool import ConfluenceSearchTool
+from language_model_gateway.gateway.tools.confluence_page_retriever import (
+    ConfluencePageRetriever,
+)
+from language_model_gateway.gateway.tools.confluence_search_tool import (
+    ConfluenceSearchTool,
+)
 from language_model_gateway.gateway.tools.current_time_tool import CurrentTimeTool
 from langchain_community.tools.pubmed.tool import PubmedQueryRun
 
@@ -35,7 +39,9 @@ from language_model_gateway.gateway.tools.github_pull_request_analyzer_tool impo
 from language_model_gateway.gateway.tools.github_pull_request_diff_tool import (
     GitHubPullRequestDiffTool,
 )
-from language_model_gateway.gateway.tools.github_pull_request_retriever_tool import GitHubPullRequestRetriever
+from language_model_gateway.gateway.tools.github_pull_request_retriever_tool import (
+    GitHubPullRequestRetriever,
+)
 from language_model_gateway.gateway.tools.google_search_tool import GoogleSearchTool
 from language_model_gateway.gateway.tools.graph_viz_diagram_generator_tool import (
     GraphVizDiagramGeneratorTool,
@@ -65,7 +71,9 @@ from language_model_gateway.gateway.tools.sequence_diagram_generator_tool import
     SequenceDiagramGeneratorTool,
 )
 from language_model_gateway.gateway.tools.url_to_markdown_tool import URLToMarkdownTool
-from language_model_gateway.gateway.utilities.confluence.confluence_helper import ConfluenceHelper
+from language_model_gateway.gateway.utilities.confluence.confluence_helper import (
+    ConfluenceHelper,
+)
 from language_model_gateway.gateway.utilities.environment_variables import (
     EnvironmentVariables,
 )

@@ -2,24 +2,31 @@ import logging
 from typing import Optional, Type, Tuple, Literal
 from pydantic import BaseModel, Field
 from language_model_gateway.gateway.tools.resilient_base_tool import ResilientBaseTool
-from language_model_gateway.gateway.utilities.confluence.confluence_document import ConfluenceDocument
-from language_model_gateway.gateway.utilities.confluence.confluence_helper import ConfluenceHelper
+from language_model_gateway.gateway.utilities.confluence.confluence_document import (
+    ConfluenceDocument,
+)
+from language_model_gateway.gateway.utilities.confluence.confluence_helper import (
+    ConfluenceHelper,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class ConfluencePageRetrieverAgentInput(BaseModel):
     """
     Input model for retrieving a specific Confluence page by ID.
     """
+
     page_id: str = Field(
-        default=None,
-        description="The ID of the Confluence page to retrieve."
+        default="", description="The ID of the Confluence page to retrieve."
     )
+
 
 class ConfluencePageRetriever(ResilientBaseTool):
     """
     A LangChain-compatible tool for retrieving a specific Confluence page by ID.
     """
+
     name: str = "confluence_page_retriever"
     description: str = (
         "Tool to retrieve a specific Confluence page by ID. "
@@ -45,10 +52,12 @@ class ConfluencePageRetriever(ResilientBaseTool):
         log_prefix: str = f"ConfluencePageRetriever: page_id={page_id}"
 
         try:
-            confluence_page: Optional[ConfluenceDocument] = await self.confluence_helper.retrieve_page_by_id(page_id=page_id)
+            confluence_page: Optional[ConfluenceDocument] = (
+                await self.confluence_helper.retrieve_page_by_id(page_id=page_id)
+            )
 
             if not confluence_page:
-                error_msg = f"Error retrieving Confluence page: Page not found"
+                error_msg = "Error retrieving Confluence page: Page not found"
                 error_artifact = log_prefix + " Retrieval Failed: Page not found"
                 logger.error(error_msg)
                 return error_msg, error_artifact

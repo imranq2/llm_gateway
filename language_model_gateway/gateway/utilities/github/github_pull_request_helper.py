@@ -503,9 +503,19 @@ class GithubPullRequestHelper:
                     repo=pr_data["base"]["repo"]["name"],
                     user=pr_data["user"]["login"],
                     title=pr_data["title"],
-                    created_at=datetime.fromisoformat(pr_data["created_at"].replace("Z", "+00:00")),
-                    closed_at=datetime.fromisoformat(pr_data["closed_at"].replace("Z", "+00:00")) if pr_data.get("closed_at") else None,
-                    updated_at=datetime.fromisoformat(pr_data["updated_at"].replace("Z", "+00:00")),
+                    created_at=datetime.fromisoformat(
+                        pr_data["created_at"].replace("Z", "+00:00")
+                    ),
+                    closed_at=(
+                        datetime.fromisoformat(
+                            pr_data["closed_at"].replace("Z", "+00:00")
+                        )
+                        if pr_data.get("closed_at")
+                        else None
+                    ),
+                    updated_at=datetime.fromisoformat(
+                        pr_data["updated_at"].replace("Z", "+00:00")
+                    ),
                     html_url=pr_data["html_url"],
                     diff_url=pr_data.get("diff_url"),
                     state=pr_data["state"],
