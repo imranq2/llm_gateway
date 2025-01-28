@@ -47,6 +47,7 @@ async def test_jira_get_summarized_issues(httpx_mock: HTTPXMock) -> None:
     test_container: SimpleContainer = await get_container_async()
 
     if not EnvironmentReader.is_environment_variable_set("RUN_TESTS_WITH_REAL_LLM"):
+        os.environ["JIRA_USERNAME"] = "dummy_username"
         jira_base_url: str = "https://icanbwell.atlassian.net"
         access_token: Optional[str] = "fake_token"
         test_container.register(
