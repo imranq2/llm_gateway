@@ -54,20 +54,19 @@ class ConfluencePageRetriever(ResilientBaseTool):
                 return error_msg, error_artifact
 
             full_text_display = (
-                f"Id: {confluence_page.id}\n"
-                f"Title: {confluence_page.title}\n"
-                f"URL: {confluence_page.url}\n"
-                f"Updated: {confluence_page.updated_at}\n"
-                f"Author: {confluence_page.author_name}\n"
+                f"**Title**: {confluence_page.title}\n"
+                f"**URL**: {confluence_page.url}\n"
+                f"**Updated**: {confluence_page.updated_at}\n"
+                f"**Author**: {confluence_page.author_name}\n"
             )
 
             full_text = (
+                f"Id: {confluence_page.id}\n"
                 f"{full_text_display}"
                 f"Content: {confluence_page.content}\n"
             )
 
-            artifact = log_prefix + f", Retrieved page {confluence_page.id}."
-            artifact += "\n\nResults:"
+            artifact = log_prefix + f", Retrieved page {confluence_page.id}.\n\n"
             artifact += f"\n{full_text_display}"
 
             return full_text, artifact

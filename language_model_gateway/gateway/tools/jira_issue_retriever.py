@@ -57,17 +57,16 @@ class JiraIssueRetriever(ResilientBaseTool):
             jira_issue = jira_issue_result.issues[0]
 
             full_text = (
-                f"Id: {jira_issue.key}\n"
-                f"Summary: {jira_issue.summary}\n"
-                f"Status: {jira_issue.status}\n"
-                f"Assignee: {jira_issue.assignee}\n"
-                f"Created: {jira_issue.created_at}\n"
-                f"Closed: {jira_issue.closed_at}\n"
-                f"Description: {jira_issue.description}\n"
+                f"**Id**: {jira_issue.key}\n"
+                f"**Summary**: {jira_issue.summary}\n"
+                f"**Status**: {jira_issue.status}\n"
+                f"**Assignee**: {jira_issue.assignee}\n"
+                f"**Created**: {jira_issue.created_at}\n"
+                f"**Closed**: {jira_issue.closed_at}\n"
+                f"**Description**: {jira_issue.description}\n"
             )
 
-            artifact = log_prefix + f", Retrieved issue {jira_issue.key}."
-            artifact += "\n\nResults:"
+            artifact = log_prefix + f", Retrieved issue {jira_issue.key}.\n\n"
             artifact += f"\n{full_text}"
 
             return full_text, artifact

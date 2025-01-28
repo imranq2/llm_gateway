@@ -48,7 +48,7 @@ class ConfluenceHelper:
                 response.raise_for_status()
 
                 results = response.json().get("results", [])
-                self.logger.info(f"Confluence raw response:\n{results}")
+                # self.logger.info(f"Confluence raw response:\n{results}")
                 search_results = []
                 for result in results:
                     content = result.get('content', {})
@@ -56,7 +56,7 @@ class ConfluenceHelper:
                         id=content.get('id'),
                         title=content.get('title'),
                         url=f"{self.confluence_base_url}/wiki/{content.get('_links', {}).get('webui')}",
-                        updated_at=datetime.fromisoformat(result.get('lastModified').replace("Z", "+00:00")),
+                        updated_at=datetime.fromisoformat(result.get('lastModified').replace("Z", "+00:00")).date().isoformat(),
                         excerpt=result.get('excerpt'),
                     ))
                 return search_results
@@ -84,7 +84,7 @@ class ConfluenceHelper:
                         result.id,
                         result.title,
                         result.url,
-                        result.updated_at.isoformat(),
+                        result.updated_at,
                         result.excerpt
                     ])
             self.logger.info(f"Results exported to {output_file}")
@@ -105,7 +105,7 @@ class ConfluenceHelper:
 
         output = "Id,Title,URL,Updated,Excerpt\n"
         for result in search_results:
-            output += f'{result.id},"{result.title}",{result.url},{result.updated_at.isoformat()},"{result.excerpt}"\n'
+            output += f'{result.id},{result.title},{result.url},{result.updated_at},{result.excerpt}\n'
         return output
 
     def format_results_as_csv_for_display(self, search_results: List[ConfluenceSearchResult]) -> str:
@@ -120,9 +120,9 @@ class ConfluenceHelper:
         """
         assert search_results, "Search results are required"
 
-        output = "Id,Title,URL,Updated\n"
+        output = "Title,URL,Updated\n"
         for result in search_results:
-            output += f'{result.id},"{result.title}",{result.url},{result.updated_at.isoformat()}"\n'
+            output += f'{result.title},{result.url},{result.updated_at}\n'
         return output
 
     async def retrieve_page_by_id(self, page_id: str) -> Optional[ConfluenceDocument]:
@@ -138,7 +138,7 @@ class ConfluenceHelper:
 
                 result = response.json()
                 content = result.get('body', {}).get('storage', {}).get('value', '')
-                updated_at = datetime.fromisoformat(result.get('version', {}).get('when').replace("Z", "+00:00"))
+                updated_at = datetime.fromisoformat(result.get('version', {}).get('when').replace("Z", "+00:00")).date().isoformat()
                 author_name = result.get('version', {}).get('by', {}).get('displayName', 'Unknown')
 
                 page = ConfluenceDocument(

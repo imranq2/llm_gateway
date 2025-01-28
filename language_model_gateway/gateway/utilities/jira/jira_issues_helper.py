@@ -472,9 +472,9 @@ class JiraIssueHelper:
                     url=issue_data.get("self"),
                     summary=fields_.get("summary", "No Summary"),
                     status=fields_.get("status", {}).get("name"),
-                    created_at=datetime.fromisoformat(fields_["created"].replace("Z", "+00:00")),
+                    created_at=datetime.fromisoformat(fields_["created"].replace("Z", "+00:00")).date().isoformat(),
                     closed_at=(
-                        datetime.fromisoformat(fields_.get("resolutiondate", "").replace("Z", "+00:00"))
+                        datetime.fromisoformat(fields_.get("resolutiondate", "").replace("Z", "+00:00")).date().isoformat()
                         if fields_.get("resolutiondate")
                         else None
                     ),
