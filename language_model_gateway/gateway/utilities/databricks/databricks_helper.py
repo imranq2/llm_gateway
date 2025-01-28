@@ -12,7 +12,6 @@ class DatabricksHelper:
     def __init__(
         self,
         *,
-        workspace_client: WorkspaceClient,
         catalog: str = "bronze",
         schema: str = "fhir_rpt",
     ) -> None:
@@ -21,10 +20,8 @@ class DatabricksHelper:
         logging.basicConfig(
             format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
         )
-        self.ws_client = workspace_client
-        self.tables = self.ws_client.tables.list(
-            catalog_name=catalog, schema_name=schema
-        )
+        self.catalog = catalog
+        self.schema = schema
 
     def parse_databricks_statement_response(
         self, statement_response: StatementResponse
@@ -71,17 +68,33 @@ class DatabricksHelper:
         return markdown_table
 
     def execute_query(self, query: str, max_wait_time: int = 300) -> str:
+        required_vars = [
+            "DATABRICKS_HOST",
+            "DATABRICKS_TOKEN",
+            "DATABRICKS_SQL_WAREHOUSE_ID",
+        ]
+        for var in required_vars:
+            if not os.environ.get(var):
+                raise ValueError(f"{var} environment variable not set")
+
         try:
+            ws_client = WorkspaceClient(
+                host=os.environ.get("DATABRICKS_HOST"),
+                token=os.environ.get("DATABRICKS_TOKEN"),
+            )
             # Execute initial statement
             # Handle warehouse_id as an environment variable
+            self.logger.debug(f"Executing Databricks query: {query}")
             warehouse_id = os.environ.get("DATABRICKS_SQL_WAREHOUSE_ID")
+            self.logger.debug(f"Warehouse ID: {warehouse_id}")
             if not warehouse_id:
                 raise ValueError(
                     "DATABRICKS_SQL_WAREHOUSE_ID environment variable not set"
                 )
-            results = self.ws_client.statement_execution.execute_statement(
+            results = ws_client.statement_execution.execute_statement(
                 query, warehouse_id=warehouse_id
             )
+            self.logger.debug(f"Initial results status: {results.status.state}")  # type: ignore
 
             # Track start time for timeout
             start_time = time.time()
@@ -89,17 +102,17 @@ class DatabricksHelper:
             # Wait while statement is pending
             while results.status.state == StatementState.PENDING:  # type: ignore
                 # Check for timeout
-                if time.time() - start_time > max_wait_time:
+                self.logger.debug("Waiting for query to complete")
+                if time.time() - start_time >= max_wait_time:
                     self.logger.error(f"Query timed out after {max_wait_time} seconds")
-                    return "Query timed out"
+                    raise TimeoutError("Query execution timed out")
 
                 # Wait before checking again
                 time.sleep(1)  # Wait 1 second between checks
 
                 # Refresh the statement status
-                results = self.ws_client.statement_execution.get_statement(
-                    results.statement_id  # type: ignore
-                )
+                self.logger.debug("Refreshing statement status")
+                results = self.ws_client.statement_execution.get_statement(results.statement_id)  # type: ignore
 
                 if results.status.state != StatementState.PENDING:  # type: ignore
                     break

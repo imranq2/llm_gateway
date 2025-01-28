@@ -1,7 +1,5 @@
 import logging
 import os
-from databricks.sdk import WorkspaceClient
-from databricks.sdk.core import Config
 
 from language_model_gateway.configs.config_reader.config_reader import ConfigReader
 from language_model_gateway.container.simple_container import SimpleContainer
@@ -107,16 +105,6 @@ class ContainerFactory:
         )
 
         container.register(
-            WorkspaceClient,
-            lambda c: WorkspaceClient(
-                config=Config(
-                    host=c.resolve(EnvironmentVariables).databricks_host,
-                    token=c.resolve(EnvironmentVariables).databricks_token,
-                )
-            ),
-        )
-
-        container.register(
             GithubPullRequestHelper,
             lambda c: GithubPullRequestHelper(
                 org_name=c.resolve(EnvironmentVariables).github_org,
@@ -137,9 +125,7 @@ class ContainerFactory:
 
         container.register(
             DatabricksHelper,
-            lambda c: DatabricksHelper(
-                workspace_client=c.resolve(WorkspaceClient),
-            ),
+            lambda c: DatabricksHelper(),
         )
 
         container.register(
